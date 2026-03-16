@@ -25,13 +25,13 @@ export default function About() {
             Echo Chamber Media is a Las Vegas-based production company built on
             one idea: every story deserves to be told cinematically. From
             weddings and corporate spots to independent documentaries, we handle
-            everything - concept through delivery.
+            everything from concept through delivery.
           </p>
 
           <p className="mt-4 text-brand-gray font-body text-base leading-relaxed">
             Founded by Billy Zurisk, we bring film-set precision to every
             project. No templates. No shortcuts. Just clean, intentional work
-            that looks and feels like the real thing - because it is.
+            that looks and feels like the real thing. Because it is.
           </p>
 
           <div className="mt-8 flex items-center gap-4">

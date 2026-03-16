@@ -63,7 +63,7 @@ export default function FeaturedFilm() {
             }`}
           >            <Image
               src="/images/the classified mind.png"
-              alt="The Classified Mind - Official Movie Poster"
+              alt="The Classified Mind Official Movie Poster"
               fill
               className="object-cover object-top"
               sizes="(max-width: 1024px) 100vw, 50vw"
@@ -86,7 +86,7 @@ export default function FeaturedFilm() {
             <p className="text-brand-gray font-body leading-relaxed mb-4">
               Gideon lives in his mother&apos;s basement, alone with his
               theories. The boards are covered. The patterns are there. He
-              knows something is watching - he can feel it. But the closer
+              knows something is watching. He can feel it. But the closer
               he gets to the truth, the less certain he becomes of what the
               truth actually is.
             </p>

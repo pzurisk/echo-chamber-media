@@ -4,8 +4,8 @@ import { useEffect, useRef, useState } from "react";
 
 /* ── Awards ── */
 const awards = [
-  "Official Selection - Las Vegas Indie Film Festival 2026",
-  "Winner - The Dunwich Horror Fest",
+  "Official Selection, Las Vegas Indie Film Festival 2026",
+  "Winner, The Dunwich Horror Fest",
 ];
 
 /* ── Stats ── */
