@@ -16,7 +16,7 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
-  title: "Echo Chamber Media | Cinematic Production — Las Vegas",
+  title: "Echo Chamber Media | Cinematic Production - Las Vegas",
   description:
     "Cinematic storytelling for the stories that matter. Video production, brand films, commercials, and live events based in Las Vegas, NV.",
   keywords: [
