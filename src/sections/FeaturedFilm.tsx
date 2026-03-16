@@ -83,10 +83,17 @@ export default function FeaturedFilm() {
             <p className="text-brand-off-white font-body text-lg leading-relaxed mb-2">
               An Echo Chamber Media Production
             </p>
-            <p className="text-brand-gray font-body leading-relaxed mb-8">
-              When a small-town family begins experiencing unexplainable events,
-              they discover that the truth behind the disturbances is far more
-              terrifying - and far more real - than anything they could have imagined.
+            <p className="text-brand-gray font-body leading-relaxed mb-4">
+              Gideon lives in his mother&apos;s basement, alone with his
+              theories. The boards are covered. The patterns are there. He
+              knows something is watching - he can feel it. But the closer
+              he gets to the truth, the less certain he becomes of what the
+              truth actually is.
+            </p>
+            <p className="text-brand-gray font-body leading-relaxed italic mb-4">
+              He might be wrong about everything. Then again, he might not be.
+            </p>
+            <p className="text-brand-gray/60 font-body text-sm leading-relaxed mb-8">
               Shot on DJI Ronin 4D. Color graded in DaVinci Resolve.
             </p>
             {/* Laurels */}
