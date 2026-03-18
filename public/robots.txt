@@ -1,0 +1,5 @@
+# Echo Chamber Media - echochambermedia.com
+User-agent: *
+Allow: /
+
+Sitemap: https://echochambermedia.com/sitemap.xml
