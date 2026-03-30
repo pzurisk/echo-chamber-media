@@ -13,12 +13,18 @@ const credits = [
   { role: "Cinematography", name: "Billy Zurisk" },
   { role: "Starring", name: "Mark Vanis & Milla Dawn" },
   { role: "Original Score", name: "Tim Legvold" },
+  { role: "Sound Mix", name: "Anastasia Shuvayeva" },
+  { role: "Production Design", name: "Billy Zurisk, Pete Miceli & Melissa Phillips" },
   { role: "Special Effects", name: "Billy Zurisk" },
+  { role: "Gaffer", name: "Melissa Phillips" },
+  { role: "Alien Performance", name: "Pete Miceli" },
 ];
 /* ── Laurels ── */
 const laurels = [
   { festival: "Las Vegas Indie Film Festival 2026", type: "Official Selection" },
   { festival: "The Dunwich Horror Fest", type: "Award Winner" },
+  { festival: "Golden Nugget International Film Festival 2026", type: "Official Selection" },
+  { festival: "Indie Vegas Film Festival 2026", type: "Official Selection" },
 ];
 
 export default function FeaturedFilm() {
@@ -94,7 +100,7 @@ export default function FeaturedFilm() {
               He might be wrong about everything. Then again, he might not be.
             </p>
             <p className="text-brand-gray/60 font-body text-sm leading-relaxed mb-8">
-              Shot on DJI Ronin 4D. Color graded in DaVinci Resolve.
+              Shot on DJI Ronin 4D. Edited in Adobe Premiere Pro. Color graded in DaVinci Resolve.
             </p>
             {/* Laurels */}
             <div className="flex flex-wrap gap-6 mb-10">
