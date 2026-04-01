@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 
 /* ── Review Data ── */
 const reviews = [
@@ -17,8 +17,7 @@ const reviews = [
     role: "Wedding Client",
     initials: "JR",
     photo: "https://randomuser.me/api/portraits/women/44.jpg",
-  },
-  {
+  },  {
     text: "We hired Echo Chamber Media to produce a commercial for our restaurant opening on Fremont Street. The turnaround was fast, the production quality was insane, and it actually looked like something you'd see on TV. Already planning our next project with them.",
     name: "David Torres",
     role: "Restaurant Owner, Las Vegas",
@@ -40,7 +39,6 @@ const reviews = [
     photo: "https://randomuser.me/api/portraits/men/75.jpg",
   },
 ];
-
 /* ── Star SVG ── */
 function Star() {
   return (
@@ -61,11 +59,10 @@ function GoogleIcon() {
     </svg>
   );
 }
-
 /* ── Review Card ── */
 function ReviewCard({ text, name, role, initials, photo }: (typeof reviews)[0]) {
   return (
-    <div className="flex-shrink-0 w-[340px] md:w-[380px] bg-brand-charcoal border border-brand-charcoal hover:border-brand-gold rounded-2xl p-8 transition-all duration-300 hover:-translate-y-1 relative group">
+    <div className="flex-shrink-0 w-[340px] md:w-[380px] bg-brand-charcoal border border-brand-charcoal hover:border-brand-gold rounded-2xl p-8 transition-all duration-300 hover:-translate-y-1 relative group select-none">
       {/* Big quote */}
       <span className="absolute top-2 left-5 font-heading text-7xl text-brand-gold/10 leading-none pointer-events-none select-none">
         &ldquo;
@@ -105,23 +102,126 @@ function ReviewCard({ text, name, role, initials, photo }: (typeof reviews)[0]) 
     </div>
   );
 }
-
 /* ── Main Reviews Section ── */
 export default function Reviews() {
+  const containerRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
+  const autoScrollRef = useRef<number | null>(null);
+  const isDragging = useRef(false);
+  const startX = useRef(0);
+  const scrollStart = useRef(0);
+  const resumeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [isPaused, setIsPaused] = useState(false);
+  const CARD_WIDTH = 404; // card width + gap
+  const SPEED = 1; // pixels per frame
 
-  /* Duplicate cards for seamless infinite scroll */
+  /* ── Auto-scroll loop ── */
+  const startAutoScroll = useCallback(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const step = () => {
+      if (!containerRef.current) return;
+      const el = containerRef.current;
+      el.scrollLeft += SPEED;
+      // Reset to beginning when halfway (seamless loop)
+      const halfScroll = el.scrollWidth / 2;
+      if (el.scrollLeft >= halfScroll) {
+        el.scrollLeft -= halfScroll;
+      }
+      autoScrollRef.current = requestAnimationFrame(step);
+    };
+    autoScrollRef.current = requestAnimationFrame(step);
+  }, []);
+  const stopAutoScroll = useCallback(() => {
+    if (autoScrollRef.current) {
+      cancelAnimationFrame(autoScrollRef.current);
+      autoScrollRef.current = null;
+    }
+  }, []);
+
+  /* Resume auto-scroll after 3 seconds of inactivity */
+  const scheduleResume = useCallback(() => {
+    if (resumeTimer.current) clearTimeout(resumeTimer.current);
+    resumeTimer.current = setTimeout(() => {
+      setIsPaused(false);
+      startAutoScroll();
+    }, 3000);
+  }, [startAutoScroll]);
+
+  /* ── Duplicate cards for seamless loop + start auto-scroll ── */
   useEffect(() => {
     const track = trackRef.current;
     if (!track) return;
-    // Clone all children and append for seamless loop
     const children = Array.from(track.children);
     children.forEach((child) => {
       const clone = child.cloneNode(true) as HTMLElement;
       track.appendChild(clone);
     });
+    startAutoScroll();
+    return () => stopAutoScroll();
+  }, [startAutoScroll, stopAutoScroll]);
+  /* ── Touch swipe handlers (mobile) ── */
+  const onTouchStart = useCallback((e: React.TouchEvent) => {
+    stopAutoScroll();
+    setIsPaused(true);
+    startX.current = e.touches[0].clientX;
+    scrollStart.current = containerRef.current?.scrollLeft ?? 0;
+  }, [stopAutoScroll]);
+
+  const onTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!containerRef.current) return;
+    const diff = startX.current - e.touches[0].clientX;
+    containerRef.current.scrollLeft = scrollStart.current + diff;
   }, []);
 
+  const onTouchEnd = useCallback(() => {
+    scheduleResume();
+  }, [scheduleResume]);
+
+  /* ── Mouse drag handlers (desktop) ── */
+  const onMouseDown = useCallback((e: React.MouseEvent) => {
+    isDragging.current = true;
+    stopAutoScroll();
+    setIsPaused(true);
+    startX.current = e.clientX;
+    scrollStart.current = containerRef.current?.scrollLeft ?? 0;
+    if (containerRef.current) containerRef.current.style.cursor = "grabbing";
+  }, [stopAutoScroll]);
+
+  const onMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!isDragging.current || !containerRef.current) return;
+    e.preventDefault();
+    const diff = startX.current - e.clientX;
+    containerRef.current.scrollLeft = scrollStart.current + diff;
+  }, []);
+  const onMouseUp = useCallback(() => {
+    isDragging.current = false;
+    if (containerRef.current) containerRef.current.style.cursor = "grab";
+    scheduleResume();
+  }, [scheduleResume]);
+
+  const onMouseLeave = useCallback(() => {
+    if (isDragging.current) {
+      isDragging.current = false;
+      if (containerRef.current) containerRef.current.style.cursor = "grab";
+      scheduleResume();
+    }
+  }, [scheduleResume]);
+
+  /* ── Hover pause (desktop, non-drag) ── */
+  const onMouseEnter = useCallback(() => {
+    if (!isDragging.current) {
+      stopAutoScroll();
+      setIsPaused(true);
+    }
+  }, [stopAutoScroll]);
+
+  const onContainerMouseLeave = useCallback(() => {
+    if (!isDragging.current) {
+      setIsPaused(false);
+      startAutoScroll();
+    }
+  }, [startAutoScroll]);
   return (
     <section className="relative w-full py-20 md:py-28 bg-brand-black overflow-hidden">
       {/* Ambient glow */}
@@ -149,24 +249,35 @@ export default function Reviews() {
 
         <div className="w-16 h-0.5 bg-brand-gold mx-auto mt-6 rounded-full" />
       </div>
-
-      {/* Scrolling track */}
+      {/* Scrolling track with swipe/drag */}
       <div className="relative mt-12">
         {/* Fade edges */}
         <div className="absolute left-0 top-0 bottom-0 w-20 md:w-28 bg-gradient-to-r from-brand-black to-transparent z-10 pointer-events-none" />
         <div className="absolute right-0 top-0 bottom-0 w-20 md:w-28 bg-gradient-to-l from-brand-black to-transparent z-10 pointer-events-none" />
 
         <div
-          ref={trackRef}
-          className="flex gap-6 animate-[scrollLeft_35s_linear_infinite] hover:[animation-play-state:paused]"
-          style={{ width: "max-content" }}
+          ref={containerRef}
+          className="overflow-hidden cursor-grab"
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
+          onMouseDown={onMouseDown}
+          onMouseMove={onMouseMove}
+          onMouseUp={onMouseUp}
+          onMouseLeave={onMouseLeave}
+          onMouseEnter={onMouseEnter}
         >
-          {reviews.map((review) => (
-            <ReviewCard key={review.name} {...review} />
-          ))}
+          <div
+            ref={trackRef}
+            className="flex gap-6"
+            style={{ width: "max-content" }}
+          >
+            {reviews.map((review) => (
+              <ReviewCard key={review.name} {...review} />
+            ))}
+          </div>
         </div>
       </div>
-
       {/* CTA */}
       <div className="text-center mt-12 relative z-10">
         <a
