@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import Logo from "@/components/Logo";
 import ScrollIndicator from "@/components/ScrollIndicator";
 
@@ -9,6 +9,16 @@ export default function Hero() {
   const [entered, setEntered] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [fading, setFading] = useState(false);
+  /* Lock body scroll until user clicks Enter */
+  useEffect(() => {
+    if (!entered) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [entered]);
+
   const handleEnter = () => {
     setFading(true);
     const video = videoRef.current;
@@ -48,12 +58,13 @@ export default function Hero() {
 
       {/* ── Vignette ── */}
       <div className="absolute inset-0 bg-gradient-to-t from-brand-black via-transparent to-transparent opacity-80" />
-      {/* ── Splash Overlay ── */}
+      {/* ── Splash Overlay — fixed fullscreen gate, blocks scroll ── */}
       {!entered && (
         <div
-          className={`absolute inset-0 z-30 flex flex-col items-center justify-center bg-brand-black transition-opacity duration-700 ${
+          className={`fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-brand-black transition-opacity duration-700 ${
             fading ? "opacity-0 pointer-events-none" : "opacity-100"
           }`}
+          style={{ overscrollBehavior: "none" }}
         >
           <p className="font-heading text-sm uppercase tracking-[0.3em] text-brand-gold mb-6">
             Echo Chamber Media Presents
