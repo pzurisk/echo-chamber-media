@@ -9,7 +9,7 @@ const projects = [
   {
     title: "The Naked City Underground",
     type: "Music Video",
-    description: "Dark, atmospheric visuals for Las Vegas' genre-bending band. \"Coming To Me\" & \"Everything's Alright.\"",
+    description: "Outlaw country meets surf punk. Raw energy from Las Vegas' genre-bending band. \"Coming To Me\" & \"Everything's Alright.\"",
     youtubeId: "x1yqQXmHCdY",
     href: "/blog/naked-city-underground-music-video",
   },

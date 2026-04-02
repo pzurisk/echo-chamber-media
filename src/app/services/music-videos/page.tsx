@@ -157,7 +157,7 @@ export default function MusicVideosPage() {
               The Naked City Underground
             </h2>
             <p className="font-body text-brand-gray text-center max-w-2xl mx-auto mb-12">
-              &quot;Coming To Me&quot; &amp; &quot;Everything&apos;s Alright&quot; — Our debut music video production. A dark, atmospheric visual companion for Las Vegas&apos; own genre-bending outfit, blending outlaw country grit with surf punk energy.
+              &quot;Coming To Me&quot; &amp; &quot;Everything&apos;s Alright&quot; — Our debut music video production. Raw, gritty visuals for Las Vegas&apos; own genre-bending outfit. Two flair bartenders turned musicians, blending outlaw country with surf punk, blues, and alternative rock.
             </p>
 
             {/* YouTube Embed */}
@@ -183,7 +183,7 @@ export default function MusicVideosPage() {
               </div>
               <div className="bg-brand-charcoal/40 border border-brand-gold/10 p-6 text-center">
                 <p className="text-xs uppercase tracking-editorial text-brand-gold font-body mb-1">Vibe</p>
-                <p className="text-brand-off-white font-body">Dark &amp; Atmospheric</p>
+                <p className="text-brand-off-white font-body">Outlaw Country / Surf Punk</p>
               </div>
             </div>
 

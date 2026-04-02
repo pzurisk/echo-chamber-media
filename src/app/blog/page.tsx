@@ -21,7 +21,7 @@ const posts = [
   {
     slug: 'naked-city-underground-music-video',
     title: 'Shooting My First Music Video: The Naked City Underground',
-    excerpt: 'How we brought a dark, atmospheric Goodbye Horses vibe to life for Las Vegas\' own genre-bending outfit. Behind the scenes of the "Coming To Me" & "Everything\'s Alright" music video.',
+    excerpt: 'How we captured the raw, genre-smashing energy of Las Vegas\' own outlaw country-surf punk outfit. Behind the scenes of the "Coming To Me" & "Everything\'s Alright" music video.',
     date: 'April 2, 2026',
     category: 'Case Study',
     readTime: '5 min read',

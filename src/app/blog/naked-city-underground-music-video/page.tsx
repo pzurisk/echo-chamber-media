@@ -5,12 +5,12 @@ import Footer from '@/sections/Footer';
 
 export const metadata: Metadata = {
   title: 'Shooting My First Music Video: The Naked City Underground | Echo Chamber Media',
-  description: 'Behind the scenes of the Naked City Underground music video shot in Las Vegas. How we created a dark, atmospheric visual for Coming To Me & Everything\'s Alright.',
+  description: 'Behind the scenes of the Naked City Underground music video shot in Las Vegas. Outlaw country meets surf punk — how we captured the raw energy of Coming To Me & Everything\'s Alright.',
   alternates: { canonical: 'https://echochambermedia.com/blog/naked-city-underground-music-video' },
   keywords: 'music video production Las Vegas, Naked City Underground, behind the scenes music video, cinematography breakdown, Echo Chamber Media',
   openGraph: {
     title: 'Shooting My First Music Video: The Naked City Underground',
-    description: 'Behind the scenes of the Naked City Underground music video. Dark, atmospheric visuals for Las Vegas\' genre-bending band.',
+    description: 'Behind the scenes of the Naked City Underground music video. Outlaw country meets surf punk — raw energy from Las Vegas\' genre-bending band.',
     url: 'https://echochambermedia.com/blog/naked-city-underground-music-video',
     type: 'article',
     locale: 'en_US',
@@ -44,7 +44,7 @@ export default function NakedCityUndergroundPost() {
             </h1>
             <div className="h-px w-16 bg-brand-gold mb-6" />
             <p className="font-body text-lg text-brand-gray leading-relaxed">
-              How we brought a dark, atmospheric <em>Goodbye Horses</em> vibe to life for Las Vegas&apos; own genre-bending outfit.
+              How we captured the raw, genre-smashing energy of Las Vegas&apos; own outlaw country-surf punk outfit in their first music video.
             </p>
           </div>
 
@@ -62,24 +62,24 @@ export default function NakedCityUndergroundPost() {
           {/* Article Body */}
           <div className="prose-ecm space-y-6">
             <p className="font-body text-brand-off-white leading-relaxed text-lg">
-              Every filmmaker remembers their first music video. This one was mine. The Naked City Underground reached out looking for something that matched the feel of their sound — equal parts outlaw country grit and Southern California surf punk, with a darkness running underneath all of it. They described the vibe as <em>Goodbye Horses</em> by Q Lazzarus. I knew exactly what they meant.
+              Every filmmaker remembers their first music video. This one was mine. The Naked City Underground reached out looking for something that matched the feel of their sound — equal parts outlaw country grit and Southern California surf punk, with blues, jazz, and alternative rock mixed in for good measure. They&apos;re not a band you put in a box, and they didn&apos;t want a video you could put in one either.
             </p>
 
             <h2 className="font-heading text-2xl uppercase tracking-editorial text-brand-gold mt-12 mb-4">
               The Band
             </h2>
             <p className="font-body text-brand-off-white leading-relaxed">
-              The Naked City Underground is a Las Vegas original. Two world-class flair bartenders who traded the bar scene for the music scene, teaming up with some of Sin City&apos;s best recording and live performing musicians. Their sound fills the gaps from Waylon Jennings to Nirvana to Sublime — and their energy on set matched that range. The tracks we shot were &quot;Coming To Me&quot; and &quot;Everything&apos;s Alright,&quot; two of their most popular songs with a combined 74,000+ plays on Spotify.
+              The Naked City Underground is a Las Vegas original. Two world-class flair bartenders who put the bottles down, picked up instruments, and started making music that comes straight from their souls. They teamed up with some of Sin City&apos;s best recording and live performing musicians to create something you can&apos;t quite pin down — their sound fills the gaps from Waylon Jennings to Nirvana to Sublime. They&apos;ve been featured on KOMP 92.3&apos;s Homegrown Show, and the tracks we shot — &quot;Coming To Me&quot; and &quot;Everything&apos;s Alright&quot; — have racked up a combined 74,000+ plays on Spotify.
             </p>
 
             <h2 className="font-heading text-2xl uppercase tracking-editorial text-brand-gold mt-12 mb-4">
               The Approach
             </h2>
             <p className="font-body text-brand-off-white leading-relaxed">
-              I wanted this to feel atmospheric and cinematic — not just a band playing in a room. The reference point was that haunting, trance-like quality of <em>Goodbye Horses</em>: slow builds, moody lighting, and a sense that something is always simmering beneath the surface. We leaned into dark tones, dramatic contrast, and movements that matched the rhythm of the music.
+              The approach had to match their energy — raw, unpolished, and authentic. These guys are the exact opposite of a slick, over-produced machine, and that&apos;s what makes them great. I wanted the visuals to have that same quality: real moments, real grit, real Vegas. We leaned into dramatic contrast, handheld movement, and a pace that matched the swagger of the music.
             </p>
             <p className="font-body text-brand-off-white leading-relaxed">
-              Las Vegas gave us everything we needed for locations. The desert, the grit, the neon — it all fed into the visual language of the video. We shot with intention on every frame, treating it more like a short film than a traditional music video.
+              Las Vegas gave us everything we needed for locations. The desert, the dive bars, the neon — it all fed into the visual language of the video. This is a band born out of the Sin City bar scene, so we kept it rooted in that world. Every frame was shot with intention, treating it more like a short film than a traditional music video.
             </p>
 
             <h2 className="font-heading text-2xl uppercase tracking-editorial text-brand-gold mt-12 mb-4">
@@ -89,7 +89,7 @@ export default function NakedCityUndergroundPost() {
               Being my first music video, I was hyper-focused on the fundamentals: camera movement that served the music, lighting that created mood without overpowering the performance, and color grading that unified everything into a cohesive visual world. Every shot was planned with the edit in mind — where the cuts would land, how the energy would build, where we&apos;d let a moment breathe.
             </p>
             <p className="font-body text-brand-off-white leading-relaxed">
-              Post-production was where it really came together. The color grade pushed into darker, more desaturated territory — warm shadows, cool highlights, and gold accents that gave the whole thing that late-night, slightly-surreal quality we were after.
+              Post-production was where it really came together. The color grade leaned into warm tones and gritty texture — honky-tonk golds, desert heat, and just enough contrast to keep things cinematic without losing the raw, lived-in feel the band brings naturally.
             </p>
 
             <h2 className="font-heading text-2xl uppercase tracking-editorial text-brand-gold mt-12 mb-4">
