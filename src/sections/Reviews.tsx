@@ -130,6 +130,7 @@ export default function Reviews() {
   const startX = useRef(0);
   const scrollStart = useRef(0);
   const resumeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [_isPaused, setIsPaused] = useState(false);
 
   /* Velocity tracking for momentum */
@@ -337,6 +338,7 @@ export default function Reviews() {
     }
   }, [stopAutoScroll, stopMomentum]);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const _onContainerMouseLeave = useCallback(() => {
     if (!isDragging.current) {
       setIsPaused(false);
