@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     template: "%s | Echo Chamber Media",
   },
   description:
-    "Echo Chamber Media is a cinematic video production company based in Las Vegas, NV. We produce wedding films, brand content, commercials, documentaries, real estate walk-throughs, and live event coverage.",
+    "Award-winning video production in Las Vegas. Cinematic wedding films, corporate video, documentaries & real estate tours. Get a free consultation today.",
   keywords: [
     "video production Las Vegas",
     "Las Vegas videographer",
@@ -53,7 +53,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Echo Chamber Media | Cinematic Video Production in Las Vegas",
     description:
-      "Cinematic storytelling for the stories that matter. Wedding films, brand content, commercials, and documentaries based in Las Vegas, NV.",
+      "Award-winning video production in Las Vegas. Cinematic wedding films, corporate video, documentaries & real estate tours. Get a free consultation today.",
     type: "website",
     locale: "en_US",
     url: "https://echochambermedia.com",
@@ -63,7 +63,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Echo Chamber Media | Cinematic Video Production in Las Vegas",
     description:
-      "Cinematic storytelling for the stories that matter. Wedding films, brand content, commercials, and documentaries based in Las Vegas, NV.",
+      "Award-winning video production in Las Vegas. Cinematic wedding films, corporate video, documentaries & real estate tours. Get a free consultation today.",
   },
   robots: {
     index: true,

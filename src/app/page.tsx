@@ -2,6 +2,7 @@ import Navbar from "@/sections/Navbar";
 import Hero from "@/sections/Hero";
 import Services from "@/sections/Services";
 import FeaturedFilm from "@/sections/FeaturedFilm";
+import Portfolio from "@/sections/Portfolio";
 import About from "@/sections/About";
 import Reviews from "@/sections/Reviews";
 import Contact from "@/sections/Contact";
@@ -15,6 +16,7 @@ export default function Home() {
         <Hero />
         <Services />
         <FeaturedFilm />
+        <Portfolio />
         <About />
         <Reviews />
         <Contact />

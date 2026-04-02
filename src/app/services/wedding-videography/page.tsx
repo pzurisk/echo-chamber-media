@@ -5,12 +5,12 @@ import Link from 'next/link';
 export const metadata = {
   title: 'Wedding Videographer Las Vegas | Cinematic Wedding Films | Echo Chamber Media',
   description:
-    'Award-winning wedding videographer in Las Vegas specializing in cinematic wedding films. Professional Las Vegas wedding video production with stunning storytelling and premium editing.',
-  canonical: 'https://echochambermedia.com/services/wedding-videography',
+    'Award-winning Las Vegas wedding videographer. Cinematic wedding films with stunning storytelling and premium editing. Get a free quote today.',
+  alternates: { canonical: 'https://echochambermedia.com/services/wedding-videography' },
   openGraph: {
     title: 'Wedding Videographer Las Vegas | Cinematic Wedding Films | Echo Chamber Media',
     description:
-      'Award-winning wedding videographer in Las Vegas specializing in cinematic wedding films. Professional Las Vegas wedding video production with stunning storytelling and premium editing.',
+      'Award-winning Las Vegas wedding videographer. Cinematic wedding films with stunning storytelling and premium editing. Get a free quote today.',
     url: 'https://echochambermedia.com/services/wedding-videography',
     type: 'website',
   },

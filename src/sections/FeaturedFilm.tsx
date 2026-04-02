@@ -22,6 +22,8 @@ const credits = [
 /* ── Laurels ── */
 const laurels = [
   { festival: "Las Vegas Indie Film Festival 2026", type: "Official Selection" },
+  { festival: "Las Vegas Indie Film Festival 2026", type: "Best Horror" },
+  { festival: "Las Vegas Indie Film Festival 2026", type: "Best Score" },
   { festival: "The Dunwich Horror Fest", type: "Award Winner" },
   { festival: "Golden Nugget International Film Festival 2026", type: "Official Selection" },
   { festival: "Indie Vegas Film Festival 2026", type: "Official Selection" },

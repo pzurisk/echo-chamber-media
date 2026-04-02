@@ -5,12 +5,12 @@ import Footer from '@/sections/Footer';
 // This must be exported for Next.js metadata
 export const metadata: Metadata = {
   title: 'Wedding Photographer Las Vegas | Cinematic Wedding Photography | Echo Chamber Media',
-  description: 'Award-winning wedding photographer in Las Vegas. Cinematic, editorial wedding photography & elopement coverage. Book your Las Vegas wedding photographer today.',
+  description: 'Las Vegas wedding photographer specializing in cinematic, editorial coverage. Elopements, ceremonies & receptions. View our portfolio and book today.',
   alternates: { canonical: 'https://echochambermedia.com/services/wedding-photography' },
   keywords: 'wedding photographer Las Vegas, Las Vegas wedding photography, wedding photos Las Vegas, Las Vegas wedding photographer, elopement photographer Las Vegas, cinematic wedding photography',
   openGraph: {
     title: 'Wedding Photographer Las Vegas | Echo Chamber Media',
-    description: 'Cinematic wedding photography for luxury couples in Las Vegas. Professional, artistic wedding photographer serving the entire valley.',
+    description: 'Las Vegas wedding photographer specializing in cinematic, editorial coverage. Elopements, ceremonies & receptions. View our portfolio and book today.',
     url: 'https://echochambermedia.com/services/wedding-photography',
     type: 'website',
     locale: 'en_US',

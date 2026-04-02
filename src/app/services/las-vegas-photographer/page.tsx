@@ -3,8 +3,8 @@ import Footer from '@/sections/Footer';
 
 export const metadata = {
   title: 'Las Vegas Photographer & Videographer | Professional Photos & Video in Vegas | Echo Chamber Media',
-  description: 'Professional Las Vegas photographer & videographer for tourists and visitors. Vacation photoshoots, proposals, bachelorette parties, and content creation. Book your Vegas memories today.',
-  canonical: 'https://echochambermedia.com/services/las-vegas-photographer',
+  description: 'Las Vegas photographer for vacations, proposals, bachelorette parties & content creation. Professional photos and video. Book your session today.',
+  alternates: { canonical: 'https://echochambermedia.com/services/las-vegas-photographer' },
   keywords: 'Las Vegas photographer, Vegas vacation photographer, tourist photographer Las Vegas, professional photos Las Vegas, Las Vegas proposal photographer, bachelorette party photographer Vegas, Las Vegas content creator, Vegas photoshoot',
 };
 

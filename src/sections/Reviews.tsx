@@ -9,7 +9,7 @@ const reviews = [
     name: "Melissa Phillips",
     role: "Tattoo Artist, Las Vegas",
     initials: "MP",
-    photo: "https://lh3.googleusercontent.com/a/default-user=s64-c",
+    photo: "",
   },
   {
     text: "Billy and the Echo Chamber team filmed our wedding and we couldn't be happier. Every moment was captured perfectly — the ceremony, the reception, even the little candid moments we didn't know were being filmed. The final edit had us in tears. Worth every penny.",
@@ -39,6 +39,10 @@ const reviews = [
     photo: "https://randomuser.me/api/portraits/men/75.jpg",
   },
 ];
+
+/* ── Momentum physics constants ── */
+const FRICTION = 0.95; // deceleration per frame (lower = stops faster)
+const MIN_VELOCITY = 0.5; // stop animating below this speed
 /* ── Star SVG ── */
 function Star() {
   return (
@@ -59,6 +63,30 @@ function GoogleIcon() {
     </svg>
   );
 }
+/* ── Avatar with error fallback ── */
+function Avatar({ photo, name, initials }: { photo: string; name: string; initials: string }) {
+  const [imgFailed, setImgFailed] = useState(false);
+
+  if (!photo || imgFailed) {
+    return (
+      <div className="w-11 h-11 rounded-full bg-brand-gold/15 flex items-center justify-center font-heading text-sm text-brand-gold flex-shrink-0">
+        {initials}
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={photo}
+      alt={name}
+      className="w-11 h-11 rounded-full object-cover flex-shrink-0 border-2 border-brand-gold/30"
+      onError={() => setImgFailed(true)}
+      referrerPolicy="no-referrer"
+      loading="lazy"
+    />
+  );
+}
+
 /* ── Review Card ── */
 function ReviewCard({ text, name, role, initials, photo }: (typeof reviews)[0]) {
   return (
@@ -82,17 +110,7 @@ function ReviewCard({ text, name, role, initials, photo }: (typeof reviews)[0]) 
 
       {/* Reviewer */}
       <div className="flex items-center gap-3 border-t border-brand-black/50 pt-5">
-        {photo ? (
-          <img
-            src={photo}
-            alt={name}
-            className="w-11 h-11 rounded-full object-cover flex-shrink-0 border-2 border-brand-gold/30"
-          />
-        ) : (
-          <div className="w-11 h-11 rounded-full bg-brand-gold/15 flex items-center justify-center font-heading text-sm text-brand-gold flex-shrink-0">
-            {initials}
-          </div>
-        )}
+        <Avatar photo={photo} name={name} initials={initials} />
         <div className="flex-1">
           <div className="font-body font-semibold text-sm text-brand-off-white">{name}</div>
           <div className="font-body text-xs text-brand-gray mt-0.5">{role}</div>
@@ -107,13 +125,31 @@ export default function Reviews() {
   const containerRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const autoScrollRef = useRef<number | null>(null);
+  const momentumRef = useRef<number | null>(null);
   const isDragging = useRef(false);
   const startX = useRef(0);
   const scrollStart = useRef(0);
   const resumeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isPaused, setIsPaused] = useState(false);
-  const CARD_WIDTH = 404; // card width + gap
-  const SPEED = 1; // pixels per frame
+
+  /* Velocity tracking for momentum */
+  const lastX = useRef(0);
+  const lastTime = useRef(0);
+  const velocity = useRef(0);
+
+  const SPEED = 1; // pixels per frame for auto-scroll
+
+  /* ── Seamless loop wrap helper ── */
+  const wrapScroll = useCallback(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const halfScroll = el.scrollWidth / 2;
+    if (el.scrollLeft >= halfScroll) {
+      el.scrollLeft -= halfScroll;
+    } else if (el.scrollLeft < 0) {
+      el.scrollLeft += halfScroll;
+    }
+  }, []);
 
   /* ── Auto-scroll loop ── */
   const startAutoScroll = useCallback(() => {
@@ -123,7 +159,6 @@ export default function Reviews() {
       if (!containerRef.current) return;
       const el = containerRef.current;
       el.scrollLeft += SPEED;
-      // Reset to beginning when halfway (seamless loop)
       const halfScroll = el.scrollWidth / 2;
       if (el.scrollLeft >= halfScroll) {
         el.scrollLeft -= halfScroll;
@@ -132,6 +167,7 @@ export default function Reviews() {
     };
     autoScrollRef.current = requestAnimationFrame(step);
   }, []);
+
   const stopAutoScroll = useCallback(() => {
     if (autoScrollRef.current) {
       cancelAnimationFrame(autoScrollRef.current);
@@ -139,7 +175,40 @@ export default function Reviews() {
     }
   }, []);
 
-  /* Resume auto-scroll after 3 seconds of inactivity */
+  const stopMomentum = useCallback(() => {
+    if (momentumRef.current) {
+      cancelAnimationFrame(momentumRef.current);
+      momentumRef.current = null;
+    }
+    velocity.current = 0;
+  }, []);
+
+  /* ── Momentum coast animation ── */
+  const startMomentum = useCallback(() => {
+    if (momentumRef.current) cancelAnimationFrame(momentumRef.current);
+    const coast = () => {
+      const el = containerRef.current;
+      if (!el) return;
+      velocity.current *= FRICTION;
+      if (Math.abs(velocity.current) < MIN_VELOCITY) {
+        velocity.current = 0;
+        momentumRef.current = null;
+        // Resume auto-scroll after momentum dies
+        if (resumeTimer.current) clearTimeout(resumeTimer.current);
+        resumeTimer.current = setTimeout(() => {
+          setIsPaused(false);
+          startAutoScroll();
+        }, 2000);
+        return;
+      }
+      el.scrollLeft += velocity.current;
+      wrapScroll();
+      momentumRef.current = requestAnimationFrame(coast);
+    };
+    momentumRef.current = requestAnimationFrame(coast);
+  }, [startAutoScroll, wrapScroll]);
+
+  /* Resume auto-scroll after inactivity */
   const scheduleResume = useCallback(() => {
     if (resumeTimer.current) clearTimeout(resumeTimer.current);
     resumeTimer.current = setTimeout(() => {
@@ -158,63 +227,115 @@ export default function Reviews() {
       track.appendChild(clone);
     });
     startAutoScroll();
-    return () => stopAutoScroll();
-  }, [startAutoScroll, stopAutoScroll]);
-  /* ── Touch swipe handlers (mobile) ── */
+    return () => {
+      stopAutoScroll();
+      stopMomentum();
+    };
+  }, [startAutoScroll, stopAutoScroll, stopMomentum]);
+
+  /* ── Touch swipe handlers (mobile) — with velocity tracking ── */
   const onTouchStart = useCallback((e: React.TouchEvent) => {
     stopAutoScroll();
+    stopMomentum();
     setIsPaused(true);
-    startX.current = e.touches[0].clientX;
+    const touch = e.touches[0];
+    startX.current = touch.clientX;
     scrollStart.current = containerRef.current?.scrollLeft ?? 0;
-  }, [stopAutoScroll]);
+    lastX.current = touch.clientX;
+    lastTime.current = Date.now();
+    velocity.current = 0;
+  }, [stopAutoScroll, stopMomentum]);
 
   const onTouchMove = useCallback((e: React.TouchEvent) => {
     if (!containerRef.current) return;
-    const diff = startX.current - e.touches[0].clientX;
+    const touch = e.touches[0];
+    const now = Date.now();
+    const dt = now - lastTime.current;
+
+    // Track velocity (pixels per frame at ~16ms)
+    if (dt > 0) {
+      const dx = lastX.current - touch.clientX;
+      velocity.current = (dx / dt) * 16; // normalize to ~60fps
+    }
+    lastX.current = touch.clientX;
+    lastTime.current = now;
+
+    const diff = startX.current - touch.clientX;
     containerRef.current.scrollLeft = scrollStart.current + diff;
-  }, []);
+    wrapScroll();
+  }, [wrapScroll]);
 
   const onTouchEnd = useCallback(() => {
-    scheduleResume();
-  }, [scheduleResume]);
+    // Kick off momentum coast if there's velocity
+    if (Math.abs(velocity.current) > MIN_VELOCITY) {
+      startMomentum();
+    } else {
+      scheduleResume();
+    }
+  }, [scheduleResume, startMomentum]);
 
-  /* ── Mouse drag handlers (desktop) ── */
+  /* ── Mouse drag handlers (desktop) — with velocity tracking ── */
   const onMouseDown = useCallback((e: React.MouseEvent) => {
     isDragging.current = true;
     stopAutoScroll();
+    stopMomentum();
     setIsPaused(true);
     startX.current = e.clientX;
     scrollStart.current = containerRef.current?.scrollLeft ?? 0;
+    lastX.current = e.clientX;
+    lastTime.current = Date.now();
+    velocity.current = 0;
     if (containerRef.current) containerRef.current.style.cursor = "grabbing";
-  }, [stopAutoScroll]);
+  }, [stopAutoScroll, stopMomentum]);
 
   const onMouseMove = useCallback((e: React.MouseEvent) => {
     if (!isDragging.current || !containerRef.current) return;
     e.preventDefault();
+    const now = Date.now();
+    const dt = now - lastTime.current;
+
+    if (dt > 0) {
+      const dx = lastX.current - e.clientX;
+      velocity.current = (dx / dt) * 16;
+    }
+    lastX.current = e.clientX;
+    lastTime.current = now;
+
     const diff = startX.current - e.clientX;
     containerRef.current.scrollLeft = scrollStart.current + diff;
-  }, []);
+    wrapScroll();
+  }, [wrapScroll]);
+
   const onMouseUp = useCallback(() => {
     isDragging.current = false;
     if (containerRef.current) containerRef.current.style.cursor = "grab";
-    scheduleResume();
-  }, [scheduleResume]);
+    if (Math.abs(velocity.current) > MIN_VELOCITY) {
+      startMomentum();
+    } else {
+      scheduleResume();
+    }
+  }, [scheduleResume, startMomentum]);
 
   const onMouseLeave = useCallback(() => {
     if (isDragging.current) {
       isDragging.current = false;
       if (containerRef.current) containerRef.current.style.cursor = "grab";
-      scheduleResume();
+      if (Math.abs(velocity.current) > MIN_VELOCITY) {
+        startMomentum();
+      } else {
+        scheduleResume();
+      }
     }
-  }, [scheduleResume]);
+  }, [scheduleResume, startMomentum]);
 
   /* ── Hover pause (desktop, non-drag) ── */
   const onMouseEnter = useCallback(() => {
     if (!isDragging.current) {
       stopAutoScroll();
+      stopMomentum();
       setIsPaused(true);
     }
-  }, [stopAutoScroll]);
+  }, [stopAutoScroll, stopMomentum]);
 
   const onContainerMouseLeave = useCallback(() => {
     if (!isDragging.current) {
