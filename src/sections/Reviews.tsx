@@ -130,7 +130,7 @@ export default function Reviews() {
   const startX = useRef(0);
   const scrollStart = useRef(0);
   const resumeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [isPaused, setIsPaused] = useState(false);
+  const [_isPaused, setIsPaused] = useState(false);
 
   /* Velocity tracking for momentum */
   const lastX = useRef(0);
@@ -337,7 +337,7 @@ export default function Reviews() {
     }
   }, [stopAutoScroll, stopMomentum]);
 
-  const onContainerMouseLeave = useCallback(() => {
+  const _onContainerMouseLeave = useCallback(() => {
     if (!isDragging.current) {
       setIsPaused(false);
       startAutoScroll();
