@@ -48,15 +48,30 @@ export default function NakedCityUndergroundPost() {
             </p>
           </div>
 
-          {/* Video Embed */}
-          <div className="relative w-full aspect-video mb-12 border border-brand-gold/20">
-            <iframe
-              src="https://www.youtube.com/embed/x1yqQXmHCdY"
-              title="The Naked City Underground — Music Video by Echo Chamber Media"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              allowFullScreen
-              className="absolute inset-0 w-full h-full"
-            />
+          {/* Video Embeds */}
+          <div className="mb-6">
+            <p className="text-xs uppercase tracking-editorial text-brand-gold font-body mb-3">&quot;Coming To Me&quot;</p>
+            <div className="relative w-full aspect-video border border-brand-gold/20">
+              <iframe
+                src="https://www.youtube.com/embed/x1yqQXmHCdY"
+                title="The Naked City Underground — Coming To Me — Music Video by Echo Chamber Media"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                className="absolute inset-0 w-full h-full"
+              />
+            </div>
+          </div>
+          <div className="mb-12">
+            <p className="text-xs uppercase tracking-editorial text-brand-gold font-body mb-3">&quot;Everything&apos;s Alright&quot;</p>
+            <div className="relative w-full aspect-video border border-brand-gold/20">
+              <iframe
+                src="https://www.youtube.com/embed/UnqTEQxPWwo"
+                title="The Naked City Underground — Everything's Alright — Music Video by Echo Chamber Media"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                className="absolute inset-0 w-full h-full"
+              />
+            </div>
           </div>
 
           {/* Article Body */}
