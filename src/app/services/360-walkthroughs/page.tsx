@@ -147,49 +147,29 @@ export default function VideoWalkthroughPage() {
           </div>
         </section>
 
-        {/* Showcase/Process Section */}
+        {/* Live Showcase — Kuula 360 Portfolio */}
         <section id="showcase" className="py-20 px-6 bg-brand-black">
           <div className="max-w-5xl mx-auto">
-            <h2 className="font-heading text-4xl lg:text-5xl font-black text-brand-gold mb-16 text-center tracking-editorial">
-              360 Video Walkthrough Examples
+            <h2 className="font-heading text-4xl lg:text-5xl font-black text-brand-gold mb-6 text-center tracking-editorial">
+              Explore Our 360 Tours
             </h2>
+            <p className="font-body text-brand-gray text-center max-w-2xl mx-auto mb-12">
+              Browse our portfolio of interactive 360 walkthroughs below. Click, drag, and explore — this is exactly what your clients will experience.
+            </p>
 
-            <div className="space-y-16">
-              <div className="flex flex-col md:flex-row gap-8 items-center">
-                <div className="md:w-1/2">
-                  <h3 className="font-heading text-2xl font-bold text-brand-gold mb-4">Luxury Residential Tours</h3>
-                  <p className="font-body text-brand-off-white text-lg leading-relaxed mb-4">
-                    Showcase high-end homes with all the elegance they deserve. Our 360 walkthroughs capture luxury finishes, architectural details, and premium fixtures in a way that static photos simply cannot. Perfect for luxury listings targeting serious buyers.
-                  </p>
-                </div>
-                <div className="md:w-1/2 h-64 bg-brand-charcoal rounded-lg flex items-center justify-center border border-brand-gold border-opacity-30">
-                  <p className="text-brand-gray text-center">[360 Walkthrough Demo - Luxury Home]</p>
-                </div>
-              </div>
-
-              <div className="flex flex-col md:flex-row gap-8 items-center">
-                <div className="md:w-1/2 h-64 bg-brand-charcoal rounded-lg flex items-center justify-center border border-brand-gold border-opacity-30 order-2 md:order-1">
-                  <p className="text-brand-gray text-center">[360 Walkthrough Demo - Commercial Space]</p>
-                </div>
-                <div className="md:w-1/2 order-1 md:order-2">
-                  <h3 className="font-heading text-2xl font-bold text-brand-gold mb-4">Commercial Property Tours</h3>
-                  <p className="font-body text-brand-off-white text-lg leading-relaxed mb-4">
-                    Office buildings, retail spaces, and commercial suites need to convey functionality and opportunity. 360 walkthroughs let potential tenants and buyers visualize their business in the space, reducing follow-up site visits and accelerating lease decisions.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex flex-col md:flex-row gap-8 items-center">
-                <div className="md:w-1/2">
-                  <h3 className="font-heading text-2xl font-bold text-brand-gold mb-4">Model Home & New Construction</h3>
-                  <p className="font-body text-brand-off-white text-lg leading-relaxed mb-4">
-                    Developers and builders use 360 walkthroughs to pre-sell units before completion. Show off the layout, finishes, and location appeal while the property is still under development. Update walkthroughs as phases complete to keep the listing fresh.
-                  </p>
-                </div>
-                <div className="md:w-1/2 h-64 bg-brand-charcoal rounded-lg flex items-center justify-center border border-brand-gold border-opacity-30">
-                  <p className="text-brand-gray text-center">[360 Walkthrough Demo - New Construction]</p>
-                </div>
-              </div>
+            {/* Kuula Embed */}
+            <div className="w-full border border-brand-gold/20">
+              <iframe
+                src="https://kuula.co/share/collection/7Hrpm?logo=1&info=1&fs=1&vr=0&sd=1&thumbs=1"
+                title="Echo Chamber Media — 360 Walkthrough Portfolio"
+                width="100%"
+                height="640"
+                frameBorder="0"
+                allowFullScreen
+                allow="xr-spatial-tracking; gyroscope; accelerometer"
+                className="w-full"
+                style={{ minHeight: '400px' }}
+              />
             </div>
           </div>
         </section>
