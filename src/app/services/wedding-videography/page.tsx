@@ -1,5 +1,6 @@
 import Navbar from '@/sections/Navbar';
 import Footer from '@/sections/Footer';
+import Image from 'next/image';
 import Link from 'next/link';
 
 export const metadata = {
@@ -22,19 +23,24 @@ export default function WeddingVideographyPage() {
       <Navbar />
       
       <main className="bg-brand-black text-brand-off-white font-body">
-        {/* Hero Section */}
-        <section className="relative min-h-screen flex items-center justify-center bg-gradient-to-b from-brand-charcoal to-brand-black px-4 sm:px-6 lg:px-8">
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute top-20 right-10 w-96 h-96 bg-brand-gold rounded-full mix-blend-multiply filter blur-3xl"></div>
-            <div className="absolute bottom-20 left-10 w-96 h-96 bg-brand-gold rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
-          </div>
-          
+        {/* Hero Section with Background Image */}
+        <section className="relative min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 overflow-hidden">
+          <Image
+            src="/images/wedding/string-lights.jpg"
+            alt="Bride and groom under string lights at night"
+            fill
+            className="object-cover"
+            priority
+          />
+          <div className="absolute inset-0 bg-black/55" />
+          <div className="absolute inset-0 bg-gradient-to-t from-brand-black via-transparent to-brand-black/30" />
+
           <div className="relative z-10 text-center max-w-4xl mx-auto">
-            <h1 className="font-heading text-5xl sm:text-6xl lg:text-7xl font-black mb-6 text-brand-off-white tracking-editorial">
+            <h1 className="font-heading text-5xl sm:text-6xl lg:text-7xl font-black mb-6 text-brand-off-white tracking-editorial drop-shadow-lg">
               Your Wedding Story,{' '}
               <span className="text-brand-gold">Beautifully Told</span>
             </h1>
-            <p className="text-lg sm:text-xl text-brand-gray mb-8 leading-relaxed">
+            <p className="text-lg sm:text-xl text-brand-off-white/90 mb-8 leading-relaxed drop-shadow-md">
               Award-winning wedding videographer in Las Vegas. We create cinematic wedding films that capture the emotion, joy, and intimacy of your special day.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -46,7 +52,7 @@ export default function WeddingVideographyPage() {
               </a>
               <Link
                 href="/"
-                className="inline-block px-8 py-4 border-2 border-brand-gold text-brand-gold font-heading font-black rounded hover:bg-brand-gold hover:text-brand-black transition-all"
+                className="inline-block px-8 py-4 border-2 border-brand-gold text-brand-gold font-heading font-black rounded hover:bg-brand-gold hover:text-brand-black transition-all backdrop-blur-sm bg-black/20"
               >
                 View Our Work
               </Link>

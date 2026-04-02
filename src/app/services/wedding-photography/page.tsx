@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import Image from 'next/image';
 import Navbar from '@/sections/Navbar';
 import Footer from '@/sections/Footer';
 
@@ -22,29 +23,35 @@ export default function WeddingPhotographyPage() {
     <>
       <Navbar />
       <main className="bg-brand-black text-brand-off-white">
-        {/* Hero Section */}
+        {/* Hero Section with Background Image */}
         <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden pt-32 pb-20 px-6">
-          <div className="absolute inset-0 opacity-30">
-            <div className="absolute inset-0 bg-gradient-to-b from-brand-charcoal to-brand-black"></div>
-          </div>
+          <Image
+            src="/images/wedding/petal-toss.jpg"
+            alt="Bride and groom celebrating with flower petals"
+            fill
+            className="object-cover"
+            priority
+          />
+          <div className="absolute inset-0 bg-black/60" />
+          <div className="absolute inset-0 bg-gradient-to-t from-brand-black via-transparent to-brand-black/40" />
 
           <div className="relative z-10 max-w-4xl mx-auto text-center">
-            <h1 className="font-heading text-5xl lg:text-7xl font-black mb-6 text-brand-gold tracking-editorial leading-tight">
+            <h1 className="font-heading text-5xl lg:text-7xl font-black mb-6 text-brand-gold tracking-editorial leading-tight drop-shadow-lg">
               Wedding Photographer Las Vegas
             </h1>
-            <p className="font-body text-xl lg:text-2xl text-brand-off-white mb-8 leading-relaxed max-w-2xl mx-auto">
+            <p className="font-body text-xl lg:text-2xl text-brand-off-white mb-8 leading-relaxed max-w-2xl mx-auto drop-shadow-md">
               Cinematic wedding photography that captures the emotion, intimacy, and joy of your wedding day. From intimate elopements to grand celebrations, Echo Chamber Media delivers stunning Las Vegas wedding photos.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a
-                href="#packages"
+                href="#gallery"
                 className="inline-block bg-brand-gold text-brand-black font-heading font-bold py-4 px-8 rounded-lg hover:bg-opacity-90 transition-all"
               >
-                View Packages
+                View Our Work
               </a>
               <a
                 href="#contact"
-                className="inline-block border-2 border-brand-gold text-brand-gold font-heading font-bold py-4 px-8 rounded-lg hover:bg-brand-gold hover:text-brand-black transition-all"
+                className="inline-block border-2 border-brand-gold text-brand-gold font-heading font-bold py-4 px-8 rounded-lg hover:bg-brand-gold hover:text-brand-black transition-all backdrop-blur-sm bg-black/20"
               >
                 Book a Consultation
               </a>
@@ -147,48 +154,145 @@ export default function WeddingPhotographyPage() {
           </div>
         </section>
 
-        {/* Our Process & Style */}
+        {/* Photo Gallery — Attention Grabber */}
+        <section id="gallery" className="py-20 px-6 bg-brand-black">
+          <div className="max-w-6xl mx-auto">
+            <p className="text-sm uppercase tracking-editorial text-brand-gold font-body mb-4 text-center">
+              Our Work
+            </p>
+            <h2 className="font-heading text-4xl lg:text-5xl font-black text-brand-gold mb-6 text-center tracking-editorial">
+              Every Moment, Preserved
+            </h2>
+            <p className="font-body text-brand-gray text-center max-w-2xl mx-auto mb-16">
+              We don&apos;t just take photos — we capture the feeling. The nervous hands, the joyful tears, the golden light. Here&apos;s a glimpse of what we see.
+            </p>
+
+            {/* Masonry-style Gallery Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+              {/* Ring Exchange — tall */}
+              <div className="relative row-span-2 overflow-hidden group">
+                <Image
+                  src="/images/wedding/ring-exchange.jpg"
+                  alt="Groom placing ring on bride's finger during ceremony"
+                  width={600}
+                  height={900}
+                  className="object-cover w-full h-full transition-transform duration-700 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-brand-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <p className="absolute bottom-4 left-4 text-sm font-body text-brand-off-white opacity-0 group-hover:opacity-100 transition-opacity duration-500 drop-shadow-lg">
+                  The Moment
+                </p>
+              </div>
+
+              {/* Petal Toss — wide */}
+              <div className="relative col-span-2 overflow-hidden group">
+                <Image
+                  src="/images/wedding/petal-toss.jpg"
+                  alt="Newlyweds walking through a shower of flower petals"
+                  width={1200}
+                  height={600}
+                  className="object-cover w-full h-64 md:h-72 transition-transform duration-700 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-brand-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <p className="absolute bottom-4 left-4 text-sm font-body text-brand-off-white opacity-0 group-hover:opacity-100 transition-opacity duration-500 drop-shadow-lg">
+                  The Celebration
+                </p>
+              </div>
+
+              {/* Overhead Couple */}
+              <div className="relative overflow-hidden group">
+                <Image
+                  src="/images/wedding/overhead-couple.jpg"
+                  alt="Bride and groom photographed from above with bouquet"
+                  width={600}
+                  height={600}
+                  className="object-cover w-full h-64 md:h-72 transition-transform duration-700 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-brand-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <p className="absolute bottom-4 left-4 text-sm font-body text-brand-off-white opacity-0 group-hover:opacity-100 transition-opacity duration-500 drop-shadow-lg">
+                  The Portrait
+                </p>
+              </div>
+
+              {/* String Lights — wide bottom */}
+              <div className="relative col-span-2 md:col-span-3 overflow-hidden group">
+                <Image
+                  src="/images/wedding/string-lights.jpg"
+                  alt="Bride and groom holding hands under string lights at night"
+                  width={1200}
+                  height={500}
+                  className="object-cover w-full h-64 md:h-80 transition-transform duration-700 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-brand-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <p className="absolute bottom-4 left-4 text-sm font-body text-brand-off-white opacity-0 group-hover:opacity-100 transition-opacity duration-500 drop-shadow-lg">
+                  The Magic Hour
+                </p>
+              </div>
+            </div>
+
+            {/* CTA under gallery */}
+            <div className="mt-12 text-center">
+              <a
+                href="#contact"
+                className="inline-block px-10 py-4 border border-brand-gold/60 text-brand-off-white font-body text-sm uppercase tracking-editorial hover:bg-brand-gold/10 transition-all duration-500"
+              >
+                Book Your Wedding Shoot
+              </a>
+            </div>
+          </div>
+        </section>
+
+        {/* Our Approach — Text sections */}
         <section className="py-20 px-6 bg-brand-black">
           <div className="max-w-5xl mx-auto">
             <h2 className="font-heading text-4xl lg:text-5xl font-black text-brand-gold mb-16 text-center tracking-editorial">
-              Our Wedding Photography Process
+              Our Wedding Photography Approach
             </h2>
 
-            <div className="space-y-12">
-              <div className="flex flex-col md:flex-row gap-8 items-center">
-                <div className="md:w-1/2">
-                  <h3 className="font-heading text-2xl font-bold text-brand-gold mb-4">Cinematic Photography</h3>
-                  <p className="font-body text-brand-off-white text-lg leading-relaxed mb-4">
-                    Our cinematic approach treats each wedding like a film production. We use professional lighting techniques, thoughtful posing, and careful composition to create images with depth and visual impact. Every shot feels like a scene from a luxury wedding film.
-                  </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="text-center">
+                <div className="relative w-full h-48 mb-6 overflow-hidden">
+                  <Image
+                    src="/images/wedding/ring-exchange.jpg"
+                    alt="Cinematic wedding detail shot"
+                    fill
+                    className="object-cover"
+                  />
                 </div>
-                <div className="md:w-1/2 h-64 bg-brand-charcoal rounded-lg flex items-center justify-center border border-brand-gold border-opacity-30">
-                  <p className="text-brand-gray text-center">[Cinematic Photography Showcase]</p>
-                </div>
+                <h3 className="font-heading text-xl font-bold text-brand-gold mb-3">Cinematic Storytelling</h3>
+                <p className="font-body text-brand-off-white leading-relaxed">
+                  We treat each wedding like a film production. Professional lighting, thoughtful composition, and color grading that gives every image depth and visual impact.
+                </p>
               </div>
 
-              <div className="flex flex-col md:flex-row gap-8 items-center">
-                <div className="md:w-1/2 h-64 bg-brand-charcoal rounded-lg flex items-center justify-center border border-brand-gold border-opacity-30 order-2 md:order-1">
-                  <p className="text-brand-gray text-center">[Editorial Posing Showcase]</p>
+              <div className="text-center">
+                <div className="relative w-full h-48 mb-6 overflow-hidden">
+                  <Image
+                    src="/images/wedding/petal-toss.jpg"
+                    alt="Candid wedding celebration moment"
+                    fill
+                    className="object-cover"
+                  />
                 </div>
-                <div className="md:w-1/2 order-1 md:order-2">
-                  <h3 className="font-heading text-2xl font-bold text-brand-gold mb-4">Editorial & Authentic Moments</h3>
-                  <p className="font-body text-brand-off-white text-lg leading-relaxed mb-4">
-                    While we guide you through polished, editorial-style portraits, we never miss the candid moments that matter most. Your nervous smile during vows, the quiet glance across the reception, genuine laughter with friends—we capture it all with an artist&apos;s eye.
-                  </p>
-                </div>
+                <h3 className="font-heading text-xl font-bold text-brand-gold mb-3">Authentic Moments</h3>
+                <p className="font-body text-brand-off-white leading-relaxed">
+                  The nervous smile during vows, the quiet glance across the reception, genuine laughter with friends — we capture the real emotions with an artist&apos;s eye.
+                </p>
               </div>
 
-              <div className="flex flex-col md:flex-row gap-8 items-center">
-                <div className="md:w-1/2">
-                  <h3 className="font-heading text-2xl font-bold text-brand-gold mb-4">Complete Coverage</h3>
-                  <p className="font-body text-brand-off-white text-lg leading-relaxed mb-4">
-                    From getting ready to the last dance, we&apos;re there documenting every moment. Our wedding photography packages include full-day coverage, multiple photographers for larger events, and a timeline-driven approach that ensures nothing is missed.
-                  </p>
+              <div className="text-center">
+                <div className="relative w-full h-48 mb-6 overflow-hidden">
+                  <Image
+                    src="/images/wedding/string-lights.jpg"
+                    alt="Evening wedding photography with dramatic lighting"
+                    fill
+                    className="object-cover"
+                  />
                 </div>
-                <div className="md:w-1/2 h-64 bg-brand-charcoal rounded-lg flex items-center justify-center border border-brand-gold border-opacity-30">
-                  <p className="text-brand-gray text-center">[Full Day Coverage]</p>
-                </div>
+                <h3 className="font-heading text-xl font-bold text-brand-gold mb-3">Complete Coverage</h3>
+                <p className="font-body text-brand-off-white leading-relaxed">
+                  From getting ready to the last dance, we&apos;re there documenting every moment. Full-day coverage, multiple photographers, and a timeline that ensures nothing is missed.
+                </p>
               </div>
             </div>
           </div>
