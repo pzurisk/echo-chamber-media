@@ -4,7 +4,7 @@ import Footer from '@/sections/Footer';
 
 // This must be exported for Next.js metadata
 export const metadata: Metadata = {
-  title: 'Corporate Video Production Las Vegas | Commercial Video Services | Echo Chamber Media',
+  title: 'Corporate Video Production Las Vegas | Commercial Video Services',
   description: 'Corporate video production in Las Vegas. Brand films, commercials, product showcases & event coverage. Cinematic content that drives results.',
   alternates: { canonical: 'https://echochambermedia.com/services/corporate' },
   keywords: 'corporate video production Las Vegas, commercial video Las Vegas, business video production, brand film Las Vegas, product video, event videography Las Vegas, corporate video services',

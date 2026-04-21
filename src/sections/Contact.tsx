@@ -59,7 +59,7 @@ export default function Contact() {
   return (
     <SectionWrapper id="contact">
       <div className="max-w-2xl mx-auto text-center">
-        <Heading as="h2">Let&apos;s make something unforgettable.</Heading>
+        <Heading as="h2">Tell Us About Your Project</Heading>
         <p className="mt-4 text-brand-gray font-body text-lg">Based in Las Vegas. Available worldwide.</p>
         <div className="mt-4 h-px w-16 bg-brand-gold mx-auto" />
       </div>
@@ -77,8 +77,10 @@ export default function Contact() {
         </Button>
       </form>
 
-      <div className="mt-12 flex items-center justify-center gap-8">
-        <a href="https://instagram.com/echochambermedia" target="_blank" rel="noopener noreferrer" className="text-brand-gray hover:text-brand-gold transition-colors duration-300 font-body text-sm uppercase tracking-editorial">Instagram</a>
+      <div className="mt-12 flex items-center justify-center gap-8 flex-wrap">
+        <a href="https://instagram.com/chunkdude" target="_blank" rel="noopener noreferrer" className="text-brand-gray hover:text-brand-gold transition-colors duration-300 font-body text-sm uppercase tracking-editorial">Instagram</a>
+        <span className="text-brand-charcoal">|</span>
+        <a href="https://www.tiktok.com/@billyzurisk" target="_blank" rel="noopener noreferrer" className="text-brand-gray hover:text-brand-gold transition-colors duration-300 font-body text-sm uppercase tracking-editorial">TikTok</a>
         <span className="text-brand-charcoal">|</span>
         <a href="mailto:Echochambermediasales@gmail.com" className="text-brand-gray hover:text-brand-gold transition-colors duration-300 font-body text-sm uppercase tracking-editorial">Email</a>
       </div>

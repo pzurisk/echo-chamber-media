@@ -4,11 +4,12 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 
 const serviceLinks = [
+  { label: "Wedding Videography", href: "/services/wedding-videography" },
   { label: "Wedding Photography", href: "/services/wedding-photography" },
-  { label: "360 Walkthroughs", href: "/services/360-walkthroughs" },
-  { label: "Music Videos", href: "/services/music-videos" },
   { label: "Corporate & Commercial", href: "/services/corporate" },
+  { label: "Music Videos", href: "/services/music-videos" },
   { label: "Documentary", href: "/services/documentary" },
+  { label: "360 Walkthroughs", href: "/services/360-walkthroughs" },
   { label: "Las Vegas Photographer", href: "/services/las-vegas-photographer" },
 ];
 
@@ -100,6 +101,14 @@ export default function Navbar() {
               {link.label}
             </a>
           ))}
+
+          {/* Email CTA — direct contact path */}
+          <a
+            href="mailto:Echochambermediasales@gmail.com"
+            className="text-xs uppercase tracking-editorial text-brand-gold border border-brand-gold/40 px-4 py-2 hover:bg-brand-gold hover:text-brand-black transition-all duration-300 font-body"
+          >
+            Email Us
+          </a>
         </div>
 
         <button
@@ -138,6 +147,13 @@ export default function Navbar() {
               {link.label}
             </a>
           ))}
+          <a
+            href="mailto:Echochambermediasales@gmail.com"
+            onClick={() => setMenuOpen(false)}
+            className="text-sm uppercase tracking-editorial text-brand-gold font-body transition-colors duration-300 border border-brand-gold/40 px-4 py-2 mt-2 inline-block w-fit"
+          >
+            Email Us
+          </a>
         </div>
       </div>
     </nav>

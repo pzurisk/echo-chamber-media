@@ -3,7 +3,7 @@ import Navbar from "@/sections/Navbar";
 import Footer from "@/sections/Footer";
 
 export const metadata: Metadata = {
-  title: "Links | Echo Chamber Media",
+  title: "Links",
   description:
     "Everywhere Echo Chamber Media lives online. Services, portfolio, contact, and social links for Las Vegas video production.",
   alternates: { canonical: "https://echochambermedia.com/links" },
@@ -80,14 +80,20 @@ const serviceLinks: LinkItem[] = [
 const socialLinks: LinkItem[] = [
   {
     label: "Instagram",
-    description: "@echochambermedia",
-    href: "https://instagram.com/echochambermedia",
+    description: "@chunkdude",
+    href: "https://instagram.com/chunkdude",
+    external: true,
+  },
+  {
+    label: "TikTok",
+    description: "@billyzurisk",
+    href: "https://www.tiktok.com/@billyzurisk",
     external: true,
   },
   {
     label: "Facebook",
-    description: "facebook.com/echochambermedia",
-    href: "https://facebook.com/echochambermedia",
+    description: "Philip Zurisk",
+    href: "https://www.facebook.com/share/18S1WRCyMq/",
     external: true,
   },
   {

@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'Wedding Videographer Las Vegas | Cinematic Wedding Films | Echo Chamber Media',
+  title: 'Wedding Videographer Las Vegas | Cinematic Wedding Films',
   description:
     'Award-winning Las Vegas wedding videographer. Cinematic wedding films with stunning storytelling and premium editing. Get a free quote today.',
   alternates: { canonical: 'https://echochambermedia.com/services/wedding-videography' },

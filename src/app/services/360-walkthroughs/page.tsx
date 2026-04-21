@@ -4,7 +4,7 @@ import Footer from '@/sections/Footer';
 
 // This must be exported for Next.js metadata
 export const metadata: Metadata = {
-  title: '360 Video Walkthrough Las Vegas | Real Estate Video Tours | Echo Chamber Media',
+  title: '360 Video Walkthrough Las Vegas | Real Estate Video Tours',
   description: 'Professional 360 video walkthroughs in Las Vegas. Real estate tours for MLS, Airbnb & commercial listings. Fast turnaround, stunning results.',
   alternates: { canonical: 'https://echochambermedia.com/services/360-walkthroughs' },
   keywords: '360 video walkthrough Las Vegas, real estate video tour Las Vegas, property walkthrough video, MLS video tour, Airbnb virtual tour, commercial property video tour',

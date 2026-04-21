@@ -5,7 +5,7 @@ import Footer from '@/sections/Footer';
 
 // This must be exported for Next.js metadata
 export const metadata: Metadata = {
-  title: 'Wedding Photographer Las Vegas | Cinematic Wedding Photography | Echo Chamber Media',
+  title: 'Wedding Photographer Las Vegas | Cinematic Wedding Photography',
   description: 'Las Vegas wedding photographer specializing in cinematic, editorial coverage. Elopements, ceremonies & receptions. View our portfolio and book today.',
   alternates: { canonical: 'https://echochambermedia.com/services/wedding-photography' },
   keywords: 'wedding photographer Las Vegas, Las Vegas wedding photography, wedding photos Las Vegas, Las Vegas wedding photographer, elopement photographer Las Vegas, cinematic wedding photography',

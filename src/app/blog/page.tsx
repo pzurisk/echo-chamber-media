@@ -4,7 +4,7 @@ import Navbar from '@/sections/Navbar';
 import Footer from '@/sections/Footer';
 
 export const metadata: Metadata = {
-  title: 'Blog | Behind the Scenes & Production Insights | Echo Chamber Media',
+  title: 'Blog | Behind the Scenes & Production Insights',
   description: 'Behind-the-scenes stories, production insights, and filmmaking tips from Echo Chamber Media in Las Vegas. Case studies, gear breakdowns, and creative process.',
   alternates: { canonical: 'https://echochambermedia.com/blog' },
   keywords: 'video production blog, filmmaking Las Vegas, behind the scenes, production insights, cinematography tips',

@@ -4,7 +4,7 @@ import Footer from '@/sections/Footer';
 
 // This must be exported for Next.js metadata
 export const metadata: Metadata = {
-  title: 'Music Video Production Las Vegas | Cinematic Music Videos | Echo Chamber Media',
+  title: 'Music Video Production Las Vegas | Cinematic Music Videos',
   description: 'Music video production in Las Vegas. Cinematic visuals for artists — performance, narrative & concept videos. Bring your sound to life today.',
   alternates: { canonical: 'https://echochambermedia.com/services/music-videos' },
   keywords: 'music video production Las Vegas, cinematic music videos, music video producer Las Vegas, professional music video production, artist music videos',

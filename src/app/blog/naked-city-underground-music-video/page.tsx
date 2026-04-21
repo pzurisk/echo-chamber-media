@@ -4,7 +4,7 @@ import Navbar from '@/sections/Navbar';
 import Footer from '@/sections/Footer';
 
 export const metadata: Metadata = {
-  title: 'Shooting My First Music Video: The Naked City Underground | Echo Chamber Media',
+  title: 'Shooting My First Music Video: The Naked City Underground',
   description: 'Behind the scenes of the Naked City Underground music video shot in Las Vegas. Outlaw country meets surf punk — how we captured the raw energy of Coming To Me & Everything\'s Alright.',
   alternates: { canonical: 'https://echochambermedia.com/blog/naked-city-underground-music-video' },
   keywords: 'music video production Las Vegas, Naked City Underground, behind the scenes music video, cinematography breakdown, Echo Chamber Media',

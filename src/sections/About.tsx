@@ -22,16 +22,19 @@ export default function About() {
           <div className="mt-4 h-px w-16 bg-brand-gold" />
 
           <p className="mt-8 text-brand-off-white/90 font-body text-base md:text-lg leading-relaxed">
-            Echo Chamber Media is a Las Vegas-based production company built on
-            one idea: every story deserves to be told cinematically. From
-            weddings and corporate spots to independent documentaries, we handle
-            everything from concept through delivery.
+            Echo Chamber Media is a Las Vegas production company that handles
+            video projects from concept through final delivery. Weddings,
+            corporate content, property walk-throughs, documentaries, and music
+            videos. We bring film-set gear and process to every shoot.
           </p>
 
           <p className="mt-4 text-brand-gray font-body text-base leading-relaxed">
-            Founded by Billy Zurisk, we bring film-set precision to every
-            project. No templates. No shortcuts. Just clean, intentional work
-            that looks and feels like the real thing. Because it is.
+            Billy Zurisk founded the company and runs every project. On the
+            independent side, his feature &ldquo;The Classified Mind&rdquo; has
+            picked up festival laurels, and the same standards that go into a
+            feature go into a wedding or a corporate edit. Our Google reviews
+            sit at 5.0 because we don&apos;t cut corners and we don&apos;t use
+            templates.
           </p>
 
           <div className="mt-8 flex items-center gap-4">

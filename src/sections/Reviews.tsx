@@ -218,13 +218,17 @@ export default function Reviews() {
     }, 3000);
   }, [startAutoScroll]);
 
-  /* ── Duplicate cards for seamless loop + start auto-scroll ── */
+  /* ── Duplicate cards for seamless loop + start auto-scroll ──
+     Clones get aria-hidden so screen readers and search crawlers
+     don't see the testimonials twice. */
   useEffect(() => {
     const track = trackRef.current;
     if (!track) return;
     const children = Array.from(track.children);
     children.forEach((child) => {
       const clone = child.cloneNode(true) as HTMLElement;
+      clone.setAttribute("aria-hidden", "true");
+      clone.setAttribute("data-clone", "true");
       track.appendChild(clone);
     });
     startAutoScroll();
@@ -356,7 +360,7 @@ export default function Reviews() {
           Client Testimonials
         </span>
         <h2 className="font-heading text-3xl md:text-5xl uppercase tracking-editorial text-brand-off-white">
-          What They&apos;re Saying
+          Client Reviews
         </h2>
 
         {/* Rating */}

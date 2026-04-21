@@ -8,8 +8,8 @@ import Heading from "@/components/Heading";
 const services = [
   {
     title: "Weddings",
-    description: "Your day, told like a film.",
-    href: "/services/wedding-photography",
+    description: "Shot like short films. Same cameras, same lighting, same edit room.",
+    href: "/services/wedding-videography",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-8 h-8">
         <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z" />
@@ -18,7 +18,7 @@ const services = [
   },
   {
     title: "Corporate",
-    description: "Content that commands attention.",
+    description: "Videos people actually watch. Scripted tight, shot clean, edited for pace.",
     href: "/services/corporate",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-8 h-8">
@@ -29,7 +29,7 @@ const services = [
   },
   {
     title: "Walk-throughs",
-    description: "Cinematic movement and precision.",
+    description: "Property tours with gimbal and slider work, color-graded like a film.",
     href: "/services/360-walkthroughs",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-8 h-8">
@@ -40,7 +40,7 @@ const services = [
   },
   {
     title: "Documentaries",
-    description: "Real stories. No shortcuts.",
+    description: "From interview through final cut. We handle shooting, sound, and edit.",
     href: "/services/documentary",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-8 h-8">
@@ -51,7 +51,7 @@ const services = [
   },
   {
     title: "Music Videos",
-    description: "Your sound, visualized.",
+    description: "Concept to delivery. You bring the song, we handle the rest.",
     href: "/services/music-videos",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-8 h-8">

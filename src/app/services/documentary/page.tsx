@@ -3,7 +3,7 @@ import Navbar from '@/sections/Navbar'
 import Footer from '@/sections/Footer'
 
 export const metadata: Metadata = {
-  title: 'Documentary Production | Echo Chamber Media Las Vegas',
+  title: 'Documentary Production Las Vegas | Cinematic Documentary Filmmaker',
   description: 'Documentary production in Las Vegas. From concept to distribution, we craft authentic stories with cinematic precision. Tell us about your project.',
   keywords: 'documentary production Las Vegas, documentary filmmaker, video production Las Vegas, documentary services, story-driven content',
   openGraph: {

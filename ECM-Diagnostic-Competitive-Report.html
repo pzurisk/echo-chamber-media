@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Echo Chamber Media — Site Diagnostic & Competitive Intelligence Report</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; background: #0f0f0f; color: #e5e5e5; line-height: 1.7; }
+  .container { max-width: 960px; margin: 0 auto; padding: 60px 24px; }
+
+  header { text-align: center; margin-bottom: 60px; padding-bottom: 40px; border-bottom: 1px solid #C9A84C33; }
+  header h1 { font-size: 1.8rem; font-weight: 700; color: #C9A84C; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 8px; }
+  header p { color: #888; font-size: 0.9rem; }
+
+  .grade-box { display: inline-block; background: #1a2a1a; border: 2px solid #4ade80; padding: 12px 28px; border-radius: 4px; margin-top: 16px; }
+  .grade-box .grade { font-size: 2.5rem; font-weight: 700; color: #4ade80; }
+  .grade-box .label { font-size: 0.75rem; color: #888; text-transform: uppercase; letter-spacing: 0.05em; }
+
+  .section { margin-bottom: 56px; }
+  .section h2 { font-size: 1.25rem; font-weight: 600; color: #C9A84C; margin-bottom: 20px; padding-bottom: 8px; border-bottom: 1px solid #222; text-transform: uppercase; letter-spacing: 0.04em; }
+  .section h3 { font-size: 1.05rem; font-weight: 600; color: #f5f5f5; margin: 24px 0 10px; }
+  .section p { color: #bbb; margin-bottom: 12px; font-size: 0.95rem; }
+
+  .scorecard { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-bottom: 32px; }
+  .score-item { background: #1a1a1a; border: 1px solid #2a2a2a; padding: 16px; border-radius: 4px; text-align: center; }
+  .score-item .cat { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: #888; margin-bottom: 4px; }
+  .score-item .val { font-size: 1.4rem; font-weight: 700; }
+  .score-green .val { color: #4ade80; }
+  .score-yellow .val { color: #fbbf24; }
+  .score-red .val { color: #f87171; }
+
+  .card { background: #1a1a1a; border: 1px solid #2a2a2a; padding: 20px; margin-bottom: 12px; border-radius: 4px; }
+  .card:hover { border-color: #C9A84C33; }
+  .card .card-title { font-weight: 600; color: #f5f5f5; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+  .card .card-body { color: #999; font-size: 0.9rem; }
+
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+  .badge-fixed { background: #1a3a1a; color: #4ade80; border: 1px solid #4ade8033; }
+  .badge-critical { background: #3a1a1a; color: #f87171; border: 1px solid #f8717133; }
+  .badge-warn { background: #3a2a1a; color: #fbbf24; border: 1px solid #fbbf2433; }
+  .badge-info { background: #1a2a3a; color: #60a5fa; border: 1px solid #60a5fa33; }
+
+  .priority-1 { border-left: 3px solid #ef4444; }
+  .priority-2 { border-left: 3px solid #f59e0b; }
+  .priority-3 { border-left: 3px solid #3b82f6; }
+
+  .comp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+  @media (max-width: 640px) { .comp-grid { grid-template-columns: 1fr; } }
+
+  .steal-card { background: #1a1a1a; border: 1px solid #C9A84C33; padding: 20px; border-radius: 4px; margin-bottom: 12px; border-left: 3px solid #C9A84C; }
+  .steal-card .steal-from { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: #C9A84C; margin-bottom: 4px; }
+  .steal-card .steal-title { font-weight: 600; color: #f5f5f5; margin-bottom: 6px; }
+  .steal-card .steal-body { color: #999; font-size: 0.9rem; }
+
+  .checklist { list-style: none; }
+  .checklist li { padding: 10px 0; border-bottom: 1px solid #1a1a1a; color: #bbb; font-size: 0.9rem; }
+  .checklist li::before { content: "☐ "; color: #C9A84C; font-size: 1.1rem; }
+  .checklist li.done::before { content: "✓ "; color: #4ade80; }
+
+  .week-label { display: inline-block; background: #C9A84C22; color: #C9A84C; padding: 2px 8px; border-radius: 2px; font-size: 0.75rem; font-weight: 600; margin-bottom: 8px; margin-top: 16px; }
+
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+  th { text-align: left; padding: 10px 12px; background: #1a1a1a; border-bottom: 1px solid #333; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: #C9A84C; }
+  td { padding: 10px 12px; border-bottom: 1px solid #1a1a1a; font-size: 0.9rem; color: #bbb; }
+  tr:hover td { background: #1a1a1a44; }
+
+  footer { text-align: center; padding-top: 40px; border-top: 1px solid #222; color: #555; font-size: 0.8rem; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <h1>Site Diagnostic & Competitive Intel</h1>
+  <p>Echo Chamber Media — EchoChamberMedia.com</p>
+  <p style="color:#666; margin-top:4px;">April 2, 2026 | Prepared for Billy Zurisk</p>
+  <div class="grade-box">
+    <div class="grade">B+</div>
+    <div class="label">Overall Site Health</div>
+  </div>
+</header>
+
+<!-- SCORECARD -->
+<div class="section">
+  <h2>Health Scorecard</h2>
+  <div class="scorecard">
+    <div class="score-item score-green"><div class="cat">Content</div><div class="val">A</div><p style="font-size:0.75rem;color:#666;margin:0;">All pages 1,100-2,100 words</p></div>
+    <div class="score-item score-green"><div class="cat">Meta Tags</div><div class="val">A</div><p style="font-size:0.75rem;color:#666;margin:0;">All pages optimized today</p></div>
+    <div class="score-item score-yellow"><div class="cat">Technical SEO</div><div class="val">B</div><p style="font-size:0.75rem;color:#666;margin:0;">Sitemap fixed, canonicals fixed</p></div>
+    <div class="score-item score-yellow"><div class="cat">Performance</div><div class="val">B-</div><p style="font-size:0.75rem;color:#666;margin:0;">Hero video needs mobile optimization</p></div>
+    <div class="score-item score-yellow"><div class="cat">Accessibility</div><div class="val">B</div><p style="font-size:0.75rem;color:#666;margin:0;">Some alt text + contrast gaps</p></div>
+    <div class="score-item score-red"><div class="cat">Organic Visibility</div><div class="val">D</div><p style="font-size:0.75rem;color:#666;margin:0;">Not ranking for any keywords</p></div>
+    <div class="score-item score-red"><div class="cat">Social Proof</div><div class="val">D</div><p style="font-size:0.75rem;color:#666;margin:0;">No reviews pipeline, no logos</p></div>
+    <div class="score-item score-red"><div class="cat">Content Marketing</div><div class="val">F</div><p style="font-size:0.75rem;color:#666;margin:0;">No blog, no case studies</p></div>
+  </div>
+</div>
+
+<!-- FIXES COMPLETED TODAY -->
+<div class="section">
+  <h2>Fixes Completed Today</h2>
+
+  <div class="card"><div class="card-title"><span class="badge badge-fixed">Fixed</span> Sitemap — Added 4 missing service pages</div><div class="card-body">Sitemap now includes all 8 pages (homepage + 7 services). Previously only had 4. Google can now discover corporate, documentary, 360-walkthroughs, and music-videos.</div></div>
+
+  <div class="card"><div class="card-title"><span class="badge badge-fixed">Fixed</span> Custom 404 page created</div><div class="card-body">Brand-consistent 404 page (not-found.tsx) with dark luxury aesthetic, gold accents, and "Back to Home" link. Previously showed generic Next.js error.</div></div>
+
+  <div class="card"><div class="card-title"><span class="badge badge-fixed">Fixed</span> Canonical tags — wedding-videography & las-vegas-photographer</div><div class="card-body">Changed from non-standard <code>canonical</code> property to proper Next.js <code>alternates: { canonical: ... }</code> format so Google respects the canonical URLs.</div></div>
+
+  <div class="card"><div class="card-title"><span class="badge badge-fixed">Fixed</span> All 8 meta descriptions optimized (previous session)</div><div class="card-body">Every page now has 141-152 character descriptions with keywords up front and CTAs at the end.</div></div>
+
+  <div class="card"><div class="card-title"><span class="badge badge-fixed">Fixed</span> Mobile services tap issue (previous session)</div><div class="card-body">Converted to Next.js Link components, added touch-manipulation, pointer-events-none on overlays.</div></div>
+</div>
+
+<!-- REMAINING TECHNICAL ISSUES -->
+<div class="section">
+  <h2>Remaining Technical Issues</h2>
+
+  <div class="card priority-1">
+    <div class="card-title"><span class="badge badge-critical">Critical</span> Hero video not optimized for mobile</div>
+    <div class="card-body">Video autoplays on mobile consuming bandwidth. Missing <code>preload="metadata"</code>. No separate mobile-optimized video or conditional loading. <strong>File:</strong> Hero.tsx lines 34-44.</div>
+  </div>
+
+  <div class="card priority-1">
+    <div class="card-title"><span class="badge badge-critical">Critical</span> No favicon or app icons</div>
+    <div class="card-body">Browser tabs show generic icon. Missing favicon.ico, apple-touch-icon.png, and web manifest. Hurts brand recognition in bookmarks and mobile home screens.</div>
+  </div>
+
+  <div class="card priority-2">
+    <div class="card-title"><span class="badge badge-warn">Medium</span> Color contrast — gold on light backgrounds may fail WCAG AA</div>
+    <div class="card-body">Brand gold (#C9A84C) passes against dark backgrounds but may fail contrast requirements where used on lighter surfaces. Test with WebAIM checker.</div>
+  </div>
+
+  <div class="card priority-2">
+    <div class="card-title"><span class="badge badge-warn">Medium</span> No cross-linking between service pages</div>
+    <div class="card-body">Service pages don't link to related services. Wedding Videography should link to Wedding Photography. Corporate should link to Documentary. This distributes SEO authority and keeps users exploring.</div>
+  </div>
+
+  <div class="card priority-2">
+    <div class="card-title"><span class="badge badge-warn">Medium</span> Missing schema markup — BreadcrumbList, AggregateRating</div>
+    <div class="card-body">Layout.tsx has VideoProductionCompany schema but missing BreadcrumbList for navigation and AggregateRating from testimonials. Both improve SERP appearance.</div>
+  </div>
+
+  <div class="card priority-3">
+    <div class="card-title"><span class="badge badge-info">Low</span> Background images not using Next.js Image component</div>
+    <div class="card-body">About.tsx uses CSS backgroundImage instead of optimized Next.js Image. Misses automatic WebP conversion, lazy loading, and responsive sizing.</div>
+  </div>
+
+  <div class="card priority-3">
+    <div class="card-title"><span class="badge badge-info">Low</span> Missing Content Security Policy header</div>
+    <div class="card-body">No CSP configured in next.config.mjs. Adding one improves security posture and is a trust signal.</div>
+  </div>
+
+  <div class="card priority-3">
+    <div class="card-title"><span class="badge badge-info">Low</span> Navbar Services dropdown missing aria-label</div>
+    <div class="card-body">Desktop dropdown button lacks descriptive aria-label for screen readers. Mobile menu escape key handler also missing.</div>
+  </div>
+</div>
+
+<!-- COMPETITIVE INTELLIGENCE -->
+<div class="section">
+  <h2>Competitive Intelligence — What They're Doing That You're Not</h2>
+
+  <p>We analyzed 6 direct competitors. Here's what's working for them that Echo Chamber Media should adopt:</p>
+
+  <h3>Top Things to Steal</h3>
+
+  <div class="steal-card">
+    <div class="steal-from">Steal from: IN COLOR STUDIOS</div>
+    <div class="steal-title">Client Logo Carousel — "As Seen Working With"</div>
+    <div class="steal-body">IN COLOR displays 20+ recognizable brand logos (CBS, MGM, Caesars, etc.) in a scrolling carousel. This instantly signals credibility. If Echo Chamber has worked with ANY recognizable brands, venues, or events — add a logo bar to the homepage. Even wedding venues (Bellagio, Wynn, Red Rock) count.</div>
+  </div>
+
+  <div class="steal-card">
+    <div class="steal-from">Steal from: IN COLOR STUDIOS</div>
+    <div class="steal-title">Blog / Case Study Content Strategy</div>
+    <div class="steal-body">IN COLOR has an "ICS Story" blog with case studies targeting long-tail keywords. This is the BIGGEST gap — Echo Chamber has ZERO blog content. Competitors who blog consistently rank for 50+ keywords that pure service pages can't capture. Start with 2 posts/month: one case study ("Behind the Scenes: Red Rock Canyon Wedding Film") and one educational piece ("How Much Does Wedding Videography Cost in Las Vegas?").</div>
+  </div>
+
+  <div class="steal-card">
+    <div class="steal-from">Steal from: LEVY PRODUCTION GROUP</div>
+    <div class="steal-title">Story-Driven About Page — "The Brothers" Narrative</div>
+    <div class="steal-body">Levy leads with their founder story (35 years, two brothers, 14,000 sq ft facility). This builds massive trust. Echo Chamber's About section is thin. Create a dedicated /about page with Billy's story — filmmaker background, why Las Vegas, the vision. Real stories convert better than feature lists.</div>
+  </div>
+
+  <div class="steal-card">
+    <div class="steal-from">Steal from: LIGHTEN FILMS</div>
+    <div class="steal-title">Video Testimonials Over Text Reviews</div>
+    <div class="steal-body">Lighten Films features video testimonials from real couples. For a VIDEO production company, having only text reviews is a missed opportunity. Shoot 5 quick 30-second testimonials from happy clients. These convert 2-3x better than text and double as portfolio content.</div>
+  </div>
+
+  <div class="steal-card">
+    <div class="steal-from">Steal from: THE LOU EFFECT</div>
+    <div class="steal-title">Wedding Platform Presence — WeddingWire, The Knot, Zola</div>
+    <div class="steal-body">The Lou Effect ranks on wedding aggregator platforms where couples actually search. These platforms dominate the "wedding videographer Las Vegas" SERP — not individual company websites. Claiming profiles on WeddingWire, The Knot, and Zola gives you access to thousands of active couples without fighting for organic rank.</div>
+  </div>
+
+  <div class="steal-card">
+    <div class="steal-from">Steal from: FIVESIX PRODUCTIONS</div>
+    <div class="steal-title">Nationwide Positioning + City-Specific Landing Pages</div>
+    <div class="steal-body">FiveSix positions as nationwide while having location-specific pages. Echo Chamber should create area-specific pages for Henderson, Summerlin, North Las Vegas, and surrounding areas. Each one captures local search volume with minimal effort.</div>
+  </div>
+
+  <div class="steal-card">
+    <div class="steal-from">Steal from: ALL COMPETITORS</div>
+    <div class="steal-title">Google Reviews Volume — You Need 20+ Reviews ASAP</div>
+    <div class="steal-body">Most competitors have 15-50+ Google reviews. Reviews are a MAJOR local ranking factor. Start a review generation campaign: email past clients with a direct Google review link. Target 20 reviews in the next 60 days. Each one strengthens your local SEO.</div>
+  </div>
+</div>
+
+<!-- COMPETITIVE COMPARISON TABLE -->
+<div class="section">
+  <h2>Competitive Comparison</h2>
+
+  <table>
+    <tr>
+      <th>Feature</th>
+      <th>Echo Chamber</th>
+      <th>IN COLOR</th>
+      <th>Levy</th>
+      <th>FiveSix</th>
+    </tr>
+    <tr>
+      <td>Website Quality</td>
+      <td style="color:#4ade80;">★★★★★</td>
+      <td style="color:#fbbf24;">★★★★</td>
+      <td style="color:#fbbf24;">★★★</td>
+      <td style="color:#fbbf24;">★★★★</td>
+    </tr>
+    <tr>
+      <td>Blog Content</td>
+      <td style="color:#f87171;">None</td>
+      <td style="color:#4ade80;">Active</td>
+      <td style="color:#f87171;">None</td>
+      <td style="color:#f87171;">None</td>
+    </tr>
+    <tr>
+      <td>Client Logos</td>
+      <td style="color:#f87171;">None</td>
+      <td style="color:#4ade80;">20+ brands</td>
+      <td style="color:#fbbf24;">Some</td>
+      <td style="color:#fbbf24;">Some</td>
+    </tr>
+    <tr>
+      <td>Google Reviews</td>
+      <td style="color:#fbbf24;">5.0 (few)</td>
+      <td style="color:#4ade80;">50+</td>
+      <td style="color:#4ade80;">30+</td>
+      <td style="color:#fbbf24;">15+</td>
+    </tr>
+    <tr>
+      <td>Video Testimonials</td>
+      <td style="color:#f87171;">No</td>
+      <td style="color:#f87171;">No</td>
+      <td style="color:#f87171;">No</td>
+      <td style="color:#f87171;">No</td>
+    </tr>
+    <tr>
+      <td>Wedding Platforms</td>
+      <td style="color:#f87171;">No</td>
+      <td style="color:#f87171;">No</td>
+      <td style="color:#f87171;">No</td>
+      <td style="color:#f87171;">No</td>
+    </tr>
+    <tr>
+      <td>Film Festival Wins</td>
+      <td style="color:#4ade80;">4 laurels</td>
+      <td style="color:#fbbf24;">Award-winning</td>
+      <td style="color:#f87171;">None listed</td>
+      <td style="color:#fbbf24;">Award-winning</td>
+    </tr>
+    <tr>
+      <td>Service Pages (SEO)</td>
+      <td style="color:#4ade80;">7 pages</td>
+      <td style="color:#4ade80;">Multiple</td>
+      <td style="color:#fbbf24;">Basic</td>
+      <td style="color:#fbbf24;">Basic</td>
+    </tr>
+    <tr>
+      <td>"Cinematic" Position</td>
+      <td style="color:#4ade80;">Strong</td>
+      <td style="color:#fbbf24;">Moderate</td>
+      <td style="color:#f87171;">No</td>
+      <td style="color:#f87171;">No</td>
+    </tr>
+  </table>
+
+  <p style="margin-top:16px;"><strong>Your edge:</strong> Best website quality of all competitors, strongest "cinematic" brand positioning, film festival pedigree, and full-service offering. The gap is visibility — the competitors aren't better, they're just more visible.</p>
+</div>
+
+<!-- GOOGLE SERP ANALYSIS -->
+<div class="section">
+  <h2>Who's Ranking Where You Should Be</h2>
+
+  <h3>"video production Las Vegas"</h3>
+  <div class="card"><div class="card-body">Dominated by directories (Yelp, Clutch, GoodFirms, DesignRush). Direct competitors ranking: IN COLOR STUDIOS, Levy Production Group, Beverly Boy Productions. <strong>Echo Chamber Media: not found in top 20.</strong></div></div>
+
+  <h3>"wedding videographer Las Vegas"</h3>
+  <div class="card"><div class="card-body">Dominated by aggregators (WeddingWire, The Knot, Zola, Brides.com). Very few individual companies rank organically. <strong>Strategy: Claim wedding platform profiles rather than fighting aggregators for organic rank.</strong></div></div>
+
+  <h3>"corporate video production Las Vegas"</h3>
+  <div class="card"><div class="card-body">Less competitive — IN COLOR STUDIOS and Levy rank alongside directory sites. <strong>Best organic opportunity for Echo Chamber.</strong> Your corporate service page has strong content (1,800 words). With backlinks and schema, this is winnable in 3-6 months.</div></div>
+
+  <h3>"Las Vegas photographer"</h3>
+  <div class="card"><div class="card-body">Extremely competitive. Dominated by dedicated photography studios. Your Las Vegas Photographer page targets tourists/visitors — a smart niche angle that avoids head-on competition with established studios.</div></div>
+</div>
+
+<!-- 90-DAY ACTION PLAN -->
+<div class="section">
+  <h2>90-Day Action Plan</h2>
+
+  <span class="week-label">This Week — Quick Wins</span>
+  <ul class="checklist">
+    <li class="done">Fix sitemap (added 4 missing pages)</li>
+    <li class="done">Create 404 page</li>
+    <li class="done">Fix canonical tags</li>
+    <li class="done">Optimize all meta descriptions</li>
+    <li>Add favicon and apple-touch-icon</li>
+    <li>Claim/complete Google Business Profile</li>
+    <li>Submit sitemap to Google Search Console</li>
+  </ul>
+
+  <span class="week-label">Weeks 2-3 — Foundation</span>
+  <ul class="checklist">
+    <li>Claim WeddingWire, The Knot, and Zola profiles</li>
+    <li>Email past clients for Google reviews (target: 10 in 2 weeks)</li>
+    <li>Add "Related Services" cross-links to all service pages</li>
+    <li>Add client/venue logo bar to homepage</li>
+    <li>Optimize hero video for mobile (preload, conditional loading)</li>
+    <li>Add BreadcrumbList + AggregateRating schema markup</li>
+  </ul>
+
+  <span class="week-label">Month 2 — Content Launch</span>
+  <ul class="checklist">
+    <li>Publish blog post #1: Case study with behind-the-scenes content</li>
+    <li>Publish blog post #2: "How Much Does Wedding Videography Cost in Las Vegas?"</li>
+    <li>Create dedicated About/Founder page with Billy's story</li>
+    <li>Shoot 3-5 video testimonials from happy clients</li>
+    <li>Build area-specific pages (Henderson, Summerlin, Downtown)</li>
+  </ul>
+
+  <span class="week-label">Month 3 — Scale</span>
+  <ul class="checklist">
+    <li>Publish 2 more blog posts (case study + educational)</li>
+    <li>Continue review campaign (target: 20+ Google reviews total)</li>
+    <li>Add video testimonials to homepage and service pages</li>
+    <li>Submit to production directories (ProductionHub, Clutch)</li>
+    <li>Audit Core Web Vitals and optimize page speed</li>
+  </ul>
+</div>
+
+<!-- PROJECTED RESULTS -->
+<div class="section">
+  <h2>Projected Results</h2>
+  <div class="comp-grid">
+    <div class="card">
+      <div class="card-title" style="color:#C9A84C;">By Month 3</div>
+      <div class="card-body">Google Business Profile live. 20+ reviews. First blog posts indexed. Wedding platform profiles getting views. Branded search ("Echo Chamber Media") returning results.</div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:#C9A84C;">By Month 6</div>
+      <div class="card-body">8-12 blog posts ranking for long-tail keywords. Corporate video page competing for "corporate video production Las Vegas." 40+ Google reviews. Wedding platform leads flowing in.</div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:#C9A84C;">By Month 9</div>
+      <div class="card-body">Content authority building. Top 10 for 2-3 primary keywords. Video testimonials boosting conversion rate. Consistent organic lead flow.</div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:#C9A84C;">By Month 12</div>
+      <div class="card-body">24+ blog posts. 50+ reviews. Competitive for primary keywords. Estimated +$50K-100K additional annual revenue from organic traffic. Dominant "cinematic" positioning in Las Vegas market.</div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <p>Echo Chamber Media — Site Diagnostic & Competitive Intelligence Report</p>
+  <p style="margin-top:4px;">Generated April 2, 2026</p>
+</footer>
+
+</div>
+</body>
+</html>
