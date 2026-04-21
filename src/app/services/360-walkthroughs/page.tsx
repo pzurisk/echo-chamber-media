@@ -276,7 +276,7 @@ export default function VideoWalkthroughPage() {
                   How do I book a 360 video walkthrough?
                 </h3>
                 <p className="font-body text-brand-off-white leading-relaxed">
-                  Contact us at hello@echochambermedia.com or use the form below. We&apos;ll discuss your property, timeline, and vision. Once you&apos;re ready, we&apos;ll schedule a shoot date and get started on creating an immersive tour for your listing.
+                  Contact us at Echochambermediasales@gmail.com or use the form below. We&apos;ll discuss your property, timeline, and vision. Once you&apos;re ready, we&apos;ll schedule a shoot date and get started on creating an immersive tour for your listing.
                 </p>
               </div>
             </div>
@@ -294,7 +294,7 @@ export default function VideoWalkthroughPage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a
-                href="mailto:hello@echochambermedia.com"
+                href="mailto:Echochambermediasales@gmail.com"
                 className="inline-block bg-brand-gold text-brand-black font-heading font-bold py-4 px-8 rounded-lg hover:bg-opacity-90 transition-all"
               >
                 Get a Quote
@@ -321,7 +321,7 @@ export default function VideoWalkthroughPage() {
             image: 'https://echochambermedia.com/og-image.jpg',
             description: 'Professional 360 video walkthroughs for real estate in Las Vegas. Immersive property tours for MLS listings, Airbnb, commercial leasing, and new construction marketing.',
             telephone: '+1-702-555-ECHO',
-            email: 'hello@echochambermedia.com',
+            email: 'Echochambermediasales@gmail.com',
             address: {
               '@type': 'PostalAddress',
               addressLocality: 'Las Vegas',

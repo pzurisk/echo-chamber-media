@@ -288,7 +288,7 @@ export default function LasVegasPhotographerPage() {
             </button>
           </div>
           <p className="font-body text-brand-gray mt-8 text-sm">
-            Questions? Contact us at hello@echochambermedia.com or call (702) XXX-XXXX
+            Questions? Contact us at Echochambermediasales@gmail.com or call (702) XXX-XXXX
           </p>
         </div>
       </section>

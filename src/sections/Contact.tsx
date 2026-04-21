@@ -20,7 +20,7 @@ export default function Contact() {
     e.preventDefault();
     setSending(true);
     try {
-      await fetch("https://formsubmit.co/ajax/5050divevideo@gmail.com", {
+      await fetch("https://formsubmit.co/ajax/Echochambermediasales@gmail.com", {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify({
@@ -34,7 +34,7 @@ export default function Contact() {
       });
       setSubmitted(true);
     } catch {
-      alert("Something went wrong. Please email us directly at 5050divevideo@gmail.com");
+      alert("Something went wrong. Please email us directly at Echochambermediasales@gmail.com");
     } finally {
       setSending(false);
     }
@@ -80,7 +80,7 @@ export default function Contact() {
       <div className="mt-12 flex items-center justify-center gap-8">
         <a href="https://instagram.com/echochambermedia" target="_blank" rel="noopener noreferrer" className="text-brand-gray hover:text-brand-gold transition-colors duration-300 font-body text-sm uppercase tracking-editorial">Instagram</a>
         <span className="text-brand-charcoal">|</span>
-        <a href="mailto:5050divevideo@gmail.com" className="text-brand-gray hover:text-brand-gold transition-colors duration-300 font-body text-sm uppercase tracking-editorial">Email</a>
+        <a href="mailto:Echochambermediasales@gmail.com" className="text-brand-gray hover:text-brand-gold transition-colors duration-300 font-body text-sm uppercase tracking-editorial">Email</a>
       </div>
     </SectionWrapper>
   );
