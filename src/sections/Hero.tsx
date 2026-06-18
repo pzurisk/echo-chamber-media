@@ -1,7 +1,6 @@
 "use client";
 
 import { useRef, useState } from "react";
-import Logo from "@/components/Logo";
 import ScrollIndicator from "@/components/ScrollIndicator";
 
 export default function Hero() {
@@ -16,7 +15,7 @@ export default function Hero() {
   };
 
   return (
-    <section className="relative h-screen w-full overflow-hidden flex items-center justify-center">
+    <section className="relative min-h-screen w-full overflow-hidden flex items-center justify-center">
       {/* SEO H1 — hidden visually, present for crawlers and screen readers */}
       <h1 className="sr-only">
         Echo Chamber Media — Las Vegas Video Production Company
@@ -36,7 +35,7 @@ export default function Hero() {
       </video>
 
       {/* ── Dim Overlay ── */}
-      <div className="absolute inset-0 bg-black/50" />
+      <div className="absolute inset-0 bg-black/55" />
 
       {/* ── Vignette ── */}
       <div className="absolute inset-0 bg-gradient-to-t from-brand-black via-transparent to-transparent opacity-80" />
@@ -63,13 +62,55 @@ export default function Hero() {
       </button>
 
       {/* ── Content ── */}
-      <div className="relative z-10 text-center px-6">
-        <Logo size="lg" className="mx-auto" />
+      <div className="relative z-10 text-center px-6 py-24 max-w-4xl">
+        {/* Eyebrow */}
+        <p className="font-body text-[11px] md:text-xs font-semibold tracking-[0.3em] uppercase text-brand-gold mb-6">
+          Las Vegas Video Production
+        </p>
 
+        {/* Aria-hidden visual headline (real H1 is in sr-only above for SEO) */}
+        <p
+          aria-hidden="true"
+          className="font-heading text-4xl sm:text-5xl md:text-7xl uppercase tracking-editorial text-brand-off-white leading-[1.05]"
+        >
+          Film-Quality Video.
+          <br />
+          <span className="text-brand-gold">For Every Project.</span>
+        </p>
+
+        {/* Gold divider */}
         <div className="mt-8 h-px w-24 bg-brand-gold mx-auto" />
 
-        <p className="mt-6 text-lg md:text-xl text-brand-off-white/90 font-body font-light tracking-wide max-w-xl mx-auto">
-          Las Vegas Video Production. Film-set gear and process on every shoot.
+        {/* Sub-headline */}
+        <p className="mt-6 text-base md:text-lg text-brand-off-white/85 font-body font-light tracking-wide max-w-2xl mx-auto leading-relaxed">
+          Weddings, commercials, music videos, walk-throughs, and documentaries — shot with cinema cameras, lit like a film set, edited like a feature.
+        </p>
+
+        {/* CTAs */}
+        <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+          <a
+            href="#contact"
+            className="w-full sm:w-auto px-8 py-4 bg-brand-gold text-brand-black font-body font-semibold text-sm uppercase tracking-[0.15em] hover:bg-brand-gold-hover transition-all duration-300 hover:-translate-y-0.5"
+          >
+            Get a Free Quote
+          </a>
+          <a
+            href="#portfolio"
+            className="w-full sm:w-auto px-8 py-4 border border-brand-off-white/30 text-brand-off-white font-body font-semibold text-sm uppercase tracking-[0.15em] hover:border-brand-gold hover:text-brand-gold transition-all duration-300"
+          >
+            See Our Work
+          </a>
+        </div>
+
+        {/* Phone call line */}
+        <p className="mt-7 text-sm text-brand-gray font-body">
+          Or call our 24/7 AI booking line:{" "}
+          <a
+            href="tel:+19893081633"
+            className="text-brand-gold font-semibold border-b border-transparent hover:border-brand-gold transition-colors"
+          >
+            (989) 308-1633
+          </a>
         </p>
       </div>
 

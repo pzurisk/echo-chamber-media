@@ -112,11 +112,17 @@ const jsonLd = {
   },
 };
 
+// GA4 Measurement ID. Get from analytics.google.com → Admin → Data Streams → Web → Measurement ID.
+// Set via NEXT_PUBLIC_GA_ID env var, or replace the placeholder below.
+const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_ID || "G-XXXXXXXXXX";
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const hasGA = GA_MEASUREMENT_ID && GA_MEASUREMENT_ID !== "G-XXXXXXXXXX";
+
   return (
     <html lang="en" className="dark">
       <head>
@@ -124,6 +130,27 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
+        {hasGA && (
+          <>
+            <script
+              async
+              src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+            />
+            <script
+              dangerouslySetInnerHTML={{
+                __html: `
+                  window.dataLayer = window.dataLayer || [];
+                  function gtag(){dataLayer.push(arguments);}
+                  gtag('js', new Date());
+                  gtag('config', '${GA_MEASUREMENT_ID}', {
+                    anonymize_ip: true,
+                    send_page_view: true
+                  });
+                `,
+              }}
+            />
+          </>
+        )}
       </head>
       <body
         className={`${archivoBlack.variable} ${montserrat.variable} font-body antialiased bg-brand-black text-brand-off-white`}

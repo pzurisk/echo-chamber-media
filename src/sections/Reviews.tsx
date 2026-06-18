@@ -16,27 +16,27 @@ const reviews = [
     name: "Jessica & Ryan M.",
     role: "Wedding Client",
     initials: "JR",
-    photo: "https://randomuser.me/api/portraits/women/44.jpg",
+    photo: "",
   },  {
     text: "We hired Echo Chamber Media to produce a commercial for our restaurant opening on Fremont Street. The turnaround was fast, the production quality was insane, and it actually looked like something you'd see on TV. Already planning our next project with them.",
     name: "David Torres",
     role: "Restaurant Owner, Las Vegas",
     initials: "DT",
-    photo: "https://randomuser.me/api/portraits/men/32.jpg",
+    photo: "",
   },
   {
     text: "Needed a professional walkthrough video for a luxury listing in Summerlin. Echo Chamber Media made the property look like something out of Architectural Digest. My client loved it and it helped the home sell within the first week. These guys know what they're doing.",
     name: "Sarah Kim",
     role: "Real Estate Agent, Henderson",
     initials: "SK",
-    photo: "https://randomuser.me/api/portraits/women/68.jpg",
+    photo: "",
   },
   {
     text: "Echo Chamber filmed a music video for my latest single and the result was absolutely cinematic. Billy has a real eye for storytelling — he understood the vision from the first conversation and brought it to life in ways I didn't even imagine. Can't wait to work together again.",
     name: "Marcus James",
     role: "Recording Artist",
     initials: "MJ",
-    photo: "https://randomuser.me/api/portraits/men/75.jpg",
+    photo: "",
   },
 ];
 

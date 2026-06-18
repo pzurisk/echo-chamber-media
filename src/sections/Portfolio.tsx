@@ -5,13 +5,25 @@ import Link from "next/link";
 import SectionWrapper from "@/components/SectionWrapper";
 import Heading from "@/components/Heading";
 
-const projects = [
+const projects: {
+  title: string;
+  type: string;
+  description: string;
+  youtubeId: string;
+  href?: string;
+}[] = [
   {
     title: "The Naked City Underground",
     type: "Music Video",
     description: "Outlaw country meets surf punk. Raw energy from Las Vegas' genre-bending band. \"Coming To Me\" & \"Everything's Alright.\"",
     youtubeId: "x1yqQXmHCdY",
     href: "/blog/naked-city-underground-music-video",
+  },
+  {
+    title: "Doritos — Spec Commercial",
+    type: "Commercial / Spec",
+    description: "Spec commercial for Doritos. Cinematic execution and full production process. The same playbook we bring to paid national campaigns.",
+    youtubeId: "zFlXJVtnv-U",
   },
 ];
 
@@ -27,7 +39,7 @@ function ProjectCard({
   type: string;
   description: string;
   youtubeId: string;
-  href: string;
+  href?: string;
   index: number;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -78,12 +90,14 @@ function ProjectCard({
       <p className="text-sm text-brand-gray font-body leading-relaxed mb-4">
         {description}
       </p>
-      <Link
-        href={href}
-        className="text-xs uppercase tracking-editorial text-brand-gold font-body hover:text-brand-off-white transition-colors duration-300"
-      >
-        Read the Case Study →
-      </Link>
+      {href && (
+        <Link
+          href={href}
+          className="text-xs uppercase tracking-editorial text-brand-gold font-body hover:text-brand-off-white transition-colors duration-300"
+        >
+          Read the Case Study →
+        </Link>
+      )}
     </div>
   );
 }
