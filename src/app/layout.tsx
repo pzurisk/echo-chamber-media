@@ -112,9 +112,8 @@ const jsonLd = {
   },
 };
 
-// GA4 Measurement ID. Get from analytics.google.com → Admin → Data Streams → Web → Measurement ID.
-// Set via NEXT_PUBLIC_GA_ID env var, or replace the placeholder below.
-const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_ID || "G-XXXXXXXXXX";
+// GA4 Measurement ID — Echo Chamber Media production stream.
+const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_ID || "G-C2R4NNXYCY";
 
 export default function RootLayout({
   children,
