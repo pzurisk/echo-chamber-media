@@ -104,7 +104,7 @@ export default function WeddingPhotographyPage() {
                   <div>
                     <h3 className="font-heading text-xl font-bold text-brand-gold mb-2">Las Vegas Local Expertise</h3>
                     <p className="font-body text-brand-off-white">
-                      Serving the Las Vegas wedding photography market for years, we know every venue in the valley—from intimate chapel elopements to luxury resort ballrooms.
+                      Serving the Las Vegas wedding photography market for years, we know every venue in the valley, from intimate chapel elopements to luxury resort ballrooms.
                     </p>
                   </div>
                 </div>
@@ -155,7 +155,7 @@ export default function WeddingPhotographyPage() {
           </div>
         </section>
 
-        {/* Photo Gallery — Attention Grabber */}
+        {/* Photo Gallery, Attention Grabber */}
         <section id="gallery" className="py-20 px-6 bg-brand-black">
           <div className="max-w-6xl mx-auto">
             <p className="text-sm uppercase tracking-editorial text-brand-gold font-body mb-4 text-center">
@@ -165,12 +165,12 @@ export default function WeddingPhotographyPage() {
               Every Moment, Preserved
             </h2>
             <p className="font-body text-brand-gray text-center max-w-2xl mx-auto mb-16">
-              We don&apos;t just take photos — we capture the feeling. The nervous hands, the joyful tears, the golden light. Here&apos;s a glimpse of what we see.
+              We don&apos;t just take photos, we capture the feeling. The nervous hands, the joyful tears, the golden light. Here&apos;s a glimpse of what we see.
             </p>
 
             {/* Masonry-style Gallery Grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-              {/* Ring Exchange — tall */}
+              {/* Ring Exchange, tall */}
               <div className="relative row-span-2 overflow-hidden group">
                 <Image
                   src="/images/wedding/ring-exchange.jpg"
@@ -185,7 +185,7 @@ export default function WeddingPhotographyPage() {
                 </p>
               </div>
 
-              {/* Petal Toss — wide */}
+              {/* Petal Toss, wide */}
               <div className="relative col-span-2 overflow-hidden group">
                 <Image
                   src="/images/wedding/petal-toss.jpg"
@@ -215,7 +215,7 @@ export default function WeddingPhotographyPage() {
                 </p>
               </div>
 
-              {/* String Lights — wide bottom */}
+              {/* String Lights, wide bottom */}
               <div className="relative col-span-2 md:col-span-3 overflow-hidden group">
                 <Image
                   src="/images/wedding/string-lights.jpg"
@@ -243,7 +243,7 @@ export default function WeddingPhotographyPage() {
           </div>
         </section>
 
-        {/* Our Approach — Text sections */}
+        {/* Our Approach, Text sections */}
         <section className="py-20 px-6 bg-brand-black">
           <div className="max-w-5xl mx-auto">
             <h2 className="font-heading text-4xl lg:text-5xl font-black text-brand-gold mb-16 text-center tracking-editorial">
@@ -277,7 +277,7 @@ export default function WeddingPhotographyPage() {
                 </div>
                 <h3 className="font-heading text-xl font-bold text-brand-gold mb-3">Authentic Moments</h3>
                 <p className="font-body text-brand-off-white leading-relaxed">
-                  The nervous smile during vows, the quiet glance across the reception, genuine laughter with friends — we capture the real emotions with an artist&apos;s eye.
+                  The nervous smile during vows, the quiet glance across the reception, genuine laughter with friends, we capture the real emotions with an artist&apos;s eye.
                 </p>
               </div>
 
@@ -448,7 +448,7 @@ export default function WeddingPhotographyPage() {
                   What&apos;s the difference between your wedding photography and videography?
                 </h3>
                 <p className="font-body text-brand-off-white leading-relaxed">
-                  Wedding photography provides still images—carefully composed, edited, and color-graded for your albums and wall art. Our videography captures moving footage for highlight reels and full wedding films. Many couples choose both to tell a complete visual story of their day.
+                  Wedding photography provides still images, carefully composed, edited, and color-graded for your albums and wall art. Our videography captures moving footage for highlight reels and full wedding films. Many couples choose both to tell a complete visual story of their day.
                 </p>
               </div>
 

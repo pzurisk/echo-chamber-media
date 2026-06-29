@@ -147,7 +147,7 @@ function SocialPill({ item }: { item: SocialItem }) {
       href={item.href}
       target={isMail ? undefined : "_blank"}
       rel={isMail ? undefined : "noopener noreferrer"}
-      aria-label={`${item.label} — ${item.handle}`}
+      aria-label={`${item.label}, ${item.handle}`}
       className="group flex flex-col items-center gap-2 text-center"
     >
       <span className="flex h-14 w-14 items-center justify-center rounded-full border border-brand-gold/40 bg-brand-charcoal text-brand-gold transition-all duration-300 group-hover:scale-105 group-hover:border-brand-gold group-hover:bg-brand-gold group-hover:text-brand-black">
@@ -228,7 +228,7 @@ export default function LinksPage() {
                 <div className="relative h-60 w-60 overflow-hidden rounded-[26px] bg-brand-charcoal shadow-2xl shadow-black/60 sm:h-72 sm:w-72">
                   <Image
                     src="/images/billy-portrait.jpg"
-                    alt="Billy Zurisk — Founder, Echo Chamber Media"
+                    alt="Billy Zurisk, Founder, Echo Chamber Media"
                     fill
                     className="object-cover object-center"
                     sizes="(max-width: 640px) 240px, 288px"

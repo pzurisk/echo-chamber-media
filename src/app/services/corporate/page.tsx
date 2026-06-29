@@ -69,7 +69,7 @@ export default function CorporateVideoPage() {
                   <div>
                     <h3 className="font-heading text-lg font-bold text-brand-gold mb-2">Brand-Focused Storytelling</h3>
                     <p className="font-body text-brand-off-white text-sm">
-                      We don&apos;t just record—we craft narratives that align with your brand values and resonate with your target audience.
+                      We don&apos;t just record, we craft narratives that align with your brand values and resonate with your target audience.
                     </p>
                   </div>
                 </div>
@@ -282,7 +282,7 @@ export default function CorporateVideoPage() {
                   What&apos;s the typical timeline for a corporate video project?
                 </h3>
                 <p className="font-body text-brand-off-white leading-relaxed">
-                  Timeline varies based on scope, but a standard corporate video typically takes 3-6 weeks from start to finish. This includes pre-production planning, shoot day, editing, and revisions. We can accelerate timelines for rush projects—just let us know your deadline.
+                  Timeline varies based on scope, but a standard corporate video typically takes 3-6 weeks from start to finish. This includes pre-production planning, shoot day, editing, and revisions. We can accelerate timelines for rush projects, just let us know your deadline.
                 </p>
               </div>
 
@@ -300,7 +300,7 @@ export default function CorporateVideoPage() {
                   Can we use corporate video content across multiple platforms?
                 </h3>
                 <p className="font-body text-brand-off-white leading-relaxed">
-                  Absolutely. We deliver videos optimized for multiple formats—full-length for your website, short versions for social media, vertical cuts for mobile, and more. Licensing includes unlimited use across your own channels, making your investment work harder.
+                  Absolutely. We deliver videos optimized for multiple formats, full-length for your website, short versions for social media, vertical cuts for mobile, and more. Licensing includes unlimited use across your own channels, making your investment work harder.
                 </p>
               </div>
 

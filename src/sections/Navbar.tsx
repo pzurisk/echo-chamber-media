@@ -113,7 +113,7 @@ export default function Navbar() {
             (989) 308-1633
           </a>
 
-          {/* Quote CTA — primary conversion button */}
+          {/* Quote CTA, primary conversion button */}
           <a
             href="#contact"
             className="text-xs uppercase tracking-editorial text-brand-black bg-brand-gold border border-brand-gold px-4 py-2 hover:bg-brand-gold-hover transition-all duration-300 font-body font-semibold"

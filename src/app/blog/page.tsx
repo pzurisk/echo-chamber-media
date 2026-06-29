@@ -19,6 +19,14 @@ export const metadata: Metadata = {
 
 const posts = [
   {
+    slug: 'wedding-videographer-cost-las-vegas',
+    title: 'How Much Does a Wedding Videographer Cost in Las Vegas?',
+    excerpt: 'A straight answer on 2026 pricing, what actually drives the number, and how to tell a real wedding video package from a cheap one.',
+    date: 'June 29, 2026',
+    category: 'Pricing Guide',
+    readTime: '7 min read',
+  },
+  {
     slug: 'naked-city-underground-music-video',
     title: 'Shooting My First Music Video: The Naked City Underground',
     excerpt: 'How we captured the raw, genre-smashing energy of Las Vegas\' own outlaw country-surf punk outfit. Behind the scenes of the "Coming To Me" & "Everything\'s Alright" music video.',

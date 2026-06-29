@@ -146,7 +146,7 @@ export default function Services() {
         <div className="mt-4 h-px w-16 bg-brand-gold mx-auto" />
       </div>
 
-      {/* Comic strip panel layout — service panels in a row */}
+      {/* Comic strip panel layout, service panels in a row */}
       <div className="border border-brand-charcoal">
         <div className="grid grid-cols-2 md:grid-cols-3 [&>a:nth-child(3n)]:md:border-r-0 [&>a:nth-last-child(-n+3)]:md:border-b-0">
           {services.map((service, i) => (

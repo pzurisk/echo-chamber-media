@@ -16,9 +16,9 @@ export default function Hero() {
 
   return (
     <section className="relative min-h-screen w-full overflow-hidden flex items-center justify-center">
-      {/* SEO H1 — hidden visually, present for crawlers and screen readers */}
+      {/* SEO H1, hidden visually, present for crawlers and screen readers */}
       <h1 className="sr-only">
-        Echo Chamber Media — Las Vegas Video Production Company
+        Echo Chamber Media, Las Vegas Video Production Company
       </h1>
 
       {/* ── Background Video (autoplays muted; user can unmute) ── */}
@@ -83,7 +83,7 @@ export default function Hero() {
 
         {/* Sub-headline */}
         <p className="mt-6 text-base md:text-lg text-brand-off-white/85 font-body font-light tracking-wide max-w-2xl mx-auto leading-relaxed">
-          Weddings, commercials, music videos, walk-throughs, and documentaries — shot with cinema cameras, lit like a film set, edited like a feature.
+          Weddings, commercials, music videos, walk-throughs, and documentaries, shot with cinema cameras, lit like a film set, edited like a feature.
         </p>
 
         {/* CTAs */}

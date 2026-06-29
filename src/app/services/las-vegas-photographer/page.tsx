@@ -164,7 +164,7 @@ export default function LasVegasPhotographerPage() {
             <div className="bg-brand-charcoal rounded-lg p-8 border-l-4 border-brand-gold">
               <h3 className="font-heading text-2xl font-bold text-brand-gold mb-3">The Strip</h3>
               <p className="font-body text-brand-off-white leading-relaxed">
-                The Bellagio Fountains, Welcome to Vegas sign, Caesars Palace—we&apos;ll get you in front of iconic Vegas landmarks with perfect lighting and minimal crowds.
+                The Bellagio Fountains, Welcome to Vegas sign, Caesars Palace, we&apos;ll get you in front of iconic Vegas landmarks with perfect lighting and minimal crowds.
               </p>
             </div>
 
@@ -192,7 +192,7 @@ export default function LasVegasPhotographerPage() {
             <div className="bg-brand-charcoal rounded-lg p-8 border-l-4 border-brand-gold">
               <h3 className="font-heading text-2xl font-bold text-brand-gold mb-3">Neon Museum</h3>
               <p className="font-body text-brand-off-white leading-relaxed">
-                Vintage Vegas neon signs in one incredible location. Nostalgic, colorful, and utterly unique—perfect for creative and artistic sessions.
+                Vintage Vegas neon signs in one incredible location. Nostalgic, colorful, and utterly unique, perfect for creative and artistic sessions.
               </p>
             </div>
 
@@ -250,7 +250,7 @@ export default function LasVegasPhotographerPage() {
                 Do you offer videography too?
               </h3>
               <p className="font-body text-brand-gray leading-relaxed">
-                Absolutely. We specialize in both photography and videography. Combine them for a complete coverage package—short social videos, highlight reels, and full edited videos. Video content from Vegas is pure gold for your memories and content.
+                Absolutely. We specialize in both photography and videography. Combine them for a complete coverage package, short social videos, highlight reels, and full edited videos. Video content from Vegas is pure gold for your memories and content.
               </p>
             </div>
 

@@ -5,12 +5,12 @@ import Footer from '@/sections/Footer';
 
 export const metadata: Metadata = {
   title: 'Shooting My First Music Video: The Naked City Underground',
-  description: 'Behind the scenes of the Naked City Underground music video shot in Las Vegas. Outlaw country meets surf punk — how we captured the raw energy of Coming To Me & Everything\'s Alright.',
+  description: 'Behind the scenes of the Naked City Underground music video shot in Las Vegas. Outlaw country meets surf punk, how we captured the raw energy of Coming To Me & Everything\'s Alright.',
   alternates: { canonical: 'https://echochambermedia.com/blog/naked-city-underground-music-video' },
   keywords: 'music video production Las Vegas, Naked City Underground, behind the scenes music video, cinematography breakdown, Echo Chamber Media',
   openGraph: {
     title: 'Shooting My First Music Video: The Naked City Underground',
-    description: 'Behind the scenes of the Naked City Underground music video. Outlaw country meets surf punk — raw energy from Las Vegas\' genre-bending band.',
+    description: 'Behind the scenes of the Naked City Underground music video. Outlaw country meets surf punk, raw energy from Las Vegas\' genre-bending band.',
     url: 'https://echochambermedia.com/blog/naked-city-underground-music-video',
     type: 'article',
     locale: 'en_US',
@@ -50,11 +50,11 @@ export default function NakedCityUndergroundPost() {
 
           {/* Video Embeds */}
           <div className="mb-6">
-            <p className="text-xs uppercase tracking-editorial text-brand-gold font-body mb-3">&quot;Coming To Me&quot;</p>
+            <p className="text-xs uppercase tracking-editorial text-brand-gold font-body mb-3">&quot;Everything&apos;s Alright&quot;</p>
             <div className="relative w-full aspect-video border border-brand-gold/20">
               <iframe
-                src="https://www.youtube.com/embed/x1yqQXmHCdY"
-                title="The Naked City Underground — Coming To Me — Music Video by Echo Chamber Media"
+                src="https://www.youtube.com/embed/UnqTEQxPWwo"
+                title="The Naked City Underground: Everything's Alright. Music Video by Echo Chamber Media"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
                 className="absolute inset-0 w-full h-full"
@@ -62,11 +62,11 @@ export default function NakedCityUndergroundPost() {
             </div>
           </div>
           <div className="mb-12">
-            <p className="text-xs uppercase tracking-editorial text-brand-gold font-body mb-3">&quot;Everything&apos;s Alright&quot;</p>
+            <p className="text-xs uppercase tracking-editorial text-brand-gold font-body mb-3">&quot;Coming To Me&quot;</p>
             <div className="relative w-full aspect-video border border-brand-gold/20">
               <iframe
-                src="https://www.youtube.com/embed/UnqTEQxPWwo"
-                title="The Naked City Underground — Everything's Alright — Music Video by Echo Chamber Media"
+                src="https://www.youtube.com/embed/x1yqQXmHCdY"
+                title="The Naked City Underground: Coming To Me. Music Video by Echo Chamber Media"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
                 className="absolute inset-0 w-full h-full"
@@ -77,44 +77,44 @@ export default function NakedCityUndergroundPost() {
           {/* Article Body */}
           <div className="prose-ecm space-y-6">
             <p className="font-body text-brand-off-white leading-relaxed text-lg">
-              Every filmmaker remembers their first music video. This one was mine. The Naked City Underground reached out looking for something that matched the feel of their sound — equal parts outlaw country grit and Southern California surf punk, with blues, jazz, and alternative rock mixed in for good measure. They&apos;re not a band you put in a box, and they didn&apos;t want a video you could put in one either.
+              Every filmmaker remembers their first music video. This one was mine. The Naked City Underground reached out looking for something that matched the feel of their sound, equal parts outlaw country grit and Southern California surf punk, with blues, jazz, and alternative rock mixed in for good measure. They&apos;re not a band you put in a box, and they didn&apos;t want a video you could put in one either.
             </p>
 
             <h2 className="font-heading text-2xl uppercase tracking-editorial text-brand-gold mt-12 mb-4">
               The Band
             </h2>
             <p className="font-body text-brand-off-white leading-relaxed">
-              The Naked City Underground is a Las Vegas original. Two world-class flair bartenders who put the bottles down, picked up instruments, and started making music that comes straight from their souls. They teamed up with some of Sin City&apos;s best recording and live performing musicians to create something you can&apos;t quite pin down — their sound fills the gaps from Waylon Jennings to Nirvana to Sublime. They&apos;ve been featured on KOMP 92.3&apos;s Homegrown Show, and the tracks we shot — &quot;Coming To Me&quot; and &quot;Everything&apos;s Alright&quot; — have racked up a combined 74,000+ plays on Spotify.
+              The Naked City Underground is a Las Vegas original. Two world-class flair bartenders who put the bottles down, picked up instruments, and started making music that comes straight from their souls. They teamed up with some of Sin City&apos;s best recording and live performing musicians to create something you can&apos;t quite pin down, their sound fills the gaps from Waylon Jennings to Nirvana to Sublime. They&apos;ve been featured on KOMP 92.3&apos;s Homegrown Show, and the tracks we shot, &quot;Coming To Me&quot; and &quot;Everything&apos;s Alright&quot;, have racked up a combined 74,000+ plays on Spotify.
             </p>
 
             <h2 className="font-heading text-2xl uppercase tracking-editorial text-brand-gold mt-12 mb-4">
               The Approach
             </h2>
             <p className="font-body text-brand-off-white leading-relaxed">
-              The approach had to match their energy — raw, unpolished, and authentic. These guys are the exact opposite of a slick, over-produced machine, and that&apos;s what makes them great. I wanted the visuals to have that same quality: real moments, real grit, real Vegas. We leaned into dramatic contrast, handheld movement, and a pace that matched the swagger of the music.
+              The approach had to match their energy, raw, unpolished, and authentic. These guys are the exact opposite of a slick, over-produced machine, and that&apos;s what makes them great. I wanted the visuals to have that same quality: real moments, real grit, real Vegas. We leaned into dramatic contrast, handheld movement, and a pace that matched the swagger of the music.
             </p>
             <p className="font-body text-brand-off-white leading-relaxed">
-              Las Vegas gave us everything we needed for locations. The desert, the dive bars, the neon — it all fed into the visual language of the video. This is a band born out of the Sin City bar scene, so we kept it rooted in that world. Every frame was shot with intention, treating it more like a short film than a traditional music video.
+              Las Vegas gave us everything we needed for locations. The desert, the dive bars, the neon, it all fed into the visual language of the video. This is a band born out of the Sin City bar scene, so we kept it rooted in that world. Every frame was shot with intention, treating it more like a short film than a traditional music video.
             </p>
 
             <h2 className="font-heading text-2xl uppercase tracking-editorial text-brand-gold mt-12 mb-4">
               The Technical Side
             </h2>
             <p className="font-body text-brand-off-white leading-relaxed">
-              Being my first music video, I was hyper-focused on the fundamentals: camera movement that served the music, lighting that created mood without overpowering the performance, and color grading that unified everything into a cohesive visual world. Every shot was planned with the edit in mind — where the cuts would land, how the energy would build, where we&apos;d let a moment breathe.
+              Being my first music video, I was hyper-focused on the fundamentals: camera movement that served the music, lighting that created mood without overpowering the performance, and color grading that unified everything into a cohesive visual world. Every shot was planned with the edit in mind, where the cuts would land, how the energy would build, where we&apos;d let a moment breathe.
             </p>
             <p className="font-body text-brand-off-white leading-relaxed">
-              Post-production was where it really came together. The color grade leaned into warm tones and gritty texture — honky-tonk golds, desert heat, and just enough contrast to keep things cinematic without losing the raw, lived-in feel the band brings naturally.
+              Post-production was where it really came together. The color grade leaned into warm tones and gritty texture, honky-tonk golds, desert heat, and just enough contrast to keep things cinematic without losing the raw, lived-in feel the band brings naturally.
             </p>
 
             <h2 className="font-heading text-2xl uppercase tracking-editorial text-brand-gold mt-12 mb-4">
               What I Learned
             </h2>
             <p className="font-body text-brand-off-white leading-relaxed">
-              Shooting a music video is a completely different discipline than corporate work or weddings. The music is the edit. Every cut, every transition, every camera movement has to serve the rhythm. You&apos;re not telling a story in the traditional sense — you&apos;re building a feeling. That lesson carried into everything I&apos;ve shot since, including <Link href="/#featured-film" className="text-brand-gold hover:underline">The Classified Mind</Link>, our award-winning short film.
+              Shooting a music video is a completely different discipline than corporate work or weddings. The music is the edit. Every cut, every transition, every camera movement has to serve the rhythm. You&apos;re not telling a story in the traditional sense, you&apos;re building a feeling. That lesson carried into everything I&apos;ve shot since, including <Link href="/#featured-film" className="text-brand-gold hover:underline">The Classified Mind</Link>, our award-winning short film.
             </p>
             <p className="font-body text-brand-off-white leading-relaxed">
-              This project also confirmed something I already suspected: Las Vegas is an incredible city for music video production. The locations, the light, the energy — it&apos;s all here. If you&apos;re an artist looking to shoot something cinematic in Vegas, <Link href="/#contact" className="text-brand-gold hover:underline">let&apos;s talk</Link>.
+              This project also confirmed something I already suspected: Las Vegas is an incredible city for music video production. The locations, the light, the energy, it&apos;s all here. If you&apos;re an artist looking to shoot something cinematic in Vegas, <Link href="/#contact" className="text-brand-gold hover:underline">let&apos;s talk</Link>.
             </p>
 
             {/* Production Credits */}

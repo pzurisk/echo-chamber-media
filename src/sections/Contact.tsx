@@ -60,7 +60,7 @@ export default function Contact() {
           "Project Type": form.projectType,
           Budget: form.budget,
           Message: form.message,
-          _subject: `New Inquiry from ${form.name} — ${form.projectType}`,
+          _subject: `New Inquiry from ${form.name}, ${form.projectType}`,
           _template: "table",
         }),
       });
@@ -100,8 +100,7 @@ export default function Contact() {
             Need to talk now? Call us at{" "}
             <a href="tel:+19893081633" className="text-brand-gold font-semibold">
               (989) 308-1633
-            </a>{" "}
-            — 24/7 booking line.
+            </a>{" "}, 24/7 booking line.
           </p>
         </div>
       </SectionWrapper>
@@ -124,7 +123,7 @@ export default function Contact() {
       <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[1fr_1.4fr] gap-10 lg:gap-16 items-start">
         {/* ── Contact Info Column ── */}
         <div className="space-y-6">
-          {/* Google Calendar appointment scheduling — primary booking CTA */}
+          {/* Google Calendar appointment scheduling, primary booking CTA */}
           <div className="bg-brand-gold/5 border border-brand-gold/30 p-5">
             <p className={labelBase}>Book a Free Consultation</p>
             <p className="text-brand-off-white font-body text-sm mb-4">
@@ -150,7 +149,7 @@ export default function Contact() {
           </div>
 
           <div className="border-t border-brand-charcoal pt-5">
-            <p className={labelBase}>Call or Text — 24/7 AI Booking Line</p>
+            <p className={labelBase}>Call or Text, 24/7 AI Booking Line</p>
             <a
               href="tel:+19893081633"
               onClick={() => {

@@ -24,7 +24,7 @@ const projects: {
     uploadDate: "2026-04-02",
   },
   {
-    title: "Doritos — Spec Commercial",
+    title: "Doritos, Spec Commercial",
     type: "Commercial / Spec",
     description: "Spec commercial for Doritos. Cinematic execution and full production process. The same playbook we bring to paid national campaigns.",
     youtubeId: "zFlXJVtnv-U",
@@ -40,7 +40,7 @@ const videoJsonLd = {
     position: i + 1,
     item: {
       "@type": "VideoObject",
-      name: `${p.title} — Echo Chamber Media`,
+      name: `${p.title}, Echo Chamber Media`,
       description: p.description,
       thumbnailUrl: `https://i.ytimg.com/vi/${p.youtubeId}/maxresdefault.jpg`,
       uploadDate: p.uploadDate,
@@ -98,7 +98,7 @@ function ProjectCard({
       <div className="relative w-full aspect-video mb-6 border border-brand-gold/20 bg-brand-charcoal">
         <iframe
           src={`https://www.youtube.com/embed/${youtubeId}`}
-          title={`${title} — Echo Chamber Media`}
+          title={`${title}, Echo Chamber Media`}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowFullScreen
           loading="lazy"

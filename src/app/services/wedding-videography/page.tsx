@@ -279,7 +279,7 @@ export default function WeddingVideographyPage() {
                   Cinematic Vision
                 </h3>
                 <p className="text-brand-gray">
-                  We treat every wedding like a film production. Our approach to wedding videography Las Vegas style goes beyond documentation—we create art that tells your story.
+                  We treat every wedding like a film production. Our approach to wedding videography Las Vegas style goes beyond documentation, we create art that tells your story.
                 </p>
               </div>
 
@@ -306,7 +306,7 @@ export default function WeddingVideographyPage() {
                   Personal Attention
                 </h3>
                 <p className="text-brand-gray">
-                  You work directly with us—not a large corporate studio. We&apos;re invested in understanding your vision and delivering a wedding video that exceeds expectations.
+                  You work directly with us, not a large corporate studio. We&apos;re invested in understanding your vision and delivering a wedding video that exceeds expectations.
                 </p>
               </div>
 
@@ -315,7 +315,7 @@ export default function WeddingVideographyPage() {
                   Full Creative Control
                 </h3>
                 <p className="text-brand-gray">
-                  Music selection, editing style, color grade—you have input throughout the process. Your wedding film should reflect your unique love story and personal style.
+                  Music selection, editing style, color grade, you have input throughout the process. Your wedding film should reflect your unique love story and personal style.
                 </p>
               </div>
 
@@ -373,7 +373,7 @@ export default function WeddingVideographyPage() {
                   Can you work at my specific Las Vegas wedding venue?
                 </h3>
                 <p className="text-brand-gray">
-                  Yes! We film weddings at all Las Vegas venues—from intimate chapels to grand ballrooms and outdoor desert locations. We&apos;ll coordinate with your venue to understand any specific requirements for our wedding videography coverage.
+                  Yes! We film weddings at all Las Vegas venues, from intimate chapels to grand ballrooms and outdoor desert locations. We&apos;ll coordinate with your venue to understand any specific requirements for our wedding videography coverage.
                 </p>
               </div>
 

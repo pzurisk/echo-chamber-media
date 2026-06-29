@@ -272,7 +272,7 @@ export default function DocumentaryPage() {
             {[
               {
                 q: 'What types of documentaries do you specialize in?',
-                a: 'We work across all documentary genres—historical, biographical, investigative, personal narrative, observational, and hybrid approaches. Our experience spans feature-length films, episodic series, and short-form content.',
+                a: 'We work across all documentary genres, historical, biographical, investigative, personal narrative, observational, and hybrid approaches. Our experience spans feature-length films, episodic series, and short-form content.',
               },
               {
                 q: 'How long does a documentary typically take to produce?',

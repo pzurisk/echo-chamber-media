@@ -6,12 +6,12 @@ import Link from 'next/link';
 // This must be exported for Next.js metadata
 export const metadata: Metadata = {
   title: 'Music Video Production Las Vegas | Cinematic Music Videos',
-  description: 'Music video production in Las Vegas. Cinematic visuals for artists — performance, narrative & concept videos. Bring your sound to life today.',
+  description: 'Music video production in Las Vegas. Cinematic visuals for artists, performance, narrative & concept videos. Bring your sound to life today.',
   alternates: { canonical: 'https://echochambermedia.com/services/music-videos' },
   keywords: 'music video production Las Vegas, cinematic music videos, music video producer Las Vegas, professional music video production, artist music videos',
   openGraph: {
     title: 'Music Video Production Las Vegas | Echo Chamber Media',
-    description: 'Music video production in Las Vegas. Cinematic visuals for artists — performance, narrative & concept videos. Bring your sound to life today.',
+    description: 'Music video production in Las Vegas. Cinematic visuals for artists, performance, narrative & concept videos. Bring your sound to life today.',
     url: 'https://echochambermedia.com/services/music-videos',
     type: 'website',
     locale: 'en_US',
@@ -139,7 +139,7 @@ export default function MusicVideosPage() {
                   <div>
                     <h3 className="font-heading text-xl font-bold text-brand-gold mb-2">Artist-First Collaboration</h3>
                     <p className="font-body text-brand-off-white">
-                      Your artistic vision drives every decision. We listen, collaborate, and push creative boundaries together. Your voice matters—we&apos;re here to amplify your artistry, not override it.
+                      Your artistic vision drives every decision. We listen, collaborate, and push creative boundaries together. Your voice matters, we&apos;re here to amplify your artistry, not override it.
                     </p>
                   </div>
                 </div>
@@ -158,14 +158,14 @@ export default function MusicVideosPage() {
               The Naked City Underground
             </h2>
             <p className="font-body text-brand-gray text-center max-w-2xl mx-auto mb-12">
-              &quot;Coming To Me&quot; &amp; &quot;Everything&apos;s Alright&quot; — Our debut music video production. Raw, gritty visuals for Las Vegas&apos; own genre-bending outfit. Two flair bartenders turned musicians, blending outlaw country with surf punk, blues, and alternative rock.
+              &quot;Coming To Me&quot; &amp; &quot;Everything&apos;s Alright&quot;, Our debut music video production. Raw, gritty visuals for Las Vegas&apos; own genre-bending outfit. Two flair bartenders turned musicians, blending outlaw country with surf punk, blues, and alternative rock.
             </p>
 
             {/* YouTube Embed */}
             <div className="relative w-full max-w-4xl mx-auto aspect-video mb-12 border border-brand-gold/20">
               <iframe
                 src="https://www.youtube.com/embed/x1yqQXmHCdY"
-                title="The Naked City Underground — Music Video by Echo Chamber Media"
+                title="The Naked City Underground, Music Video by Echo Chamber Media"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
                 className="absolute inset-0 w-full h-full"
@@ -206,7 +206,7 @@ export default function MusicVideosPage() {
                 <div className="md:w-1/2 aspect-video bg-brand-charcoal rounded-lg flex items-center justify-center border border-brand-gold border-opacity-30 overflow-hidden">
                   <iframe
                     src="https://www.youtube.com/embed/x1yqQXmHCdY"
-                    title="Performance Video Example — The Naked City Underground"
+                    title="Performance Video Example, The Naked City Underground"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
                     className="w-full h-full"
@@ -400,7 +400,7 @@ export default function MusicVideosPage() {
                   Can you work with artists of different genres?
                 </h3>
                 <p className="font-body text-brand-off-white leading-relaxed">
-                  Absolutely. We&apos;ve produced music videos across hip-hop, pop, rock, indie, electronic, and many other genres. The production approach adapts to your music&apos;s energy, vibe, and message. Your genre doesn&apos;t limit us—your artistic vision does.
+                  Absolutely. We&apos;ve produced music videos across hip-hop, pop, rock, indie, electronic, and many other genres. The production approach adapts to your music&apos;s energy, vibe, and message. Your genre doesn&apos;t limit us, your artistic vision does.
                 </p>
               </div>
 

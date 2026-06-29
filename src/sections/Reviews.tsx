@@ -12,7 +12,7 @@ const reviews = [
     photo: "",
   },
   {
-    text: "Billy and the Echo Chamber team filmed our wedding and we couldn't be happier. Every moment was captured perfectly — the ceremony, the reception, even the little candid moments we didn't know were being filmed. The final edit had us in tears. Worth every penny.",
+    text: "Billy and the Echo Chamber team filmed our wedding and we couldn't be happier. Every moment was captured perfectly, the ceremony, the reception, even the little candid moments we didn't know were being filmed. The final edit had us in tears. Worth every penny.",
     name: "Jessica & Ryan M.",
     role: "Wedding Client",
     initials: "JR",
@@ -32,7 +32,7 @@ const reviews = [
     photo: "",
   },
   {
-    text: "Echo Chamber filmed a music video for my latest single and the result was absolutely cinematic. Billy has a real eye for storytelling — he understood the vision from the first conversation and brought it to life in ways I didn't even imagine. Can't wait to work together again.",
+    text: "Echo Chamber filmed a music video for my latest single and the result was absolutely cinematic. Billy has a real eye for storytelling, he understood the vision from the first conversation and brought it to life in ways I didn't even imagine. Can't wait to work together again.",
     name: "Marcus James",
     role: "Recording Artist",
     initials: "MJ",
@@ -238,7 +238,7 @@ export default function Reviews() {
     };
   }, [startAutoScroll, stopAutoScroll, stopMomentum]);
 
-  /* ── Touch swipe handlers (mobile) — with velocity tracking ── */
+  /* ── Touch swipe handlers (mobile), with velocity tracking ── */
   const onTouchStart = useCallback((e: React.TouchEvent) => {
     stopAutoScroll();
     stopMomentum();
@@ -279,7 +279,7 @@ export default function Reviews() {
     }
   }, [scheduleResume, startMomentum]);
 
-  /* ── Mouse drag handlers (desktop) — with velocity tracking ── */
+  /* ── Mouse drag handlers (desktop), with velocity tracking ── */
   const onMouseDown = useCallback((e: React.MouseEvent) => {
     isDragging.current = true;
     stopAutoScroll();

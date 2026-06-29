@@ -148,21 +148,21 @@ export default function VideoWalkthroughPage() {
           </div>
         </section>
 
-        {/* Live Showcase — Kuula 360 Portfolio */}
+        {/* Live Showcase, Kuula 360 Portfolio */}
         <section id="showcase" className="py-20 px-6 bg-brand-black">
           <div className="max-w-5xl mx-auto">
             <h2 className="font-heading text-4xl lg:text-5xl font-black text-brand-gold mb-6 text-center tracking-editorial">
               Explore Our 360 Tours
             </h2>
             <p className="font-body text-brand-gray text-center max-w-2xl mx-auto mb-12">
-              Browse our portfolio of interactive 360 walkthroughs below. Click, drag, and explore — this is exactly what your clients will experience.
+              Browse our portfolio of interactive 360 walkthroughs below. Click, drag, and explore, this is exactly what your clients will experience.
             </p>
 
             {/* Kuula Embed */}
             <div className="w-full border border-brand-gold/20">
               <iframe
                 src="https://kuula.co/share/collection/7Hrpm?logo=1&info=1&fs=1&vr=0&sd=1&thumbs=1"
-                title="Echo Chamber Media — 360 Walkthrough Portfolio"
+                title="Echo Chamber Media, 360 Walkthrough Portfolio"
                 width="100%"
                 height="640"
                 frameBorder="0"
@@ -241,7 +241,7 @@ export default function VideoWalkthroughPage() {
                   What&apos;s the difference between 360 photos and 360 video walkthroughs?
                 </h3>
                 <p className="font-body text-brand-off-white leading-relaxed">
-                  360 photos are static images you can pan around. 360 video walkthroughs are immersive moving tours—your camera flows smoothly through the property, creating a cinematic experience. Video feels more natural and engages viewers longer than static photos alone.
+                  360 photos are static images you can pan around. 360 video walkthroughs are immersive moving tours, your camera flows smoothly through the property, creating a cinematic experience. Video feels more natural and engages viewers longer than static photos alone.
                 </p>
               </div>
 
@@ -250,7 +250,7 @@ export default function VideoWalkthroughPage() {
                   How long does it take to complete a 360 video walkthrough?
                 </h3>
                 <p className="font-body text-brand-off-white leading-relaxed">
-                  We deliver finished 360 walkthroughs in 5-7 business days after filming. The shoot itself typically takes 2-4 hours depending on property size. We can rush delivery for time-sensitive listings—contact us for expedited options.
+                  We deliver finished 360 walkthroughs in 5-7 business days after filming. The shoot itself typically takes 2-4 hours depending on property size. We can rush delivery for time-sensitive listings, contact us for expedited options.
                 </p>
               </div>
 
