@@ -28,11 +28,11 @@ const posts = [
   },
   {
     slug: 'naked-city-underground-music-video',
-    title: 'Shooting My First Music Video: The Naked City Underground',
-    excerpt: 'How we captured the raw, genre-smashing energy of Las Vegas\' own outlaw country-surf punk outfit. Behind the scenes of the "Coming To Me" & "Everything\'s Alright" music video.',
+    title: 'Behind The Naked City Underground',
+    excerpt: 'A Las Vegas music video director and cinematographer breaks down the shoot: a 90s inspired look, a DIY cardboard backdrop, anamorphic lenses, and the grade behind "Everything\'s Alright" and "Coming To Me."',
     date: 'April 2, 2026',
     category: 'Case Study',
-    readTime: '5 min read',
+    readTime: '6 min read',
   },
 ];
 

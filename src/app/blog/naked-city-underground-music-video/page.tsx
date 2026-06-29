@@ -4,20 +4,68 @@ import Navbar from '@/sections/Navbar';
 import Footer from '@/sections/Footer';
 
 export const metadata: Metadata = {
-  title: 'Shooting My First Music Video: The Naked City Underground',
-  description: 'Behind the scenes of the Naked City Underground music video shot in Las Vegas. Outlaw country meets surf punk, how we captured the raw energy of Coming To Me & Everything\'s Alright.',
+  title: 'Las Vegas Music Video Director: Behind The Naked City Underground',
+  description:
+    'A Las Vegas music video director and cinematographer breaks down the Naked City Underground shoot. The U2 Numb inspired look, a DIY backdrop, anamorphic lenses, and the grade behind Everything\'s Alright and Coming To Me.',
   alternates: { canonical: 'https://echochambermedia.com/blog/naked-city-underground-music-video' },
-  keywords: 'music video production Las Vegas, Naked City Underground, behind the scenes music video, cinematography breakdown, Echo Chamber Media',
+  keywords:
+    'music video director Las Vegas, Las Vegas cinematographer, music video production Las Vegas, hire music video director, Naked City Underground, Echo Chamber Media',
   openGraph: {
-    title: 'Shooting My First Music Video: The Naked City Underground',
-    description: 'Behind the scenes of the Naked City Underground music video. Outlaw country meets surf punk, raw energy from Las Vegas\' genre-bending band.',
+    title: 'Las Vegas Music Video Director: Behind The Naked City Underground',
+    description:
+      'How a Las Vegas music video director and cinematographer shot the Naked City Underground. Outlaw country meets surf punk, a DIY backdrop, and a 90s inspired look.',
     url: 'https://echochambermedia.com/blog/naked-city-underground-music-video',
     type: 'article',
     locale: 'en_US',
   },
 };
 
+const videos = [
+  {
+    id: 'UnqTEQxPWwo',
+    label: "Everything's Alright",
+    title: "The Naked City Underground: Everything's Alright. Music Video by Echo Chamber Media",
+  },
+  {
+    id: 'x1yqQXmHCdY',
+    label: 'Coming To Me',
+    title: 'The Naked City Underground: Coming To Me. Music Video by Echo Chamber Media',
+  },
+];
+
 export default function NakedCityUndergroundPost() {
+  const articleLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    headline: 'Las Vegas Music Video Director: Behind The Naked City Underground',
+    description:
+      'A Las Vegas music video director and cinematographer breaks down the Naked City Underground shoot, the look, the gear, and the DIY backdrop.',
+    datePublished: '2026-04-02',
+    dateModified: '2026-06-29',
+    author: { '@type': 'Person', name: 'Billy Zurisk' },
+    publisher: { '@type': 'Organization', name: 'Echo Chamber Media', url: 'https://echochambermedia.com' },
+    mainEntityOfPage: 'https://echochambermedia.com/blog/naked-city-underground-music-video',
+  };
+
+  const videoLd = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    itemListElement: videos.map((v, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      item: {
+        '@type': 'VideoObject',
+        name: v.title,
+        description: `${v.label} by The Naked City Underground, a music video directed and shot in Las Vegas by Echo Chamber Media.`,
+        thumbnailUrl: `https://i.ytimg.com/vi/${v.id}/maxresdefault.jpg`,
+        uploadDate: '2026-04-02',
+        contentUrl: `https://www.youtube.com/watch?v=${v.id}`,
+        embedUrl: `https://www.youtube.com/embed/${v.id}`,
+        publisher: { '@type': 'Organization', name: 'Echo Chamber Media', url: 'https://echochambermedia.com' },
+      },
+    })),
+  };
+
   return (
     <>
       <Navbar />
@@ -26,7 +74,7 @@ export default function NakedCityUndergroundPost() {
           {/* Breadcrumb */}
           <nav className="mb-8">
             <Link href="/blog" className="text-xs uppercase tracking-editorial text-brand-gray hover:text-brand-gold font-body transition-colors">
-              ← Back to Blog
+              Back to Blog
             </Link>
           </nav>
 
@@ -37,142 +85,96 @@ export default function NakedCityUndergroundPost() {
                 Case Study
               </span>
               <span className="text-xs text-brand-gray font-body">April 2, 2026</span>
-              <span className="text-xs text-brand-gray font-body">5 min read</span>
+              <span className="text-xs text-brand-gray font-body">6 min read</span>
             </div>
             <h1 className="font-heading text-4xl lg:text-5xl uppercase tracking-editorial text-brand-off-white mb-6 leading-tight">
-              Shooting My First Music Video: The Naked City Underground
+              Behind The Naked City Underground
             </h1>
             <div className="h-px w-16 bg-brand-gold mb-6" />
             <p className="font-body text-lg text-brand-gray leading-relaxed">
-              How we captured the raw, genre-smashing energy of Las Vegas&apos; own outlaw country-surf punk outfit in their first music video.
+              How I shot two music videos for one of Las Vegas&apos; most genre-bending bands, and why it&apos;s still my favorite work to date.
             </p>
           </div>
 
           {/* Video Embeds */}
-          <div className="mb-6">
-            <p className="text-xs uppercase tracking-editorial text-brand-gold font-body mb-3">&quot;Everything&apos;s Alright&quot;</p>
-            <div className="relative w-full aspect-video border border-brand-gold/20">
-              <iframe
-                src="https://www.youtube.com/embed/UnqTEQxPWwo"
-                title="The Naked City Underground: Everything's Alright. Music Video by Echo Chamber Media"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen
-                className="absolute inset-0 w-full h-full"
-              />
+          {videos.map((v, i) => (
+            <div key={v.id} className={i === videos.length - 1 ? 'mb-12' : 'mb-6'}>
+              <p className="text-xs uppercase tracking-editorial text-brand-gold font-body mb-3">&quot;{v.label}&quot;</p>
+              <div className="relative w-full aspect-video border border-brand-gold/20">
+                <iframe
+                  src={`https://www.youtube.com/embed/${v.id}`}
+                  title={v.title}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                  className="absolute inset-0 w-full h-full"
+                />
+              </div>
             </div>
-          </div>
-          <div className="mb-12">
-            <p className="text-xs uppercase tracking-editorial text-brand-gold font-body mb-3">&quot;Coming To Me&quot;</p>
-            <div className="relative w-full aspect-video border border-brand-gold/20">
-              <iframe
-                src="https://www.youtube.com/embed/x1yqQXmHCdY"
-                title="The Naked City Underground: Coming To Me. Music Video by Echo Chamber Media"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen
-                className="absolute inset-0 w-full h-full"
-              />
-            </div>
-          </div>
+          ))}
 
           {/* Article Body */}
           <div className="prose-ecm space-y-6">
             <p className="font-body text-brand-off-white leading-relaxed text-lg">
-              Every filmmaker remembers their first music video. This one was mine. The Naked City Underground reached out looking for something that matched the feel of their sound, equal parts outlaw country grit and Southern California surf punk, with blues, jazz, and alternative rock mixed in for good measure. They&apos;re not a band you put in a box, and they didn&apos;t want a video you could put in one either.
+              The Naked City Underground came to me with songs off their album &quot;Comic Book Heroes and Honky Tonk Zeros&quot; and a simple question: what was my vision for them. So we sat down together and worked out the details. The questions I asked the band ended up doing the heavy lifting, because the answers told me what these songs were really about. That conversation is where the whole look started. As a Las Vegas music video director, that first sit-down matters more than any piece of gear.
             </p>
 
             <h2 className="font-heading text-2xl uppercase tracking-editorial text-brand-gold mt-12 mb-4">
               The Band
             </h2>
             <p className="font-body text-brand-off-white leading-relaxed">
-              The Naked City Underground is a Las Vegas original. Two world-class flair bartenders who put the bottles down, picked up instruments, and started making music that comes straight from their souls. They teamed up with some of Sin City&apos;s best recording and live performing musicians to create something you can&apos;t quite pin down, their sound fills the gaps from Waylon Jennings to Nirvana to Sublime. They&apos;ve been featured on KOMP 92.3&apos;s Homegrown Show, and the tracks we shot, &quot;Coming To Me&quot; and &quot;Everything&apos;s Alright&quot;, have racked up a combined 74,000+ plays on Spotify.
+              The Naked City Underground is a Las Vegas original. Two world-class flair bartenders put the bottles down, picked up instruments, and started making music straight from their souls. They teamed up with some of Sin City&apos;s best recording and live players to build a sound you can&apos;t put in a box, somewhere between Waylon Jennings, Nirvana, and Sublime. They&apos;ve been featured on KOMP 92.3&apos;s Homegrown Show, and the two tracks we shot, &quot;Everything&apos;s Alright&quot; and &quot;Coming To Me,&quot; have pulled in a combined 74,000 plus plays on Spotify.
             </p>
 
             <h2 className="font-heading text-2xl uppercase tracking-editorial text-brand-gold mt-12 mb-4">
-              The Approach
+              Building the Look for &quot;Everything&apos;s Alright&quot;
             </h2>
             <p className="font-body text-brand-off-white leading-relaxed">
-              The approach had to match their energy, raw, unpolished, and authentic. These guys are the exact opposite of a slick, over-produced machine, and that&apos;s what makes them great. I wanted the visuals to have that same quality: real moments, real grit, real Vegas. We leaned into dramatic contrast, handheld movement, and a pace that matched the swagger of the music.
-            </p>
-            <p className="font-body text-brand-off-white leading-relaxed">
-              Las Vegas gave us everything we needed for locations. The desert, the dive bars, the neon, it all fed into the visual language of the video. This is a band born out of the Sin City bar scene, so we kept it rooted in that world. Every frame was shot with intention, treating it more like a short film than a traditional music video.
+              For &quot;Everything&apos;s Alright,&quot; the band wanted a 90s vibe. I took inspiration from the U2 &quot;Numb&quot; video, one I&apos;ve loved for years, and then we added our own elements on top of it. Crown, cup, confetti, the whole works. I had the band and my wife act out specific parts so we could build the effects we were after instead of faking them in post. It became its own thing fast, rooted in that 90s feel but unmistakably theirs.
             </p>
 
             <h2 className="font-heading text-2xl uppercase tracking-editorial text-brand-gold mt-12 mb-4">
-              The Technical Side
+              The DIY Backdrop
             </h2>
             <p className="font-body text-brand-off-white leading-relaxed">
-              Being my first music video, I was hyper-focused on the fundamentals: camera movement that served the music, lighting that created mood without overpowering the performance, and color grading that unified everything into a cohesive visual world. Every shot was planned with the edit in mind, where the cuts would land, how the energy would build, where we&apos;d let a moment breathe.
-            </p>
-            <p className="font-body text-brand-off-white leading-relaxed">
-              Post-production was where it really came together. The color grade leaned into warm tones and gritty texture, honky-tonk golds, desert heat, and just enough contrast to keep things cinematic without losing the raw, lived-in feel the band brings naturally.
+              The biggest piece of the puzzle was the black backdrop, and we built it by hand. My wife and I broke down cardboard boxes and drilled holes through them so light could shine through and give us the effect we wanted. It was about as low budget as it gets, and I still can&apos;t believe how good it turned out. That is the part I am most proud of. A real look does not always come from expensive gear. Sometimes it comes from a stack of cardboard and a drill.
             </p>
 
             <h2 className="font-heading text-2xl uppercase tracking-editorial text-brand-gold mt-12 mb-4">
-              What I Learned
+              The Gear and the Grade
             </h2>
             <p className="font-body text-brand-off-white leading-relaxed">
-              Shooting a music video is a completely different discipline than corporate work or weddings. The music is the edit. Every cut, every transition, every camera movement has to serve the rhythm. You&apos;re not telling a story in the traditional sense, you&apos;re building a feeling. That lesson carried into everything I&apos;ve shot since, including <Link href="/#featured-film" className="text-brand-gold hover:underline">The Classified Mind</Link>, our award-winning short film.
-            </p>
-            <p className="font-body text-brand-off-white leading-relaxed">
-              This project also confirmed something I already suspected: Las Vegas is an incredible city for music video production. The locations, the light, the energy, it&apos;s all here. If you&apos;re an artist looking to shoot something cinematic in Vegas, <Link href="/#contact" className="text-brand-gold hover:underline">let&apos;s talk</Link>.
+              We shot on the DJI Ronin 4D, the cinematic camera with the chicken head, on 35mm anamorphic lenses, then handled the color grade in house. The most surprising trick was speeding up the music so the band could perform to it, then slowing the footage back down. That single move did more for the final look than anything else. It gave the performances a heavy, dreamlike quality that fits the song.
             </p>
 
-            {/* Production Credits */}
-            <div className="border-t border-brand-charcoal pt-8 mt-12">
-              <h3 className="text-sm uppercase tracking-editorial text-brand-gold font-body mb-6">
-                Production Credits
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3">
-                <div>
-                  <span className="text-xs uppercase tracking-editorial text-brand-gray font-body">Artist</span>
-                  <p className="text-brand-off-white font-body text-sm mt-0.5">The Naked City Underground</p>
-                </div>
-                <div>
-                  <span className="text-xs uppercase tracking-editorial text-brand-gray font-body">Tracks</span>
-                  <p className="text-brand-off-white font-body text-sm mt-0.5">Coming To Me &amp; Everything&apos;s Alright</p>
-                </div>
-                <div>
-                  <span className="text-xs uppercase tracking-editorial text-brand-gray font-body">Cinematography</span>
-                  <p className="text-brand-off-white font-body text-sm mt-0.5">Billy Zurisk</p>
-                </div>
-                <div>
-                  <span className="text-xs uppercase tracking-editorial text-brand-gray font-body">Production</span>
-                  <p className="text-brand-off-white font-body text-sm mt-0.5">Echo Chamber Media</p>
-                </div>
-                <div>
-                  <span className="text-xs uppercase tracking-editorial text-brand-gray font-body">Location</span>
-                  <p className="text-brand-off-white font-body text-sm mt-0.5">Las Vegas, Nevada</p>
-                </div>
-                <div>
-                  <span className="text-xs uppercase tracking-editorial text-brand-gray font-body">Listen</span>
-                  <p className="text-brand-off-white font-body text-sm mt-0.5">
-                    <a href="https://open.spotify.com/artist/43ViaCnj8lJLmilAbhfD6j" target="_blank" rel="noopener noreferrer" className="text-brand-gold hover:underline">
-                      Spotify
-                    </a>
-                  </p>
-                </div>
-              </div>
-            </div>
+            <h2 className="font-heading text-2xl uppercase tracking-editorial text-brand-gold mt-12 mb-4">
+              The Result
+            </h2>
+            <p className="font-body text-brand-off-white leading-relaxed">
+              When the band saw it, the response was &quot;holy shit that&apos;s rad.&quot; We were thrilled with how it came out. &quot;Everything&apos;s Alright&quot; is still my favorite music video I&apos;ve shot. It is proof of what happens when a band trusts the process and a director and cinematographer treats a music video like a short film instead of a quick shoot.
+            </p>
           </div>
 
           {/* CTA */}
           <div className="mt-16 p-8 bg-brand-charcoal/40 border border-brand-gold/20 text-center">
             <h3 className="font-heading text-xl uppercase tracking-editorial text-brand-gold mb-3">
-              Ready to Shoot Your Music Video?
+              Need a Music Video Director in Las Vegas?
             </h3>
             <p className="font-body text-brand-gray mb-6 max-w-lg mx-auto">
-              We bring cinematic production quality to every project. Tell us about your vision and let&apos;s create something unforgettable.
+              If you&apos;re a musician looking for a director and cinematographer who treats your song like a film, let&apos;s talk. Tell me the track and the vision, and I&apos;ll bring the rest. See more on our <Link href="/services/music-videos" className="text-brand-gold hover:underline">Las Vegas music video production page</Link>.
             </p>
             <Link
               href="/services/music-videos#contact"
               className="inline-block px-8 py-3 border border-brand-gold/60 text-brand-off-white font-body text-sm uppercase tracking-editorial hover:bg-brand-gold/10 transition-all duration-500"
             >
-              Start Your Project
+              Start Your Music Video
             </Link>
           </div>
         </article>
       </main>
       <Footer />
+
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(videoLd) }} />
     </>
   );
 }
