@@ -19,6 +19,14 @@ export const metadata: Metadata = {
 
 const posts = [
   {
+    slug: 'best-las-vegas-wedding-venues-for-video',
+    title: 'Best Las Vegas Wedding Venues for Cinematic Video',
+    excerpt: 'The venues that actually film well, picked by a working videographer. Rooftops above the Strip, Red Rock desert gardens, luxury ballrooms, and an old west ghost town.',
+    date: 'June 29, 2026',
+    category: 'Venue Guide',
+    readTime: '8 min read',
+  },
+  {
     slug: 'wedding-videographer-cost-las-vegas',
     title: 'How Much Does a Wedding Videographer Cost in Las Vegas?',
     excerpt: 'A straight answer on 2026 pricing, what actually drives the number, and how to tell a real wedding video package from a cheap one.',
