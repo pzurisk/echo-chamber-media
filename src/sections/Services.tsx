@@ -61,6 +61,18 @@ const services = [
       </svg>
     ),
   },
+  {
+    title: "Photography",
+    description: "Weddings, engagements, brand shoots, and Vegas tourist sessions.",
+    href: "/services/wedding-photography",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-8 h-8">
+        <rect x="2" y="6" width="20" height="14" rx="2" />
+        <path d="M16 2v4M8 2v4" />
+        <circle cx="12" cy="13" r="3.5" />
+      </svg>
+    ),
+  },
 ];
 
 interface ServicePanelProps {
@@ -136,11 +148,21 @@ export default function Services() {
 
       {/* Comic strip panel layout — service panels in a row */}
       <div className="border border-brand-charcoal">
-        <div className="grid grid-cols-2 md:grid-cols-5">
+        <div className="grid grid-cols-2 md:grid-cols-3 [&>a:nth-child(3n)]:md:border-r-0 [&>a:nth-last-child(-n+3)]:md:border-b-0">
           {services.map((service, i) => (
             <ServicePanel key={service.title} index={i} {...service} />
           ))}
         </div>
+      </div>
+
+      {/* Bottom CTA */}
+      <div className="text-center mt-12">
+        <a
+          href="#contact"
+          className="inline-block text-xs uppercase tracking-[0.2em] text-brand-black bg-brand-gold px-8 py-4 font-body font-semibold hover:bg-brand-gold-hover transition-all duration-300"
+        >
+          Start Your Project
+        </a>
       </div>
     </SectionWrapper>
   );

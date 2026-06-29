@@ -1,8 +1,9 @@
 import Navbar from "@/sections/Navbar";
 import Hero from "@/sections/Hero";
+import TrustStrip from "@/sections/TrustStrip";
 import Services from "@/sections/Services";
-import FeaturedFilm from "@/sections/FeaturedFilm";
 import Portfolio from "@/sections/Portfolio";
+import FeaturedFilm from "@/sections/FeaturedFilm";
 import About from "@/sections/About";
 import Reviews from "@/sections/Reviews";
 import Contact from "@/sections/Contact";
@@ -14,9 +15,10 @@ export default function Home() {
       <Navbar />
       <main>
         <Hero />
+        <TrustStrip />
         <Services />
-        <FeaturedFilm />
         <Portfolio />
+        <FeaturedFilm />
         <About />
         <Reviews />
         <Contact />

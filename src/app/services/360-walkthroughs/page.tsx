@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import Navbar from '@/sections/Navbar';
 import Footer from '@/sections/Footer';
+import Link from 'next/link';
 
 // This must be exported for Next.js metadata
 export const metadata: Metadata = {
@@ -279,6 +280,28 @@ export default function VideoWalkthroughPage() {
                   Contact us at Echochambermediasales@gmail.com or use the form below. We&apos;ll discuss your property, timeline, and vision. Once you&apos;re ready, we&apos;ll schedule a shoot date and get started on creating an immersive tour for your listing.
                 </p>
               </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Related Services */}
+        <section className="py-20 px-6 bg-brand-black">
+          <div className="max-w-6xl mx-auto">
+            <h2 className="font-heading text-4xl sm:text-5xl font-black mb-4 text-brand-gold tracking-editorial">Related Services</h2>
+            <p className="text-brand-gray text-lg mb-12">Explore the rest of what we offer.</p>
+            <div className="grid sm:grid-cols-3 gap-6">
+              <Link href="/services/wedding-videography" className="block bg-brand-charcoal p-6 rounded-lg border border-brand-gold border-opacity-30 hover:border-opacity-80 transition-all">
+                <h3 className="font-heading text-xl font-black text-brand-gold mb-2 tracking-editorial">Wedding Videography</h3>
+                <p className="text-brand-gray text-sm">Cinematic wedding films shot and edited like a short film.</p>
+              </Link>
+              <Link href="/services/corporate" className="block bg-brand-charcoal p-6 rounded-lg border border-brand-gold border-opacity-30 hover:border-opacity-80 transition-all">
+                <h3 className="font-heading text-xl font-black text-brand-gold mb-2 tracking-editorial">Corporate & Commercial</h3>
+                <p className="text-brand-gray text-sm">Tight, well-paced brand and commercial videos people watch to the end.</p>
+              </Link>
+              <Link href="/services/documentary" className="block bg-brand-charcoal p-6 rounded-lg border border-brand-gold border-opacity-30 hover:border-opacity-80 transition-all">
+                <h3 className="font-heading text-xl font-black text-brand-gold mb-2 tracking-editorial">Documentary</h3>
+                <p className="text-brand-gray text-sm">From interview through final cut. Shooting, sound, and edit handled.</p>
+              </Link>
             </div>
           </div>
         </section>

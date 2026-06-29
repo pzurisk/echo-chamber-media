@@ -102,12 +102,23 @@ export default function Navbar() {
             </a>
           ))}
 
-          {/* Email CTA — direct contact path */}
+          {/* Phone link */}
           <a
-            href="mailto:Echochambermediasales@gmail.com"
-            className="text-xs uppercase tracking-editorial text-brand-gold border border-brand-gold/40 px-4 py-2 hover:bg-brand-gold hover:text-brand-black transition-all duration-300 font-body"
+            href="tel:+19893081633"
+            className="hidden lg:flex items-center gap-2 text-xs uppercase tracking-editorial text-brand-off-white hover:text-brand-gold font-body transition-colors duration-300"
           >
-            Email Us
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-brand-gold">
+              <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" />
+            </svg>
+            (989) 308-1633
+          </a>
+
+          {/* Quote CTA — primary conversion button */}
+          <a
+            href="#contact"
+            className="text-xs uppercase tracking-editorial text-brand-black bg-brand-gold border border-brand-gold px-4 py-2 hover:bg-brand-gold-hover transition-all duration-300 font-body font-semibold"
+          >
+            Get a Quote
           </a>
         </div>
 
@@ -148,11 +159,21 @@ export default function Navbar() {
             </a>
           ))}
           <a
-            href="mailto:Echochambermediasales@gmail.com"
+            href="tel:+19893081633"
             onClick={() => setMenuOpen(false)}
-            className="text-sm uppercase tracking-editorial text-brand-gold font-body transition-colors duration-300 border border-brand-gold/40 px-4 py-2 mt-2 inline-block w-fit"
+            className="text-sm uppercase tracking-editorial text-brand-off-white font-body transition-colors duration-300 flex items-center gap-2"
           >
-            Email Us
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-brand-gold">
+              <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" />
+            </svg>
+            (989) 308-1633
+          </a>
+          <a
+            href="#contact"
+            onClick={() => setMenuOpen(false)}
+            className="text-sm uppercase tracking-editorial text-brand-black bg-brand-gold font-body transition-colors duration-300 px-4 py-3 mt-2 inline-block w-fit font-semibold"
+          >
+            Get a Quote
           </a>
         </div>
       </div>

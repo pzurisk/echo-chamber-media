@@ -80,43 +80,66 @@ export const metadata: Metadata = {
 
 const jsonLd = {
   "@context": "https://schema.org",
-  "@type": "VideoProductionCompany",
+  "@type": ["LocalBusiness", "ProfessionalService"],
   name: "Echo Chamber Media",
   url: "https://echochambermedia.com",
+  image: "https://echochambermedia.com/images/the%20classified%20mind.png",
+  telephone: "+1-989-308-1633",
+  email: "Echochambermediasales@gmail.com",
   description:
-    "Cinematic video production company based in Las Vegas specializing in wedding films, brand content, commercials, documentaries, and live events.",
+    "Cinematic video production company based in Las Vegas specializing in wedding films, brand content, commercials, documentaries, music videos, and property walk-throughs.",
+  priceRange: "$$",
   address: {
     "@type": "PostalAddress",
     addressLocality: "Las Vegas",
     addressRegion: "NV",
     addressCountry: "US",
   },
-  areaServed: {
-    "@type": "Place",
-    name: "Las Vegas, Nevada",
-  },
-  serviceType: [
-    "Wedding Videography",
-    "Wedding Photography",
-    "Corporate Video Production",
-    "Commercial Production",
-    "Documentary Filmmaking",
-    "Real Estate Video Tours",
-    "Live Event Coverage",
-    "Vacation Photography",
-    "Event Photography",
+  areaServed: [
+    { "@type": "City", name: "Las Vegas" },
+    { "@type": "City", name: "Henderson" },
+    { "@type": "City", name: "North Las Vegas" },
+    { "@type": "City", name: "Paradise" },
+    { "@type": "City", name: "Summerlin" },
+    { "@type": "City", name: "Spring Valley" },
+    { "@type": "City", name: "Enterprise" },
+  ],
+  sameAs: [
+    "https://instagram.com/chunkdude",
+    "https://www.tiktok.com/@billyzurisk",
+    "https://www.facebook.com/share/18S1WRCyMq/",
   ],
   founder: {
     "@type": "Person",
     name: "Billy Zurisk",
   },
+  hasOfferCatalog: {
+    "@type": "OfferCatalog",
+    name: "Video Production Services",
+    itemListElement: [
+      { "@type": "Offer", itemOffered: { "@type": "Service", name: "Wedding Videography" } },
+      { "@type": "Offer", itemOffered: { "@type": "Service", name: "Wedding Photography" } },
+      { "@type": "Offer", itemOffered: { "@type": "Service", name: "Corporate & Commercial Video" } },
+      { "@type": "Offer", itemOffered: { "@type": "Service", name: "Music Video Production" } },
+      { "@type": "Offer", itemOffered: { "@type": "Service", name: "Documentary Production" } },
+      { "@type": "Offer", itemOffered: { "@type": "Service", name: "Real Estate Videography" } },
+      { "@type": "Offer", itemOffered: { "@type": "Service", name: "360 Virtual Walkthroughs" } },
+      { "@type": "Offer", itemOffered: { "@type": "Service", name: "Aerial Videography" } },
+    ],
+  },
 };
+
+// GA4 Measurement ID. Get from analytics.google.com → Admin → Data Streams → Web → Measurement ID.
+// Set via NEXT_PUBLIC_GA_ID env var, or replace the placeholder below.
+const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_ID || "G-XXXXXXXXXX";
 
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const hasGA = GA_MEASUREMENT_ID && GA_MEASUREMENT_ID !== "G-XXXXXXXXXX";
+
   return (
     <html lang="en" className="dark">
       <head>
@@ -124,6 +147,27 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
+        {hasGA && (
+          <>
+            <script
+              async
+              src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+            />
+            <script
+              dangerouslySetInnerHTML={{
+                __html: `
+                  window.dataLayer = window.dataLayer || [];
+                  function gtag(){dataLayer.push(arguments);}
+                  gtag('js', new Date());
+                  gtag('config', '${GA_MEASUREMENT_ID}', {
+                    anonymize_ip: true,
+                    send_page_view: true
+                  });
+                `,
+              }}
+            />
+          </>
+        )}
       </head>
       <body
         className={`${archivoBlack.variable} ${montserrat.variable} font-body antialiased bg-brand-black text-brand-off-white`}

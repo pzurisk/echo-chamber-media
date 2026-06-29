@@ -5,15 +5,55 @@ import Link from "next/link";
 import SectionWrapper from "@/components/SectionWrapper";
 import Heading from "@/components/Heading";
 
-const projects = [
+const projects: {
+  title: string;
+  type: string;
+  description: string;
+  youtubeId: string;
+  href?: string;
+  // uploadDate: the video's real publish date (YYYY-MM-DD). Required for VideoObject
+  // schema. Update these to each clip's actual YouTube publish date.
+  uploadDate: string;
+}[] = [
   {
     title: "The Naked City Underground",
     type: "Music Video",
     description: "Outlaw country meets surf punk. Raw energy from Las Vegas' genre-bending band. \"Coming To Me\" & \"Everything's Alright.\"",
     youtubeId: "x1yqQXmHCdY",
     href: "/blog/naked-city-underground-music-video",
+    uploadDate: "2026-04-02",
+  },
+  {
+    title: "Doritos — Spec Commercial",
+    type: "Commercial / Spec",
+    description: "Spec commercial for Doritos. Cinematic execution and full production process. The same playbook we bring to paid national campaigns.",
+    youtubeId: "zFlXJVtnv-U",
+    uploadDate: "2026-04-02", // TODO: set to the real YouTube publish date
   },
 ];
+
+const videoJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  itemListElement: projects.map((p, i) => ({
+    "@type": "ListItem",
+    position: i + 1,
+    item: {
+      "@type": "VideoObject",
+      name: `${p.title} — Echo Chamber Media`,
+      description: p.description,
+      thumbnailUrl: `https://i.ytimg.com/vi/${p.youtubeId}/maxresdefault.jpg`,
+      uploadDate: p.uploadDate,
+      contentUrl: `https://www.youtube.com/watch?v=${p.youtubeId}`,
+      embedUrl: `https://www.youtube.com/embed/${p.youtubeId}`,
+      publisher: {
+        "@type": "Organization",
+        name: "Echo Chamber Media",
+        url: "https://echochambermedia.com",
+      },
+    },
+  })),
+};
 
 function ProjectCard({
   title,
@@ -27,7 +67,7 @@ function ProjectCard({
   type: string;
   description: string;
   youtubeId: string;
-  href: string;
+  href?: string;
   index: number;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -78,12 +118,14 @@ function ProjectCard({
       <p className="text-sm text-brand-gray font-body leading-relaxed mb-4">
         {description}
       </p>
-      <Link
-        href={href}
-        className="text-xs uppercase tracking-editorial text-brand-gold font-body hover:text-brand-off-white transition-colors duration-300"
-      >
-        Read the Case Study →
-      </Link>
+      {href && (
+        <Link
+          href={href}
+          className="text-xs uppercase tracking-editorial text-brand-gold font-body hover:text-brand-off-white transition-colors duration-300"
+        >
+          Read the Case Study →
+        </Link>
+      )}
     </div>
   );
 }
@@ -91,6 +133,10 @@ function ProjectCard({
 export default function Portfolio() {
   return (
     <SectionWrapper id="portfolio" dark={false}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(videoJsonLd) }}
+      />
       <div className="text-center mb-16">
         <p className="text-sm uppercase tracking-editorial text-brand-gold font-body mb-4">
           Our Work

@@ -25,16 +25,22 @@ export default function Footer() {
               Get in touch
             </p>
             <a
+              href="tel:+19893081633"
+              className="block text-sm text-brand-off-white hover:text-brand-gold font-body transition-colors duration-300 mb-2"
+            >
+              (989) 308-1633
+            </a>
+            <a
               href="mailto:Echochambermediasales@gmail.com"
-              className="block text-sm text-brand-off-white hover:text-brand-gold font-body transition-colors duration-300 break-all"
+              className="block text-sm text-brand-gray hover:text-brand-gold font-body transition-colors duration-300 break-all"
             >
               Echochambermediasales@gmail.com
             </a>
             <Link
               href="/#contact"
-              className="mt-3 inline-block text-xs uppercase tracking-editorial text-brand-gold border border-brand-gold/40 px-4 py-2 hover:bg-brand-gold hover:text-brand-black transition-all duration-300 font-body"
+              className="mt-4 inline-block text-xs uppercase tracking-editorial text-brand-black bg-brand-gold border border-brand-gold px-4 py-2 hover:bg-brand-gold-hover transition-all duration-300 font-body font-semibold"
             >
-              Start a Project
+              Get a Free Quote
             </Link>
           </div>
 

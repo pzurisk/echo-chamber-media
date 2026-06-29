@@ -51,7 +51,7 @@ export default function WeddingVideographyPage() {
                 Book Your Consultation
               </a>
               <Link
-                href="/"
+                href="/#portfolio"
                 className="inline-block px-8 py-4 border-2 border-brand-gold text-brand-gold font-heading font-black rounded hover:bg-brand-gold hover:text-brand-black transition-all backdrop-blur-sm bg-black/20"
               >
                 View Our Work
@@ -389,6 +389,53 @@ export default function WeddingVideographyPage() {
           </div>
         </section>
 
+        {/* Related Services */}
+        <section className="py-20 px-4 sm:px-6 lg:px-8 bg-brand-charcoal">
+          <div className="max-w-6xl mx-auto">
+            <h2 className="font-heading text-4xl sm:text-5xl font-black mb-4 text-brand-gold tracking-editorial">
+              Related Services
+            </h2>
+            <p className="text-brand-gray text-lg mb-12">
+              Planning a Las Vegas wedding? Explore the rest of what we offer.
+            </p>
+            <div className="grid sm:grid-cols-3 gap-6">
+              <Link
+                href="/services/wedding-photography"
+                className="block bg-brand-black p-6 rounded-lg border border-brand-gold border-opacity-30 hover:border-opacity-80 transition-all"
+              >
+                <h3 className="font-heading text-xl font-black text-brand-gold mb-2 tracking-editorial">
+                  Wedding Photography
+                </h3>
+                <p className="text-brand-gray text-sm">
+                  Coverage from getting ready through the reception, delivered in a shareable gallery.
+                </p>
+              </Link>
+              <Link
+                href="/services/360-walkthroughs"
+                className="block bg-brand-black p-6 rounded-lg border border-brand-gold border-opacity-30 hover:border-opacity-80 transition-all"
+              >
+                <h3 className="font-heading text-xl font-black text-brand-gold mb-2 tracking-editorial">
+                  360° Walkthroughs
+                </h3>
+                <p className="text-brand-gray text-sm">
+                  Immersive venue tours so guests and planners can explore the space from anywhere.
+                </p>
+              </Link>
+              <Link
+                href="/services/documentary"
+                className="block bg-brand-black p-6 rounded-lg border border-brand-gold border-opacity-30 hover:border-opacity-80 transition-all"
+              >
+                <h3 className="font-heading text-xl font-black text-brand-gold mb-2 tracking-editorial">
+                  Documentary
+                </h3>
+                <p className="text-brand-gray text-sm">
+                  Story-driven films from interview through final cut, for the moments worth keeping.
+                </p>
+              </Link>
+            </div>
+          </div>
+        </section>
+
         {/* CTA Section */}
         <section id="contact" className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-brand-charcoal to-brand-black">
           <div className="max-w-4xl mx-auto text-center">
@@ -407,45 +454,77 @@ export default function WeddingVideographyPage() {
           </div>
         </section>
 
-        {/* JSON-LD Structured Data */}
+        {/* JSON-LD: Service */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               '@context': 'https://schema.org',
-              '@type': 'VideoProductionCompany',
-              name: 'Echo Chamber Media',
-              image: 'https://echochambermedia.com/logo.png',
-              description:
-                'Award-winning wedding videographer in Las Vegas specializing in cinematic wedding films and professional wedding video production.',
-              address: {
-                '@type': 'PostalAddress',
-                addressLocality: 'Las Vegas',
-                addressRegion: 'NV',
-                addressCountry: 'US',
-              },
-              areaServed: {
-                '@type': 'City',
-                name: 'Las Vegas',
-              },
-              url: 'https://echochambermedia.com',
-              priceRange: '$$',
+              '@type': 'Service',
+              name: 'Wedding Videography',
               serviceType: 'Wedding Videography',
-              founder: {
-                '@type': 'Person',
-                name: 'Billy Zurisk',
+              description:
+                'Cinematic wedding video production for Las Vegas weddings, with multi-camera coverage, professional audio, color grading, and a teaser, highlights, and full film.',
+              areaServed: { '@type': 'City', name: 'Las Vegas' },
+              provider: {
+                '@type': 'LocalBusiness',
+                name: 'Echo Chamber Media',
+                url: 'https://echochambermedia.com',
+                telephone: '+1-989-308-1633',
               },
-              aggregateRating: {
-                '@type': 'AggregateRating',
-                ratingValue: '5',
-                ratingCount: '50',
-              },
-              service: {
-                '@type': 'Service',
-                name: 'Wedding Videography',
-                description:
-                  'Cinematic wedding video production for Las Vegas weddings',
-              },
+            }),
+          }}
+        />
+
+        {/* JSON-LD: FAQ */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'FAQPage',
+              mainEntity: [
+                {
+                  '@type': 'Question',
+                  name: 'How much does a Las Vegas wedding videographer cost?',
+                  acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: 'Our wedding videography packages vary based on coverage time, travel, and deliverables. We offer flexible options to fit different budgets. Contact us for a custom quote tailored to your Las Vegas wedding videography needs.',
+                  },
+                },
+                {
+                  '@type': 'Question',
+                  name: 'When should I book my wedding videographer?',
+                  acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: 'We recommend booking your wedding videographer as soon as you set your date. Popular dates in Las Vegas fill quickly, and early booking ensures you get the cinematographer you want for your special day.',
+                  },
+                },
+                {
+                  '@type': 'Question',
+                  name: 'How long does it take to get my wedding film?',
+                  acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: 'We typically deliver your complete wedding videography package within 6 to 8 weeks of your wedding date. This timeline allows us to provide the premium editing, color grading, and sound design that makes your film truly cinematic.',
+                  },
+                },
+                {
+                  '@type': 'Question',
+                  name: 'Can you work at my specific Las Vegas wedding venue?',
+                  acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: 'Yes. We film weddings at all Las Vegas venues, from intimate chapels to grand ballrooms and outdoor desert locations. We coordinate with your venue to understand any specific requirements for our coverage.',
+                  },
+                },
+                {
+                  '@type': 'Question',
+                  name: 'What if I want to use a different song for my wedding film?',
+                  acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: 'We work with you to select the perfect music for your wedding video. If you have a specific song in mind, we can license it and incorporate it into your cinematic wedding film. If not, we will suggest music that matches your vision.',
+                  },
+                },
+              ],
             }),
           }}
         />
