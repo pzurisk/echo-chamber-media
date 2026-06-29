@@ -1,5 +1,6 @@
 import Navbar from '@/sections/Navbar';
 import Footer from '@/sections/Footer';
+import Link from 'next/link';
 
 export const metadata = {
   title: 'Las Vegas Photographer & Videographer | Professional Photos & Video in Vegas',
@@ -262,6 +263,28 @@ export default function LasVegasPhotographerPage() {
                 Yes! Multi-location shoots are our specialty. Want the Strip, a desert backdrop, and Fremont Street all in one session? We&apos;ll make it happen. Just let us know your vision and we&apos;ll create a shot list that maximizes locations and lighting throughout the day.
               </p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Related Services */}
+      <section className="py-20 px-6 bg-brand-black">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="font-heading text-4xl sm:text-5xl font-black mb-4 text-brand-gold tracking-editorial">Related Services</h2>
+          <p className="text-brand-gray text-lg mb-12">Explore the rest of what we offer.</p>
+          <div className="grid sm:grid-cols-3 gap-6">
+            <Link href="/services/wedding-photography" className="block bg-brand-charcoal p-6 rounded-lg border border-brand-gold border-opacity-30 hover:border-opacity-80 transition-all">
+              <h3 className="font-heading text-xl font-black text-brand-gold mb-2 tracking-editorial">Wedding Photography</h3>
+              <p className="text-brand-gray text-sm">Coverage from getting ready through the reception, in a shareable gallery.</p>
+            </Link>
+            <Link href="/services/wedding-videography" className="block bg-brand-charcoal p-6 rounded-lg border border-brand-gold border-opacity-30 hover:border-opacity-80 transition-all">
+              <h3 className="font-heading text-xl font-black text-brand-gold mb-2 tracking-editorial">Wedding Videography</h3>
+              <p className="text-brand-gray text-sm">Cinematic wedding films shot and edited like a short film.</p>
+            </Link>
+            <Link href="/services/music-videos" className="block bg-brand-charcoal p-6 rounded-lg border border-brand-gold border-opacity-30 hover:border-opacity-80 transition-all">
+              <h3 className="font-heading text-xl font-black text-brand-gold mb-2 tracking-editorial">Music Videos</h3>
+              <p className="text-brand-gray text-sm">Concept to final delivery. You bring the song, we handle the rest.</p>
+            </Link>
           </div>
         </div>
       </section>

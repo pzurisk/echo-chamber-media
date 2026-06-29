@@ -1,6 +1,7 @@
 import { Metadata } from 'next'
 import Navbar from '@/sections/Navbar'
 import Footer from '@/sections/Footer'
+import Link from 'next/link';
 
 export const metadata: Metadata = {
   title: 'Documentary Production Las Vegas | Cinematic Documentary Filmmaker',
@@ -299,6 +300,28 @@ export default function DocumentaryPage() {
                 </p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Related Services */}
+      <section className="py-20 px-6 bg-brand-black">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="font-heading text-4xl sm:text-5xl font-black mb-4 text-brand-gold tracking-editorial">Related Services</h2>
+          <p className="text-brand-gray text-lg mb-12">Explore the rest of what we offer.</p>
+          <div className="grid sm:grid-cols-3 gap-6">
+            <Link href="/services/corporate" className="block bg-brand-charcoal p-6 rounded-lg border border-brand-gold border-opacity-30 hover:border-opacity-80 transition-all">
+              <h3 className="font-heading text-xl font-black text-brand-gold mb-2 tracking-editorial">Corporate & Commercial</h3>
+              <p className="text-brand-gray text-sm">Tight, well-paced brand and commercial videos people watch to the end.</p>
+            </Link>
+            <Link href="/services/music-videos" className="block bg-brand-charcoal p-6 rounded-lg border border-brand-gold border-opacity-30 hover:border-opacity-80 transition-all">
+              <h3 className="font-heading text-xl font-black text-brand-gold mb-2 tracking-editorial">Music Videos</h3>
+              <p className="text-brand-gray text-sm">Concept to final delivery. You bring the song, we handle the rest.</p>
+            </Link>
+            <Link href="/services/wedding-videography" className="block bg-brand-charcoal p-6 rounded-lg border border-brand-gold border-opacity-30 hover:border-opacity-80 transition-all">
+              <h3 className="font-heading text-xl font-black text-brand-gold mb-2 tracking-editorial">Wedding Videography</h3>
+              <p className="text-brand-gray text-sm">Cinematic wedding films shot and edited like a short film.</p>
+            </Link>
           </div>
         </div>
       </section>

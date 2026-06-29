@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import Image from 'next/image';
 import Navbar from '@/sections/Navbar';
 import Footer from '@/sections/Footer';
+import Link from 'next/link';
 
 // This must be exported for Next.js metadata
 export const metadata: Metadata = {
@@ -486,6 +487,28 @@ export default function WeddingPhotographyPage() {
                   Engagement sessions are included in most packages and are a great way to get comfortable in front of the camera before the wedding day. We also offer standalone bridal portrait sessions and can photograph rehearsals. Contact us to discuss add-ons.
                 </p>
               </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Related Services */}
+        <section className="py-20 px-6 bg-brand-black">
+          <div className="max-w-6xl mx-auto">
+            <h2 className="font-heading text-4xl sm:text-5xl font-black mb-4 text-brand-gold tracking-editorial">Related Services</h2>
+            <p className="text-brand-gray text-lg mb-12">Explore the rest of what we offer.</p>
+            <div className="grid sm:grid-cols-3 gap-6">
+              <Link href="/services/wedding-videography" className="block bg-brand-charcoal p-6 rounded-lg border border-brand-gold border-opacity-30 hover:border-opacity-80 transition-all">
+                <h3 className="font-heading text-xl font-black text-brand-gold mb-2 tracking-editorial">Wedding Videography</h3>
+                <p className="text-brand-gray text-sm">Cinematic wedding films shot and edited like a short film.</p>
+              </Link>
+              <Link href="/services/las-vegas-photographer" className="block bg-brand-charcoal p-6 rounded-lg border border-brand-gold border-opacity-30 hover:border-opacity-80 transition-all">
+                <h3 className="font-heading text-xl font-black text-brand-gold mb-2 tracking-editorial">Las Vegas Photographer</h3>
+                <p className="text-brand-gray text-sm">Engagements, brand shoots, and Vegas tourist sessions.</p>
+              </Link>
+              <Link href="/services/360-walkthroughs" className="block bg-brand-charcoal p-6 rounded-lg border border-brand-gold border-opacity-30 hover:border-opacity-80 transition-all">
+                <h3 className="font-heading text-xl font-black text-brand-gold mb-2 tracking-editorial">360° Walkthroughs</h3>
+                <p className="text-brand-gray text-sm">Immersive property and venue tours, color-graded like a film.</p>
+              </Link>
             </div>
           </div>
         </section>

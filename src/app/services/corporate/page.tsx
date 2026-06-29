@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import Navbar from '@/sections/Navbar';
 import Footer from '@/sections/Footer';
+import Link from 'next/link';
 
 // This must be exported for Next.js metadata
 export const metadata: Metadata = {
@@ -311,6 +312,28 @@ export default function CorporateVideoPage() {
                   Yes to both. We help scout locations to maximize visual impact, handle all logistics, and can shoot at multiple locations in a single project. Whether on-location at your business, on-location around Las Vegas, or at a controlled studio set, we adapt our approach to your vision and budget.
                 </p>
               </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Related Services */}
+        <section className="py-20 px-6 bg-brand-black">
+          <div className="max-w-6xl mx-auto">
+            <h2 className="font-heading text-4xl sm:text-5xl font-black mb-4 text-brand-gold tracking-editorial">Related Services</h2>
+            <p className="text-brand-gray text-lg mb-12">Explore the rest of what we offer.</p>
+            <div className="grid sm:grid-cols-3 gap-6">
+              <Link href="/services/music-videos" className="block bg-brand-charcoal p-6 rounded-lg border border-brand-gold border-opacity-30 hover:border-opacity-80 transition-all">
+                <h3 className="font-heading text-xl font-black text-brand-gold mb-2 tracking-editorial">Music Videos</h3>
+                <p className="text-brand-gray text-sm">Concept to final delivery. You bring the song, we handle the rest.</p>
+              </Link>
+              <Link href="/services/documentary" className="block bg-brand-charcoal p-6 rounded-lg border border-brand-gold border-opacity-30 hover:border-opacity-80 transition-all">
+                <h3 className="font-heading text-xl font-black text-brand-gold mb-2 tracking-editorial">Documentary</h3>
+                <p className="text-brand-gray text-sm">From interview through final cut. Shooting, sound, and edit handled.</p>
+              </Link>
+              <Link href="/services/360-walkthroughs" className="block bg-brand-charcoal p-6 rounded-lg border border-brand-gold border-opacity-30 hover:border-opacity-80 transition-all">
+                <h3 className="font-heading text-xl font-black text-brand-gold mb-2 tracking-editorial">360° Walkthroughs</h3>
+                <p className="text-brand-gray text-sm">Immersive property and venue tours, color-graded like a film.</p>
+              </Link>
             </div>
           </div>
         </section>

@@ -124,21 +124,21 @@ export default function Contact() {
       <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[1fr_1.4fr] gap-10 lg:gap-16 items-start">
         {/* ── Contact Info Column ── */}
         <div className="space-y-6">
-          {/* Cal.com — primary booking CTA */}
+          {/* Google Calendar appointment scheduling — primary booking CTA */}
           <div className="bg-brand-gold/5 border border-brand-gold/30 p-5">
             <p className={labelBase}>Book a Free Consultation</p>
             <p className="text-brand-off-white font-body text-sm mb-4">
               20-minute call to scope your project. Pick a time that works for you.
             </p>
             <a
-              href="https://cal.com/echochambermedia/free-consultation-echo-chamber-media"
+              href="https://calendar.app.google/V6EFC7Cv3rJHxAdGA"
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => {
                 if (typeof window !== "undefined" && (window as unknown as { gtag?: (...args: unknown[]) => void }).gtag) {
                   (window as unknown as { gtag: (...args: unknown[]) => void }).gtag("event", "book_consultation_click", {
                     event_category: "engagement",
-                    event_label: "cal.com",
+                    event_label: "google_calendar",
                     value: 1,
                   });
                 }
