@@ -21,7 +21,7 @@ const projects: {
     description: "Outlaw country meets surf punk. Raw energy from Las Vegas' genre-bending band. \"Coming To Me\" & \"Everything's Alright.\"",
     youtubeId: "x1yqQXmHCdY",
     href: "/blog/naked-city-underground-music-video",
-    uploadDate: "2026-04-02",
+    uploadDate: "2023-06-26",
   },
   {
     title: "Doritos, Spec Commercial",

@@ -25,11 +25,13 @@ const videos = [
     id: 'UnqTEQxPWwo',
     label: "Everything's Alright",
     title: "The Naked City Underground: Everything's Alright. Music Video by Echo Chamber Media",
+    uploadDate: '2024-10-25',
   },
   {
     id: 'x1yqQXmHCdY',
     label: 'Coming To Me',
     title: 'The Naked City Underground: Coming To Me. Music Video by Echo Chamber Media',
+    uploadDate: '2023-06-26',
   },
 ];
 
@@ -58,7 +60,7 @@ export default function NakedCityUndergroundPost() {
         name: v.title,
         description: `${v.label} by The Naked City Underground, a music video directed and shot in Las Vegas by Echo Chamber Media.`,
         thumbnailUrl: `https://i.ytimg.com/vi/${v.id}/maxresdefault.jpg`,
-        uploadDate: '2026-04-02',
+        uploadDate: v.uploadDate,
         contentUrl: `https://www.youtube.com/watch?v=${v.id}`,
         embedUrl: `https://www.youtube.com/embed/${v.id}`,
         publisher: { '@type': 'Organization', name: 'Echo Chamber Media', url: 'https://echochambermedia.com' },
