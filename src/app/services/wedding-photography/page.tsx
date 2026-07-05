@@ -3,6 +3,8 @@ import Image from 'next/image';
 import Navbar from '@/sections/Navbar';
 import Footer from '@/sections/Footer';
 import Link from 'next/link';
+import fs from 'fs';
+import path from 'path';
 
 // This must be exported for Next.js metadata
 export const metadata: Metadata = {
@@ -19,7 +21,24 @@ export const metadata: Metadata = {
   },
 };
 
+function getWeddingPhotos(): string[] {
+  try {
+    const dir = path.join(process.cwd(), 'public/images/wedding');
+    return fs
+      .readdirSync(dir)
+      .filter((f) => /\.(jpe?g|png|webp)$/i.test(f))
+      .sort((a, b) => {
+        const na = parseInt(a.replace(/\D/g, ''), 10) || 0;
+        const nb = parseInt(b.replace(/\D/g, ''), 10) || 0;
+        return na - nb;
+      });
+  } catch {
+    return [];
+  }
+}
+
 export default function WeddingPhotographyPage() {
+  const galleryPhotos = getWeddingPhotos();
   return (
     <>
       <Navbar />
@@ -242,6 +261,40 @@ export default function WeddingPhotographyPage() {
             </div>
           </div>
         </section>
+
+        {/* Full Gallery, every photo in the wedding folder */}
+        {galleryPhotos.length > 0 && (
+          <section id="full-gallery" className="py-20 px-6 bg-brand-charcoal">
+            <div className="max-w-6xl mx-auto">
+              <p className="text-sm uppercase tracking-editorial text-brand-gold font-body mb-4 text-center">
+                Full Gallery
+              </p>
+              <h2 className="font-heading text-4xl lg:text-5xl font-black text-brand-gold mb-6 text-center tracking-editorial">
+                Every Frame
+              </h2>
+              <p className="font-body text-brand-gray text-center max-w-2xl mx-auto mb-16">
+                A full look at a real Las Vegas wedding, shot and edited the way we shoot everything.
+              </p>
+
+              <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 [column-fill:_balance]">
+                {galleryPhotos.map((file) => (
+                  <div
+                    key={file}
+                    className="mb-4 break-inside-avoid overflow-hidden border border-brand-gold/10 group"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={`/images/wedding/${encodeURIComponent(file)}`}
+                      alt="Las Vegas wedding photography by Echo Chamber Media"
+                      loading="lazy"
+                      className="w-full h-auto object-cover transition-transform duration-700 group-hover:scale-105"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* Our Approach, Text sections */}
         <section className="py-20 px-6 bg-brand-black">
