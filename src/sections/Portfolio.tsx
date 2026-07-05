@@ -55,6 +55,58 @@ const videoJsonLd = {
   })),
 };
 
+function Showreel() {
+  const [playing, setPlaying] = useState(false);
+
+  return (
+    <div className="max-w-4xl mx-auto mb-20">
+      <div className="text-center mb-8">
+        <p className="text-sm uppercase tracking-editorial text-brand-gold font-body mb-4">
+          Showreel
+        </p>
+        <p className="text-brand-gray font-body leading-relaxed max-w-xl mx-auto">
+          A quick look at what we bring to a project, from concept to final cut.
+        </p>
+      </div>
+
+      <div className="relative w-full aspect-video border border-brand-gold/20 bg-brand-charcoal overflow-hidden">
+        {playing ? (
+          <video
+            src="/video/trailer.mp4"
+            poster="/images/reel-poster.jpg"
+            controls
+            autoPlay
+            playsInline
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        ) : (
+          <button
+            onClick={() => setPlaying(true)}
+            aria-label="Play Echo Chamber Media showreel"
+            className="group absolute inset-0 w-full h-full"
+          >
+            {/* Poster */}
+            <span
+              className="absolute inset-0 bg-cover bg-center"
+              style={{ backgroundImage: "url('/images/reel-poster.jpg')" }}
+            />
+            {/* Dim overlay */}
+            <span className="absolute inset-0 bg-black/50 transition-colors duration-300 group-hover:bg-black/40" />
+            {/* Play button */}
+            <span className="absolute inset-0 flex items-center justify-center">
+              <span className="flex items-center justify-center w-20 h-20 rounded-full border border-brand-gold/60 bg-brand-black/50 backdrop-blur-sm text-brand-gold transition-all duration-300 group-hover:bg-brand-gold/20 group-hover:scale-105">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor" className="ml-1">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              </span>
+            </span>
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function ProjectCard({
   title,
   type,
@@ -144,6 +196,8 @@ export default function Portfolio() {
         <Heading as="h2">Portfolio</Heading>
         <div className="mt-4 h-px w-16 bg-brand-gold mx-auto" />
       </div>
+
+      <Showreel />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
         {projects.map((project, i) => (

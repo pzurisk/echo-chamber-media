@@ -5,6 +5,26 @@ import Image from "next/image";
 import SectionWrapper from "@/components/SectionWrapper";
 import Heading from "@/components/Heading";
 
+/* ── Film video ── */
+const FILM_YOUTUBE_ID = "wGoX4MbAKCw";
+const filmVideoJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "VideoObject",
+  name: "The Classified Mind, Echo Chamber Media",
+  description:
+    "The Classified Mind. An Echo Chamber Media production. A psychological short about Gideon, alone with his theories, certain something is watching.",
+  thumbnailUrl: `https://i.ytimg.com/vi/${FILM_YOUTUBE_ID}/maxresdefault.jpg`,
+  // TODO: set to the real YouTube publish date (YYYY-MM-DD).
+  uploadDate: "2026-01-01",
+  contentUrl: `https://www.youtube.com/watch?v=${FILM_YOUTUBE_ID}`,
+  embedUrl: `https://www.youtube.com/embed/${FILM_YOUTUBE_ID}`,
+  publisher: {
+    "@type": "Organization",
+    name: "Echo Chamber Media",
+    url: "https://echochambermedia.com",
+  },
+};
+
 /* ── Credits ── */
 const credits = [
   { role: "Directed by", name: "Pete Miceli" },
@@ -21,12 +41,14 @@ const credits = [
 ];
 /* ── Laurels ── */
 const laurels = [
-  { festival: "Las Vegas Indie Film Festival 2026", type: "Official Selection" },
-  { festival: "Las Vegas Indie Film Festival 2026", type: "Best Horror" },
-  { festival: "Las Vegas Indie Film Festival 2026", type: "Best Score" },
   { festival: "The Dunwich Horror Fest", type: "Award Winner" },
+  { festival: "Las Vegas Indie Film Festival 2026", type: "Best Horror" },
+  { festival: "Las Vegas Indie Film Festival 2026", type: "Best Film Score" },
+  { festival: "Golden Nugget International Film Festival 2026", type: "Best Short" },
+  { festival: "RED Movie Awards 2027", type: "Finalist" },
   { festival: "Golden Nugget International Film Festival 2026", type: "Official Selection" },
   { festival: "Indie Vegas Film Festival 2026", type: "Official Selection" },
+  { festival: "Bocas Film Fest 2026", type: "Official Selection" },
 ];
 
 export default function FeaturedFilm() {
@@ -50,6 +72,10 @@ export default function FeaturedFilm() {
   }, []);
   return (
     <SectionWrapper id="featured-film" dark={false}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(filmVideoJsonLd) }}
+      />
       <div ref={sectionRef}>
         {/* Section header */}
         <div className="text-center mb-16">
@@ -62,6 +88,20 @@ export default function FeaturedFilm() {
           <div className="mt-4 h-px w-16 bg-brand-gold mx-auto" />
         </div>
 
+        {/* Film video */}
+        <div className="max-w-4xl mx-auto mb-16">
+          <div className="relative w-full aspect-video border border-brand-gold/20 bg-brand-charcoal">
+            <iframe
+              src={`https://www.youtube.com/embed/${FILM_YOUTUBE_ID}`}
+              title="The Classified Mind, Echo Chamber Media"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+              loading="lazy"
+              className="absolute inset-0 w-full h-full"
+            />
+          </div>
+        </div>
+
         {/* Poster + Details grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-start">
           {/* Poster */}
@@ -70,7 +110,7 @@ export default function FeaturedFilm() {
               inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
             }`}
           >            <Image
-              src="/images/the classified mind.png"
+              src="/images/the classified mind poster.png"
               alt="The Classified Mind Official Movie Poster"
               fill
               className="object-cover object-top"
@@ -108,7 +148,7 @@ export default function FeaturedFilm() {
             <div className="flex flex-wrap gap-6 mb-10">
               {laurels.map((l) => (
                 <div
-                  key={l.festival}
+                  key={`${l.festival}-${l.type}`}
                   className="flex items-center gap-3 bg-brand-black/60 px-4 py-3 border border-brand-gold/20"
                 >
                   <svg

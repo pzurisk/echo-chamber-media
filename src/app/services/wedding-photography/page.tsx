@@ -27,8 +27,8 @@ export default function WeddingPhotographyPage() {
         {/* Hero Section with Background Image */}
         <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden pt-32 pb-20 px-6">
           <Image
-            src="/images/wedding/petal-toss.jpg"
-            alt="Bride and groom celebrating with flower petals"
+            src="/images/wedding/zia%20wedding-5.jpg"
+            alt="Bride and groom holding a vinyl record at their alternative Las Vegas wedding inside Zia Records"
             fill
             className="object-cover"
             priority
@@ -173,8 +173,8 @@ export default function WeddingPhotographyPage() {
               {/* Ring Exchange, tall */}
               <div className="relative row-span-2 overflow-hidden group">
                 <Image
-                  src="/images/wedding/ring-exchange.jpg"
-                  alt="Groom placing ring on bride's finger during ceremony"
+                  src="/images/wedding/zia%20wedding-7.jpg"
+                  alt="Bride and groom kissing in the aisles of Zia Records at a Las Vegas wedding"
                   width={600}
                   height={900}
                   className="object-cover w-full h-full transition-transform duration-700 group-hover:scale-105"
@@ -188,8 +188,8 @@ export default function WeddingPhotographyPage() {
               {/* Petal Toss, wide */}
               <div className="relative col-span-2 overflow-hidden group">
                 <Image
-                  src="/images/wedding/petal-toss.jpg"
-                  alt="Newlyweds walking through a shower of flower petals"
+                  src="/images/wedding/zia%20wedding-6.jpg"
+                  alt="Black and white photo of a couple kissing under the dome at Zia Records, Las Vegas"
                   width={1200}
                   height={600}
                   className="object-cover w-full h-64 md:h-72 transition-transform duration-700 group-hover:scale-105"
@@ -203,8 +203,8 @@ export default function WeddingPhotographyPage() {
               {/* Overhead Couple */}
               <div className="relative overflow-hidden group">
                 <Image
-                  src="/images/wedding/overhead-couple.jpg"
-                  alt="Bride and groom photographed from above with bouquet"
+                  src="/images/wedding/zia%20wedding-27.jpg"
+                  alt="Playful portrait of newlyweds inside a Las Vegas record store"
                   width={600}
                   height={600}
                   className="object-cover w-full h-64 md:h-72 transition-transform duration-700 group-hover:scale-105"
@@ -218,8 +218,8 @@ export default function WeddingPhotographyPage() {
               {/* String Lights, wide bottom */}
               <div className="relative col-span-2 md:col-span-3 overflow-hidden group">
                 <Image
-                  src="/images/wedding/string-lights.jpg"
-                  alt="Bride and groom holding hands under string lights at night"
+                  src="/images/wedding/zia%20wedding-5.jpg"
+                  alt="Bride and groom celebrating at their Las Vegas record store wedding"
                   width={1200}
                   height={500}
                   className="object-cover w-full h-64 md:h-80 transition-transform duration-700 group-hover:scale-105"
@@ -254,8 +254,8 @@ export default function WeddingPhotographyPage() {
               <div className="text-center">
                 <div className="relative w-full h-48 mb-6 overflow-hidden">
                   <Image
-                    src="/images/wedding/ring-exchange.jpg"
-                    alt="Cinematic wedding detail shot"
+                    src="/images/wedding/zia%20wedding-19.jpg"
+                    alt="Groom carrying his bride through a Las Vegas record store"
                     fill
                     className="object-cover"
                   />
@@ -269,8 +269,8 @@ export default function WeddingPhotographyPage() {
               <div className="text-center">
                 <div className="relative w-full h-48 mb-6 overflow-hidden">
                   <Image
-                    src="/images/wedding/petal-toss.jpg"
-                    alt="Candid wedding celebration moment"
+                    src="/images/wedding/zia%20wedding-27.jpg"
+                    alt="Candid moment of newlyweds at an alternative Las Vegas wedding"
                     fill
                     className="object-cover"
                   />
@@ -284,8 +284,8 @@ export default function WeddingPhotographyPage() {
               <div className="text-center">
                 <div className="relative w-full h-48 mb-6 overflow-hidden">
                   <Image
-                    src="/images/wedding/string-lights.jpg"
-                    alt="Evening wedding photography with dramatic lighting"
+                    src="/images/wedding/zia%20wedding-7.jpg"
+                    alt="Cinematic black and white wedding photo in a Las Vegas record store"
                     fill
                     className="object-cover"
                   />
