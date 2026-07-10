@@ -35,3 +35,9 @@ next-env.d.ts
 
 # auto-pull activity log (created on the mini)
 .auto-pull.log
+
+# Echo Meal iOS app
+EchoMeal/Secrets.xcconfig
+EchoMeal/EchoMeal.xcodeproj/xcuserdata/
+EchoMeal/EchoMeal.xcodeproj/project.xcworkspace/xcuserdata/
+EchoMeal/DerivedData/
