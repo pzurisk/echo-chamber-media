@@ -61,6 +61,16 @@ struct GroceryItem: Codable, Hashable {
     var pantry: Bool
 }
 
+// MARK: - Taste history
+
+/// One dinner the app has planned before. The rolling history feeds the
+/// taste notes sent to Claude so suggestions improve over time.
+struct PastDinner: Codable, Hashable {
+    var title: String
+    var cuisine: String
+    var date: Date
+}
+
 // MARK: - Helpers
 
 extension MealPlan {

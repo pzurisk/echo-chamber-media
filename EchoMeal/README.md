@@ -7,9 +7,11 @@ TestFlight only. No App Store submission.
 
 ## What it does
 
-- **Speak tab.** One big red button. Tap, talk, and it transcribes on-device
-  with Apple's Speech framework, then sends the transcript to Claude
-  (claude-sonnet-5) to plan the week.
+- **Speak tab.** One big red button. Tap once to talk, tap again when done
+  (no auto-stop). Apple's Speech framework transcribes, then the transcript
+  goes to Claude (claude-sonnet-5) to plan the week, along with taste notes
+  the app learns over time (favorites, repeat cuisines, recent dinners).
+  A Surprise Me button plans a week from the taste notes alone.
 - **Week tab.** Five dinner cards, Monday through Friday. Tap for the full
   recipe. Heart a recipe to save it to Favorites.
 - **List tab.** One consolidated grocery list grouped Proteins, Produce,
@@ -30,7 +32,7 @@ EchoMeal/
     Theme.swift                Colors and card styling
     Config/HouseholdConfig.swift   Household code + container ID
     Models/MealPlanModels.swift    Codable types matching Claude's JSON schema
-    Services/SpeechRecorder.swift  Mic + SFSpeechRecognizer, 2s silence auto-stop
+    Services/SpeechRecorder.swift  Mic + SFSpeechRecognizer, tap to start and stop
     Services/ClaudeService.swift   Anthropic Messages API call + JSON parsing
     Services/CloudKitStore.swift   Public-database records + subscriptions
     State/AppState.swift           App-wide state, sync, local cache
@@ -112,6 +114,7 @@ household code (`ZURISK-KITCHEN` in `HouseholdConfig.swift`):
 | HouseholdPlan | `plan-ZURISK-KITCHEN`      | planJSON, householdID, updatedAt      |
 | GroceryState  | `grocery-ZURISK-KITCHEN`   | checkedIDs, householdID, updatedAt    |
 | Favorites     | `favorites-ZURISK-KITCHEN` | recipesJSON, householdID, updatedAt   |
+| TasteHistory  | `history-ZURISK-KITCHEN`   | historyJSON, householdID, updatedAt   |
 
 Steps:
 
@@ -120,7 +123,7 @@ Steps:
    automatically the first time each record is saved.
 2. Open [icloud.developer.apple.com](https://icloud.developer.apple.com),
    pick the `iCloud.com.echochambermedia.echomeal` container.
-3. Schema > Indexes: for each of the three record types, add a
+3. Schema > Indexes: for each of the four record types, add a
    **Queryable** index on `householdID`. This is what lets the
    CKQuerySubscription (live sync push) work. While you are there, also add
    Queryable on `recordName` for each type (harmless, and useful for

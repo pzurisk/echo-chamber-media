@@ -18,6 +18,7 @@ final class CloudKitStore {
     static let planRecordType = "HouseholdPlan"
     static let groceryRecordType = "GroceryState"
     static let favoritesRecordType = "Favorites"
+    static let historyRecordType = "TasteHistory"
 
     private let household = HouseholdConfig.code
     private let database: CKDatabase
@@ -31,6 +32,7 @@ final class CloudKitStore {
     private var planRecordID: CKRecord.ID { CKRecord.ID(recordName: "plan-\(household)") }
     private var groceryRecordID: CKRecord.ID { CKRecord.ID(recordName: "grocery-\(household)") }
     private var favoritesRecordID: CKRecord.ID { CKRecord.ID(recordName: "favorites-\(household)") }
+    private var historyRecordID: CKRecord.ID { CKRecord.ID(recordName: "history-\(household)") }
 
     // MARK: - Account
 
@@ -96,13 +98,32 @@ final class CloudKitStore {
         return try? JSONDecoder().decode([Recipe].self, from: data)
     }
 
+    // MARK: - Taste history
+
+    func saveHistory(_ dinners: [PastDinner]) async throws {
+        let json = try String(data: JSONEncoder().encode(dinners), encoding: .utf8) ?? "[]"
+        let record = await fetchOrCreate(historyRecordID, type: Self.historyRecordType)
+        record["historyJSON"] = json
+        record["householdID"] = household
+        record["updatedAt"] = Date()
+        try await save(record)
+    }
+
+    func fetchHistory() async -> [PastDinner]? {
+        guard let record = try? await database.record(for: historyRecordID),
+              let json = record["historyJSON"] as? String,
+              let data = json.data(using: .utf8)
+        else { return nil }
+        return try? JSONDecoder().decode([PastDinner].self, from: data)
+    }
+
     // MARK: - Subscriptions
 
     /// Registers silent-push query subscriptions so this phone refreshes
     /// when the other one changes something. Safe to call on every launch;
     /// saving an existing subscription ID just succeeds or errors quietly.
     func ensureSubscriptions() async {
-        let types = [Self.planRecordType, Self.groceryRecordType, Self.favoritesRecordType]
+        let types = [Self.planRecordType, Self.groceryRecordType, Self.favoritesRecordType, Self.historyRecordType]
         for type in types {
             let subscriptionID = "sub-\(type)-\(household)"
             let predicate = NSPredicate(format: "householdID == %@", household)
