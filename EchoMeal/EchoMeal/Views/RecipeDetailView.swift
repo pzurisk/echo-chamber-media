@@ -29,6 +29,29 @@ struct RecipeDetailView: View {
                     }
 
                     VStack(alignment: .leading, spacing: 10) {
+                        HStack {
+                            Text("How was it?")
+                                .font(.headline)
+                                .foregroundStyle(.white)
+                            Spacer()
+                            if appState.rating(for: recipe) > 0 && appState.rating(for: recipe) <= 2 {
+                                Text("Won't be suggested again")
+                                    .font(.caption)
+                                    .foregroundStyle(Color.echoRed)
+                            }
+                        }
+                        StarRating(rating: appState.rating(for: recipe)) { stars in
+                            appState.rate(recipe, stars: stars)
+                        }
+                        Text("Rate it after you cook it. 4 and 5 stars bring more meals like this. 1 and 2 stars mean it never comes back.")
+                            .font(.caption)
+                            .foregroundStyle(Color.echoTextSecondary)
+                    }
+                    .padding(16)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .echoCardStyle()
+
+                    VStack(alignment: .leading, spacing: 10) {
                         Text("Ingredients")
                             .font(.headline)
                             .foregroundStyle(.white)

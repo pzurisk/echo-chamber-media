@@ -25,6 +25,7 @@ final class AppState: ObservableObject {
     @Published var checkedItemIDs: Set<String> = []
     @Published var favorites: [Recipe] = []
     @Published var pastDinners: [PastDinner] = []
+    @Published var ratings: [String: Int] = [:]
     @Published var phase: Phase = .idle
     @Published var selectedTab: Tab = .speak
     @Published var iCloudAvailable = true
@@ -85,6 +86,14 @@ final class AppState: ObservableObject {
         let recent = pastDinners.suffix(15).map(\.title)
         if !recent.isEmpty {
             parts.append("Dinners from recent weeks, do not repeat these exactly: \(recent.joined(separator: ", ")).")
+        }
+        let loved = ratings.filter { $0.value >= 4 }.keys.sorted().prefix(12)
+        if !loved.isEmpty {
+            parts.append("Meals they cooked and rated 4 or 5 stars, lean toward more like these: \(loved.joined(separator: ", ")).")
+        }
+        let disliked = ratings.filter { $0.value <= 2 }.keys.sorted().prefix(12)
+        if !disliked.isEmpty {
+            parts.append("Meals they cooked and rated 1 or 2 stars. Never suggest these again, or close variations of them: \(disliked.joined(separator: ", ")).")
         }
         return parts.joined(separator: " ")
     }
@@ -179,6 +188,29 @@ final class AppState: ObservableObject {
         Task { try? await store.saveChecked(snapshot) }
     }
 
+    // MARK: - Ratings
+
+    func rating(for recipe: Recipe) -> Int {
+        ratings[recipe.title] ?? 0
+    }
+
+    func rating(forTitle title: String) -> Int? {
+        ratings[title]
+    }
+
+    /// Rate a cooked meal 1 through 5. Tapping the current star again clears
+    /// the rating. Low ratings (1 or 2) are excluded from future suggestions.
+    func rate(_ recipe: Recipe, stars: Int) {
+        if ratings[recipe.title] == stars {
+            ratings.removeValue(forKey: recipe.title)
+        } else {
+            ratings[recipe.title] = stars
+        }
+        saveLocalCache()
+        let snapshot = ratings
+        Task { try? await store.saveRatings(snapshot) }
+    }
+
     // MARK: - Favorites
 
     func isFavorite(_ recipe: Recipe) -> Bool {
@@ -222,6 +254,11 @@ final class AppState: ObservableObject {
                 pastDinners = remoteHistory
             }
         }
+        if let remoteRatings = await store.fetchRatings() {
+            if remoteRatings != ratings {
+                ratings = remoteRatings
+            }
+        }
         saveLocalCache()
     }
 
@@ -247,6 +284,11 @@ final class AppState: ObservableObject {
            let cached = try? JSONDecoder().decode([PastDinner].self, from: data) {
             pastDinners = cached
         }
+        if let json = defaults.string(forKey: HouseholdConfig.Keys.cachedRatings),
+           let data = json.data(using: .utf8),
+           let cached = try? JSONDecoder().decode([String: Int].self, from: data) {
+            ratings = cached
+        }
     }
 
     private func saveLocalCache() {
@@ -264,6 +306,10 @@ final class AppState: ObservableObject {
         if let data = try? JSONEncoder().encode(pastDinners),
            let json = String(data: data, encoding: .utf8) {
             defaults.set(json, forKey: HouseholdConfig.Keys.cachedHistory)
+        }
+        if let data = try? JSONEncoder().encode(ratings),
+           let json = String(data: data, encoding: .utf8) {
+            defaults.set(json, forKey: HouseholdConfig.Keys.cachedRatings)
         }
     }
 }
