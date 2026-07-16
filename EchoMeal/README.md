@@ -13,7 +13,9 @@ TestFlight only. No App Store submission.
   the app learns over time (favorites, repeat cuisines, recent dinners).
   A Surprise Me button plans a week from the taste notes alone.
 - **Week tab.** Five dinner cards, Monday through Friday. Tap for the full
-  recipe. Heart a recipe to save it to Favorites.
+  recipe. Heart a recipe to save it to Favorites. Rate a meal 1 to 5 stars
+  after cooking it: 4 and 5 stars pull future plans toward it, 1 and 2
+  stars mean it never gets suggested again.
 - **List tab.** One consolidated grocery list grouped Proteins, Produce,
   Pantry, Dairy, Bread, Sauces, with a budget bar up top. Pantry staples
   start pre-checked. Checking an item syncs to the other phone.
@@ -115,6 +117,7 @@ household code (`ZURISK-KITCHEN` in `HouseholdConfig.swift`):
 | GroceryState  | `grocery-ZURISK-KITCHEN`   | checkedIDs, householdID, updatedAt    |
 | Favorites     | `favorites-ZURISK-KITCHEN` | recipesJSON, householdID, updatedAt   |
 | TasteHistory  | `history-ZURISK-KITCHEN`   | historyJSON, householdID, updatedAt   |
+| Ratings       | `ratings-ZURISK-KITCHEN`   | ratingsJSON, householdID, updatedAt   |
 
 Steps:
 
@@ -123,7 +126,7 @@ Steps:
    automatically the first time each record is saved.
 2. Open [icloud.developer.apple.com](https://icloud.developer.apple.com),
    pick the `iCloud.com.echochambermedia.echomeal` container.
-3. Schema > Indexes: for each of the four record types, add a
+3. Schema > Indexes: for each of the record types in the table above, add a
    **Queryable** index on `householdID`. This is what lets the
    CKQuerySubscription (live sync push) work. While you are there, also add
    Queryable on `recordName` for each type (harmless, and useful for

@@ -16,11 +16,15 @@ struct WeekView: View {
                             ForEach(plan.week) { entry in
                                 if let recipe = plan.recipe(forDay: entry.day) {
                                     NavigationLink(value: recipe) {
-                                        DinnerCard(entry: entry, isFavorite: appState.isFavorite(recipe))
+                                        DinnerCard(
+                                            entry: entry,
+                                            isFavorite: appState.isFavorite(recipe),
+                                            rating: appState.rating(forTitle: entry.title)
+                                        )
                                     }
                                     .buttonStyle(.plain)
                                 } else {
-                                    DinnerCard(entry: entry, isFavorite: false)
+                                    DinnerCard(entry: entry, isFavorite: false, rating: nil)
                                 }
                             }
                         }
@@ -85,6 +89,7 @@ struct WeekView: View {
 struct DinnerCard: View {
     let entry: WeekEntry
     let isFavorite: Bool
+    let rating: Int?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -94,6 +99,14 @@ struct DinnerCard: View {
                     .tracking(1.2)
                     .foregroundStyle(Color.echoRed)
                 Spacer()
+                if let rating {
+                    HStack(spacing: 3) {
+                        Image(systemName: "star.fill")
+                        Text("\(rating)")
+                    }
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.yellow)
+                }
                 if isFavorite {
                     Image(systemName: "heart.fill")
                         .font(.caption)
