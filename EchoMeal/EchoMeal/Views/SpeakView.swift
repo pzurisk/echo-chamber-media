@@ -27,6 +27,9 @@ struct SpeakView: View {
                     default:
                         micButton
                         statusText
+                        if !recorder.isRecording {
+                            ideasAndSurprise
+                        }
                     }
 
                     Spacer()
@@ -113,9 +116,11 @@ struct SpeakView: View {
     private var statusText: some View {
         VStack(spacing: 12) {
             if recorder.isRecording {
-                Text("Listening. Tap to stop.")
+                Text("Listening. Take your time. Tap again when you're done.")
                     .font(.headline)
                     .foregroundStyle(.white)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 32)
                 if !recorder.transcript.isEmpty {
                     Text(recorder.transcript)
                         .font(.subheadline)
@@ -134,12 +139,36 @@ struct SpeakView: View {
                 Text("Tell me what sounds good this week.")
                     .font(.headline)
                     .foregroundStyle(.white)
-                Text("Cravings, proteins, dish ideas. Anything.")
+                Text("Tap once to talk, tap again when you're done.")
                     .font(.subheadline)
                     .foregroundStyle(Color.echoTextSecondary)
             }
         }
         .frame(minHeight: 90)
+    }
+
+    /// Idea hints learned from favorites and history, plus a button that
+    /// plans a week with no talking at all.
+    private var ideasAndSurprise: some View {
+        VStack(spacing: 12) {
+            if !appState.suggestionIdeas.isEmpty {
+                Text("Ideas: " + appState.suggestionIdeas.joined(separator: " · "))
+                    .font(.footnote)
+                    .foregroundStyle(Color.echoTextSecondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 28)
+            }
+            Button {
+                appState.surpriseMe()
+            } label: {
+                Label("Surprise me", systemImage: "sparkles")
+                    .font(.subheadline.weight(.semibold))
+                    .padding(.horizontal, 18)
+                    .padding(.vertical, 10)
+            }
+            .buttonStyle(.bordered)
+            .tint(.echoRed)
+        }
     }
 
     private var planningState: some View {

@@ -68,8 +68,15 @@ week and recipes each have exactly 5 entries, one per weekday, in order. grocery
 
     /// Sends the transcript to Claude. If the reply fails to parse as JSON,
     /// retries the call once with a corrective reminder appended.
-    static func planWeek(transcript: String, budget: Double, dinners: Int) async throws -> MealPlan {
-        let context = "Budget target: \(Int(budget)). Dinners: \(dinners). Cravings: \(transcript)"
+    /// tasteNotes carries what the app has learned about the household
+    /// (favorites, cuisines they come back to, recent dinners) so the plan
+    /// gets more personal over time.
+    static func planWeek(transcript: String, budget: Double, dinners: Int, tasteNotes: String = "") async throws -> MealPlan {
+        var context = "Budget target: \(Int(budget)). Dinners: \(dinners). "
+        if !tasteNotes.isEmpty {
+            context += "Taste notes about this household: \(tasteNotes) "
+        }
+        context += "Cravings: \(transcript)"
         do {
             return try await requestPlan(userText: context)
         } catch ClaudeError.parseFailed {

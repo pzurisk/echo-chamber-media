@@ -2,9 +2,10 @@ import AVFoundation
 import Foundation
 import Speech
 
-/// On-device speech capture. Tap to start, tap to stop, or auto-stop after
-/// about 2 seconds of silence. Prefers on-device recognition when the
-/// hardware supports it.
+/// Speech capture. Tap once to start, tap again to stop. No auto-stop:
+/// take your time, think between sentences, and end it when you are done.
+/// Uses Apple's best available recognition (on-device when the model is
+/// downloaded, Apple's servers otherwise).
 @MainActor
 final class SpeechRecorder: NSObject, ObservableObject {
 
@@ -19,8 +20,6 @@ final class SpeechRecorder: NSObject, ObservableObject {
     private let audioEngine = AVAudioEngine()
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
-    private var silenceTimer: Timer?
-    private static let silenceWindow: TimeInterval = 2.0
 
     func toggle() {
         if isRecording { stop() } else { start() }
@@ -74,9 +73,10 @@ final class SpeechRecorder: NSObject, ObservableObject {
 
             let request = SFSpeechAudioBufferRecognitionRequest()
             request.shouldReportPartialResults = true
-            if recognizer.supportsOnDeviceRecognition {
-                request.requiresOnDeviceRecognition = true
-            }
+            // Deliberately NOT requiring on-device recognition. Requiring it
+            // can return empty results on phones that have not downloaded
+            // Apple's offline speech model. iOS still uses on-device when
+            // available; otherwise Apple's servers handle it.
             recognitionRequest = request
 
             let inputNode = audioEngine.inputNode
@@ -89,17 +89,17 @@ final class SpeechRecorder: NSObject, ObservableObject {
             audioEngine.prepare()
             try audioEngine.start()
             isRecording = true
-            resetSilenceTimer()
 
             recognitionTask = recognizer.recognitionTask(with: request) { [weak self] result, error in
                 DispatchQueue.main.async {
                     guard let self else { return }
                     if let result {
                         self.transcript = result.bestTranscription.formattedString
-                        self.resetSilenceTimer()
                         if result.isFinal { self.finish() }
                     }
                     if error != nil, self.isRecording {
+                        // Recognition errored mid-stream. Keep whatever text
+                        // we already have and end cleanly.
                         self.finish()
                     }
                 }
@@ -110,21 +110,9 @@ final class SpeechRecorder: NSObject, ObservableObject {
         }
     }
 
-    private func resetSilenceTimer() {
-        silenceTimer?.invalidate()
-        silenceTimer = Timer.scheduledTimer(withTimeInterval: Self.silenceWindow, repeats: false) { [weak self] _ in
-            Task { @MainActor in
-                self?.finish()
-            }
-        }
-    }
-
     private func finish() {
         guard isRecording else { return }
         isRecording = false
-
-        silenceTimer?.invalidate()
-        silenceTimer = nil
 
         audioEngine.stop()
         audioEngine.inputNode.removeTap(onBus: 0)
@@ -138,6 +126,8 @@ final class SpeechRecorder: NSObject, ObservableObject {
         let text = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
         if !text.isEmpty {
             onFinish?(text)
+        } else {
+            errorMessage = "I did not catch anything. Tap the button and try again."
         }
     }
 }
