@@ -38,6 +38,7 @@ next-env.d.ts
 
 # Echo Meal iOS app
 EchoMeal/Secrets.xcconfig
-EchoMeal/EchoMeal.xcodeproj/xcuserdata/
-EchoMeal/EchoMeal.xcodeproj/project.xcworkspace/xcuserdata/
+# The project is generated from project.yml by `xcodegen generate`.
+EchoMeal/EchoMeal.xcodeproj/
 EchoMeal/DerivedData/
+EchoMeal/build/

@@ -25,10 +25,21 @@ targets:
     type: application
     platform: iOS
     sources:
-      - EchoMeal
+      # Exclude Finder detritus: this repo lives on an iCloud-synced Desktop,
+      # which reintroduces .DS_Store and trips codesign ("resource fork, Finder
+      # information, or similar detritus not allowed").
+      - path: EchoMeal
+        excludes:
+          - "**/.DS_Store"
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.echochambermedia.echomeal
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         INFOPLIST_FILE: EchoMeal/Info.plist
-        CODE_SIGN_ENTITLEMENTS: EchoMeal/EchoMeal.entitlements
+      configs:
+        # aps-environment must be `development` locally and `production` for
+        # TestFlight/App Store uploads, so the entitlements file differs per config.
+        Debug:
+          CODE_SIGN_ENTITLEMENTS: EchoMeal/EchoMeal.entitlements
+        Release:
+          CODE_SIGN_ENTITLEMENTS: EchoMeal/EchoMeal.Release.entitlements
