@@ -95,7 +95,7 @@ week and recipes each have exactly 5 entries, one per weekday, in order. grocery
         do {
             return try await requestPlan(userText: context)
         } catch ClaudeError.parseFailed {
-            let reminder = context + "\n\nReminder: return only valid JSON matching the schema. No prose, no markdown, no backticks."
+            let reminder = context + "\n\nReminder: return only valid JSON matching the schema. No prose, no markdown, no backticks. The \"recipes\" array is required and must contain one full recipe object for every day in \"week\" (same count, matching \"day\" values), each with its ingredients and numbered steps. Do not return an empty or partial recipes array."
             return try await requestPlan(userText: reminder)
         } catch let error as URLError where Self.transientURLErrorCodes.contains(error.code) {
             try await Task.sleep(nanoseconds: 2_000_000_000)
@@ -133,7 +133,9 @@ week and recipes each have exactly 5 entries, one per weekday, in order. grocery
 
         let body: [String: Any] = [
             "model": "claude-sonnet-5",
-            "max_tokens": 8000,
+            // Room for a full week: 5 recipes with ingredients and steps, plus
+            // the grocery list. 8000 could clip a verbose plan mid-JSON.
+            "max_tokens": 16000,
             "system": systemPrompt,
             "messages": [
                 ["role": "user", "content": userText]
@@ -168,6 +170,16 @@ week and recipes each have exactly 5 entries, one per weekday, in order. grocery
             let planData = cleaned.data(using: .utf8),
             let plan = try? JSONDecoder().decode(MealPlan.self, from: planData)
         else {
+            throw ClaudeError.parseFailed
+        }
+        // The model occasionally returns a well-formed plan with the week and
+        // grocery list filled in but the recipes array empty (or short). That
+        // decodes fine yet bricks the Week tab: every card looks up its recipe
+        // by day, finds none, and renders a dead, non-tappable cell with no way
+        // to favorite or rate. Treat a plan whose recipes do not cover every
+        // weekday as a parse failure so planWeek retries with a corrective
+        // reminder instead of saving an unusable plan.
+        guard !plan.week.isEmpty, plan.recipes.count >= plan.week.count else {
             throw ClaudeError.parseFailed
         }
         return plan

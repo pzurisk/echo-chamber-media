@@ -25,7 +25,17 @@ struct WeekView: View {
                                     }
                                     .buttonStyle(.plain)
                                 } else {
-                                    DinnerCard(entry: entry, isFavorite: false, rating: nil, isKept: false)
+                                    // No recipe detail for this day (an older or
+                                    // incomplete plan). Show the card with a clear
+                                    // prompt instead of a card that silently does
+                                    // nothing when tapped.
+                                    DinnerCard(
+                                        entry: entry,
+                                        isFavorite: false,
+                                        rating: nil,
+                                        isKept: false,
+                                        missingRecipe: true
+                                    )
                                 }
                             }
                         }
@@ -101,6 +111,10 @@ struct DinnerCard: View {
     let isFavorite: Bool
     let rating: Int?
     let isKept: Bool
+    /// True when the plan has no recipe detail for this day, so the card
+    /// cannot open a recipe. Shows a prompt to regenerate rather than
+    /// looking tappable but doing nothing.
+    var missingRecipe: Bool = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -142,6 +156,13 @@ struct DinnerCard: View {
             }
             .font(.footnote)
             .foregroundStyle(Color.echoTextSecondary)
+
+            if missingRecipe {
+                Label("Recipe details didn't load. Regenerate this week on the Speak tab.", systemImage: "exclamationmark.triangle.fill")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+                    .padding(.top, 2)
+            }
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
