@@ -19,12 +19,13 @@ struct WeekView: View {
                                         DinnerCard(
                                             entry: entry,
                                             isFavorite: appState.isFavorite(recipe),
-                                            rating: appState.rating(forTitle: entry.title)
+                                            rating: appState.rating(forTitle: entry.title),
+                                            isKept: appState.isKept(recipe)
                                         )
                                     }
                                     .buttonStyle(.plain)
                                 } else {
-                                    DinnerCard(entry: entry, isFavorite: false, rating: nil)
+                                    DinnerCard(entry: entry, isFavorite: false, rating: nil, isKept: false)
                                 }
                             }
                         }
@@ -42,11 +43,19 @@ struct WeekView: View {
             }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    NavigationLink {
-                        FavoritesView()
-                    } label: {
-                        Image(systemName: "heart.fill")
-                            .foregroundStyle(Color.echoRed)
+                    HStack(spacing: 16) {
+                        NavigationLink {
+                            RecipeBoxView()
+                        } label: {
+                            Image(systemName: "books.vertical.fill")
+                                .foregroundStyle(Color.echoTextSecondary)
+                        }
+                        NavigationLink {
+                            FavoritesView()
+                        } label: {
+                            Image(systemName: "heart.fill")
+                                .foregroundStyle(Color.echoRed)
+                        }
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
@@ -85,11 +94,13 @@ struct WeekView: View {
     }
 }
 
-/// One night's dinner card: day, dish title, cuisine, cook time.
+/// One night's dinner card: day, dish title, cuisine, cook time. Shows a
+/// pin when the recipe is kept for the next generation.
 struct DinnerCard: View {
     let entry: WeekEntry
     let isFavorite: Bool
     let rating: Int?
+    let isKept: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -106,6 +117,11 @@ struct DinnerCard: View {
                     }
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.yellow)
+                }
+                if isKept {
+                    Image(systemName: "pin.fill")
+                        .font(.caption)
+                        .foregroundStyle(Color.echoTextSecondary)
                 }
                 if isFavorite {
                     Image(systemName: "heart.fill")

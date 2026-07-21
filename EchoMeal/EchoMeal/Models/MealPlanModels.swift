@@ -108,4 +108,72 @@ extension MealPlan {
     func recipe(forDay day: String) -> Recipe? {
         recipes.first { $0.day == day }
     }
+
+    /// Section that collects recipe ingredients missing from the list.
+    static let reconciledSectionName = "From recipes"
+
+    /// Lowercased, trimmed, and reduced to a rough singular (a trailing
+    /// "es" or "s" is dropped) so "Tomatoes" matches "tomato". Nothing
+    /// fancy on purpose; both sides of a comparison get the same treatment.
+    private static func normalizedForMatching(_ name: String) -> String {
+        var n = name.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+        if n.hasSuffix("es") {
+            n = String(n.dropLast(2))
+        } else if n.hasSuffix("s") {
+            n = String(n.dropLast())
+        }
+        return n
+    }
+
+    /// Returns a copy of the plan where every recipe ingredient is
+    /// guaranteed to appear on the grocery list. This exists because the
+    /// model occasionally omits recipe ingredients from the list, and the
+    /// household must never have to double check by hand. An ingredient
+    /// counts as covered when any grocery item name contains it or it
+    /// contains the grocery item name, after normalizing both sides.
+    /// Anything uncovered lands in a "From recipes" section, deduped by
+    /// normalized name (first qty wins). The new items carry estPrice 0
+    /// on purpose: estimatedTotal is a stored value from Claude, and
+    /// pricing the extras at 0 keeps the budget bar math honest.
+    func reconciledWithRecipes() -> MealPlan {
+        var groceryNames: [String] = []
+        for section in grocery.sections {
+            for item in section.items {
+                let normalized = Self.normalizedForMatching(item.name)
+                if !normalized.isEmpty {
+                    groceryNames.append(normalized)
+                }
+            }
+        }
+
+        var missing: [GroceryItem] = []
+        var missingNames = Set<String>()
+        for recipe in recipes {
+            for ingredient in recipe.ingredients {
+                let name = Self.normalizedForMatching(ingredient.item)
+                guard !name.isEmpty, !missingNames.contains(name) else { continue }
+                let covered = groceryNames.contains { grocery in
+                    grocery.contains(name) || name.contains(grocery)
+                }
+                guard !covered else { continue }
+                missingNames.insert(name)
+                missing.append(GroceryItem(
+                    name: ingredient.item,
+                    qty: ingredient.qty,
+                    estPrice: 0,
+                    pantry: false
+                ))
+            }
+        }
+
+        guard !missing.isEmpty else { return self }
+
+        var copy = self
+        if let index = copy.grocery.sections.firstIndex(where: { $0.name == Self.reconciledSectionName }) {
+            copy.grocery.sections[index].items.append(contentsOf: missing)
+        } else {
+            copy.grocery.sections.append(GrocerySection(name: Self.reconciledSectionName, items: missing))
+        }
+        return copy
+    }
 }

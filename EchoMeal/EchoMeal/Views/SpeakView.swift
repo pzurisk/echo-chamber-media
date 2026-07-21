@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// Tab 1. One large red circular button, centered, on a dark background.
-/// Tap once to listen, tap again to stop, or it auto-stops after about
-/// 2 seconds of silence. While Claude plans, shows "Planning your week."
+/// Tap once to listen, tap again to stop. There is no auto-stop. While
+/// Claude plans, shows "Planning your week."
 struct SpeakView: View {
     @EnvironmentObject private var appState: AppState
     @StateObject private var recorder = SpeechRecorder()
@@ -142,6 +142,21 @@ struct SpeakView: View {
                 Text("Tap once to talk, tap again when you're done.")
                     .font(.subheadline)
                     .foregroundStyle(Color.echoTextSecondary)
+                Text("Old recipes are never lost. They live in the Recipe Box on the Week tab.")
+                    .font(.caption)
+                    .foregroundStyle(Color.echoTextSecondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 32)
+                if !appState.keptRecipes.isEmpty {
+                    let count = appState.keptRecipes.count
+                    Text(count == 1
+                        ? "Keeping 1 pinned dinner in your next week."
+                        : "Keeping \(count) pinned dinners in your next week.")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(Color.echoRed)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 32)
+                }
             }
         }
         .frame(minHeight: 90)

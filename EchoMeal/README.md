@@ -16,9 +16,21 @@ TestFlight only. No App Store submission.
   recipe. Heart a recipe to save it to Favorites. Rate a meal 1 to 5 stars
   after cooking it: 4 and 5 stars pull future plans toward it, 1 and 2
   stars mean it never gets suggested again.
+- **Recipe Box.** Every generated recipe is archived automatically, newest
+  first, and nothing is ever removed on its own. Deleting is manual only,
+  from the Recipe Box screen (the books icon on the Week tab), with a
+  confirmation first. Searchable by title.
+- **Keep pins.** Pin any recipe (from the Recipe Box, a swipe, or the pin
+  in the recipe detail toolbar) to lock that exact dinner into the next
+  generated week. Claude places pinned dinners on sensible days, invents
+  only the remaining nights, and the grocery list covers everything. Pins
+  survive week after week until unpinned.
 - **List tab.** One consolidated grocery list grouped Proteins, Produce,
   Pantry, Dairy, Bread, Sauces, with a budget bar up top. Pantry staples
-  start pre-checked. Checking an item syncs to the other phone.
+  start pre-checked. Checking an item syncs to the other phone. The app
+  also cross-checks the list against every recipe's ingredients and adds
+  anything missing to a "From recipes" section, so the list is always
+  complete.
 - **Settings.** Budget target, dinners per week, household code.
 
 ## Project layout
@@ -38,7 +50,7 @@ EchoMeal/
     Services/ClaudeService.swift   Anthropic Messages API call + JSON parsing
     Services/CloudKitStore.swift   Public-database records + subscriptions
     State/AppState.swift           App-wide state, sync, local cache
-    Views/                     Speak, Week, RecipeDetail, Favorites, List, Settings
+    Views/                     Speak, Week, RecipeDetail, Favorites, RecipeBox, List, Settings
 ```
 
 ## 1. Create the Xcode project
@@ -108,8 +120,8 @@ them too.
 
 ## 4. CloudKit setup
 
-The app uses the **public database** with three records keyed by the fixed
-household code (`ZURISK-KITCHEN` in `HouseholdConfig.swift`):
+The app uses the **public database** with a small set of records keyed by
+the fixed household code (`ZURISK-KITCHEN` in `HouseholdConfig.swift`):
 
 | Record type   | Record name              | Fields                                |
 |---------------|--------------------------|---------------------------------------|
@@ -118,6 +130,7 @@ household code (`ZURISK-KITCHEN` in `HouseholdConfig.swift`):
 | Favorites     | `favorites-ZURISK-KITCHEN` | recipesJSON, householdID, updatedAt   |
 | TasteHistory  | `history-ZURISK-KITCHEN`   | historyJSON, householdID, updatedAt   |
 | Ratings       | `ratings-ZURISK-KITCHEN`   | ratingsJSON, householdID, updatedAt   |
+| RecipeBox     | `recipebox-ZURISK-KITCHEN` | recipesJSON, keptJSON, householdID, updatedAt |
 
 Steps:
 
@@ -177,6 +190,11 @@ to share one). The app shows a banner if iCloud is off.
    make sure step 4.4 (deploy schema) happened first.
 8. Builds expire after 90 days. When it nags, archive and upload again with
    a bumped build number.
+
+Note on push signing: the entitlements file sets aps-environment to
+development for device builds. When you archive and upload through the
+organizer, Xcode automatically re-signs the build with the production APS
+environment, so nothing needs changing by hand there.
 
 ## A more secure key setup (recommended eventually)
 

@@ -67,23 +67,49 @@ week and recipes each have exactly 5 entries, one per weekday, in order. grocery
     // MARK: - Public entry point
 
     /// Sends the transcript to Claude. If the reply fails to parse as JSON,
-    /// retries the call once with a corrective reminder appended.
+    /// retries the call once with a corrective reminder appended. Also
+    /// retries once, after a short pause, on transient transport failures
+    /// (timeout, dropped connection, no network, unreachable host) and on
+    /// HTTP 500 to 599 responses. 4xx errors never retry.
     /// tasteNotes carries what the app has learned about the household
     /// (favorites, cuisines they come back to, recent dinners) so the plan
     /// gets more personal over time.
-    static func planWeek(transcript: String, budget: Double, dinners: Int, tasteNotes: String = "") async throws -> MealPlan {
+    /// lockedRecipes are pinned dinners the household wants repeated exactly.
+    /// They go into the user context only; the system prompt never changes.
+    static func planWeek(transcript: String, budget: Double, dinners: Int, tasteNotes: String = "", lockedRecipes: [Recipe] = []) async throws -> MealPlan {
         var context = "Budget target: \(Int(budget)). Dinners: \(dinners). "
         if !tasteNotes.isEmpty {
             context += "Taste notes about this household: \(tasteNotes) "
         }
-        context += "Cravings: \(transcript)"
+        if !lockedRecipes.isEmpty {
+            let data = (try? JSONEncoder().encode(lockedRecipes)) ?? Data("[]".utf8)
+            let json = String(data: data, encoding: .utf8) ?? "[]"
+            if lockedRecipes.count >= dinners {
+                context += "Locked dinners: the household wants these exact dinners included in the week again, unchanged (same title, ingredients, steps). Every day is locked, so do not invent any new dinners. Place each locked dinner on a sensible day and make sure the grocery list covers all of their ingredients. Locked dinners JSON: \(json) "
+            } else {
+                context += "Locked dinners: the household wants these exact dinners included in the week again, unchanged (same title, ingredients, steps). Place each on a sensible day, generate only the remaining \(dinners - lockedRecipes.count) dinners as new ideas, and make sure the grocery list covers the locked dinners' ingredients too. Locked dinners JSON: \(json) "
+            }
+        }
+        context += "Cravings: \(transcript) "
+        context += "Coverage rule: every single ingredient used by any recipe in the plan must appear on the grocery list, either as its own item or as a clearly matching combined item. The household shops from this list alone, so nothing may be missing."
         do {
             return try await requestPlan(userText: context)
         } catch ClaudeError.parseFailed {
             let reminder = context + "\n\nReminder: return only valid JSON matching the schema. No prose, no markdown, no backticks."
             return try await requestPlan(userText: reminder)
+        } catch let error as URLError where Self.transientURLErrorCodes.contains(error.code) {
+            try await Task.sleep(nanoseconds: 2_000_000_000)
+            return try await requestPlan(userText: context)
+        } catch ClaudeError.badStatus(let code, _) where (500...599).contains(code) {
+            try await Task.sleep(nanoseconds: 2_000_000_000)
+            return try await requestPlan(userText: context)
         }
     }
+
+    /// Transport failures worth one retry. Anything else fails immediately.
+    private static let transientURLErrorCodes: Set<URLError.Code> = [
+        .timedOut, .networkConnectionLost, .notConnectedToInternet, .cannotConnectToHost
+    ]
 
     // MARK: - Request
 
