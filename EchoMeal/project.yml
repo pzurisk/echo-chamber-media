@@ -35,6 +35,11 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.echochambermedia.echomeal
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        # iPhone only. Must be set on the target: the project-level value is
+        # overridden by XcodeGen's per-target default of "1,2", which pulls in
+        # iPad and makes App Store validation demand all four orientations for
+        # iPad multitasking (upload error 90474) even though this app is portrait.
+        TARGETED_DEVICE_FAMILY: "1"
         INFOPLIST_FILE: EchoMeal/Info.plist
       configs:
         # aps-environment must be `development` locally and `production` for
