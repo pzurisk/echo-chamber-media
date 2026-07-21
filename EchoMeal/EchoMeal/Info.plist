@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Echo Meal</string>
+	<string>MealTime</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -23,9 +23,9 @@
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Echo Meal listens so you can speak your dinner ideas.</string>
+	<string>MealTime listens so you can speak your dinner ideas.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>Echo Meal turns what you say into a meal plan and grocery list.</string>
+	<string>MealTime turns what you say into a meal plan and grocery list.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>

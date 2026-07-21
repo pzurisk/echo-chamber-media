@@ -1,4 +1,9 @@
-# Echo Meal
+# MealTime (code folder: EchoMeal)
+
+The app's name on the phone is MealTime. The code folder, Xcode project,
+and bundle ID keep the original EchoMeal naming so nothing breaks
+(renaming a bundle ID would orphan the CloudKit container and everyone's
+data). Only the display name and user-facing text say MealTime.
 
 A private iOS app for Billy and Melissa. Speak your dinner cravings, get a
 full week of dinners, one checkable grocery list, and saved recipes, all

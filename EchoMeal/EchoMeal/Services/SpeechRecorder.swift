@@ -33,7 +33,7 @@ final class SpeechRecorder: NSObject, ObservableObject {
             DispatchQueue.main.async {
                 guard let self else { return }
                 guard status == .authorized else {
-                    self.errorMessage = "Speech recognition is turned off. Enable it for Echo Meal in Settings."
+                    self.errorMessage = "Speech recognition is turned off. Enable it for MealTime in Settings."
                     return
                 }
                 self.requestMicThenRecord()
@@ -52,7 +52,7 @@ final class SpeechRecorder: NSObject, ObservableObject {
             DispatchQueue.main.async {
                 guard let self else { return }
                 guard granted else {
-                    self.errorMessage = "Microphone access is off. Enable it for Echo Meal in Settings."
+                    self.errorMessage = "Microphone access is off. Enable it for MealTime in Settings."
                     return
                 }
                 self.beginRecording()
