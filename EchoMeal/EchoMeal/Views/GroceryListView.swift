@@ -196,6 +196,9 @@ struct GroceryRow: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("\(item.name), \(item.qty)\(checked ? ", checked" : "")")
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(item.name), \(item.qty)")
+        .accessibilityValue(checked ? "checked" : "not checked")
+        .accessibilityAddTraits(.isButton)
     }
 }

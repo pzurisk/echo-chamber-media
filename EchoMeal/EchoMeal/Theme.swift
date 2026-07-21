@@ -33,22 +33,56 @@ extension View {
 
 /// A 1 to 5 star row. Pass onTap to make it interactive; leave it nil for
 /// display only. Big touch targets so it is easy to hit after cooking.
+/// Interactive stars are real Buttons so VoiceOver can activate them, and
+/// the row supports the VoiceOver adjustable gesture (swipe up or down).
 struct StarRating: View {
     let rating: Int
     var onTap: ((Int) -> Void)? = nil
 
+    private var accessibilityText: String {
+        rating > 0 ? "Rated \(rating) of 5 stars" : "Not rated yet"
+    }
+
     var body: some View {
-        HStack(spacing: 8) {
-            ForEach(1...5, id: \.self) { star in
-                Image(systemName: star <= rating ? "star.fill" : "star")
-                    .font(onTap == nil ? .caption : .title2)
-                    .foregroundStyle(star <= rating ? Color.yellow : Color.echoTextSecondary)
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        onTap?(star)
+        if let onTap {
+            HStack(spacing: 8) {
+                ForEach(1...5, id: \.self) { star in
+                    Button {
+                        onTap(star)
+                    } label: {
+                        starImage(for: star)
                     }
+                    .buttonStyle(.plain)
+                }
             }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(accessibilityText)
+            .accessibilityValue(rating > 0 ? "\(rating) of 5" : "No rating")
+            .accessibilityAdjustableAction { direction in
+                switch direction {
+                case .increment:
+                    if rating < 5 { onTap(rating + 1) }
+                case .decrement:
+                    if rating > 1 { onTap(rating - 1) }
+                @unknown default:
+                    break
+                }
+            }
+        } else {
+            HStack(spacing: 8) {
+                ForEach(1...5, id: \.self) { star in
+                    starImage(for: star)
+                }
+            }
+            .accessibilityLabel(accessibilityText)
         }
-        .accessibilityLabel(rating > 0 ? "Rated \(rating) of 5 stars" : "Not rated yet")
+    }
+
+    /// One star, identical visuals for both paths.
+    private func starImage(for star: Int) -> some View {
+        Image(systemName: star <= rating ? "star.fill" : "star")
+            .font(onTap == nil ? .caption : .title2)
+            .foregroundStyle(star <= rating ? Color.yellow : Color.echoTextSecondary)
+            .contentShape(Rectangle())
     }
 }

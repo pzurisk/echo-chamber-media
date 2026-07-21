@@ -48,7 +48,7 @@ final class SpeechRecorder: NSObject, ObservableObject {
     // MARK: - Internals
 
     private func requestMicThenRecord() {
-        AVAudioSession.sharedInstance().requestRecordPermission { [weak self] granted in
+        AVAudioApplication.requestRecordPermission { [weak self] granted in
             DispatchQueue.main.async {
                 guard let self else { return }
                 guard granted else {

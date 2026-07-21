@@ -21,6 +21,9 @@ enum HouseholdConfig {
         static let cachedFavorites = "cachedFavoritesJSON"
         static let cachedHistory = "cachedHistoryJSON"
         static let cachedRatings = "cachedRatingsJSON"
+        static let cachedRecipeBox = "cachedRecipeBoxJSON"
+        static let cachedKeptRecipes = "cachedKeptRecipesJSON"
+        static let cachedEditDates = "cachedEditDates"
     }
 }
 

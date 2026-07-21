@@ -9,6 +9,7 @@ import Foundation
 ///   HouseholdPlan  "plan-<code>"       planJSON, householdID, updatedAt
 ///   GroceryState   "grocery-<code>"    checkedIDs [String], householdID, updatedAt
 ///   Favorites      "favorites-<code>"  recipesJSON, householdID, updatedAt
+///   RecipeBox      "recipebox-<code>"  recipesJSON, keptJSON, householdID, updatedAt
 ///
 /// CKQuerySubscriptions (predicate: householdID == code) push a silent
 /// notification to the other phone whenever a record changes. The one-time
@@ -20,6 +21,7 @@ final class CloudKitStore {
     static let favoritesRecordType = "Favorites"
     static let historyRecordType = "TasteHistory"
     static let ratingsRecordType = "Ratings"
+    static let recipeBoxRecordType = "RecipeBox"
 
     private let household = HouseholdConfig.code
     private let database: CKDatabase
@@ -35,6 +37,7 @@ final class CloudKitStore {
     private var favoritesRecordID: CKRecord.ID { CKRecord.ID(recordName: "favorites-\(household)") }
     private var historyRecordID: CKRecord.ID { CKRecord.ID(recordName: "history-\(household)") }
     private var ratingsRecordID: CKRecord.ID { CKRecord.ID(recordName: "ratings-\(household)") }
+    private var recipeBoxRecordID: CKRecord.ID { CKRecord.ID(recordName: "recipebox-\(household)") }
 
     // MARK: - Account
 
@@ -56,12 +59,15 @@ final class CloudKitStore {
         try await save(record)
     }
 
-    func fetchPlan() async -> MealPlan? {
+    /// Returns the plan plus the record's freshness date so the caller can
+    /// skip applying a cloud copy that is older than local edits.
+    func fetchPlan() async -> (plan: MealPlan, updatedAt: Date)? {
         guard let record = try? await database.record(for: planRecordID),
               let json = record["planJSON"] as? String,
-              let data = json.data(using: .utf8)
+              let data = json.data(using: .utf8),
+              let plan = try? JSONDecoder().decode(MealPlan.self, from: data)
         else { return nil }
-        return try? JSONDecoder().decode(MealPlan.self, from: data)
+        return (plan, freshness(of: record))
     }
 
     // MARK: - Grocery checked state
@@ -74,11 +80,13 @@ final class CloudKitStore {
         try await save(record)
     }
 
-    func fetchChecked() async -> Set<String>? {
+    /// Returns the checked IDs plus the record's freshness date so the caller
+    /// can skip applying a cloud copy that is older than local edits.
+    func fetchChecked() async -> (checked: Set<String>, updatedAt: Date)? {
         guard let record = try? await database.record(for: groceryRecordID),
               let ids = record["checkedIDs"] as? [String]
         else { return nil }
-        return Set(ids)
+        return (Set(ids), freshness(of: record))
     }
 
     // MARK: - Favorites
@@ -92,12 +100,15 @@ final class CloudKitStore {
         try await save(record)
     }
 
-    func fetchFavorites() async -> [Recipe]? {
+    /// Returns the favorites plus the record's freshness date so the caller
+    /// can skip applying a cloud copy that is older than local edits.
+    func fetchFavorites() async -> (recipes: [Recipe], updatedAt: Date)? {
         guard let record = try? await database.record(for: favoritesRecordID),
               let json = record["recipesJSON"] as? String,
-              let data = json.data(using: .utf8)
+              let data = json.data(using: .utf8),
+              let recipes = try? JSONDecoder().decode([Recipe].self, from: data)
         else { return nil }
-        return try? JSONDecoder().decode([Recipe].self, from: data)
+        return (recipes, freshness(of: record))
     }
 
     // MARK: - Taste history
@@ -111,12 +122,15 @@ final class CloudKitStore {
         try await save(record)
     }
 
-    func fetchHistory() async -> [PastDinner]? {
+    /// Returns the history plus the record's freshness date so the caller
+    /// can skip applying a cloud copy that is older than local edits.
+    func fetchHistory() async -> (dinners: [PastDinner], updatedAt: Date)? {
         guard let record = try? await database.record(for: historyRecordID),
               let json = record["historyJSON"] as? String,
-              let data = json.data(using: .utf8)
+              let data = json.data(using: .utf8),
+              let dinners = try? JSONDecoder().decode([PastDinner].self, from: data)
         else { return nil }
-        return try? JSONDecoder().decode([PastDinner].self, from: data)
+        return (dinners, freshness(of: record))
     }
 
     // MARK: - Ratings
@@ -131,12 +145,48 @@ final class CloudKitStore {
         try await save(record)
     }
 
-    func fetchRatings() async -> [String: Int]? {
+    /// Returns the ratings plus the record's freshness date so the caller
+    /// can skip applying a cloud copy that is older than local edits.
+    func fetchRatings() async -> (ratings: [String: Int], updatedAt: Date)? {
         guard let record = try? await database.record(for: ratingsRecordID),
               let json = record["ratingsJSON"] as? String,
-              let data = json.data(using: .utf8)
+              let data = json.data(using: .utf8),
+              let ratings = try? JSONDecoder().decode([String: Int].self, from: data)
         else { return nil }
-        return try? JSONDecoder().decode([String: Int].self, from: data)
+        return (ratings, freshness(of: record))
+    }
+
+    // MARK: - Recipe box
+
+    /// The full archive of every generated recipe plus the kept (pinned)
+    /// recipes locked into the next generation. Both live on one record so
+    /// they sync together.
+    func saveRecipeBox(_ recipes: [Recipe], kept: [Recipe]) async throws {
+        let recipesJSON = try String(data: JSONEncoder().encode(recipes), encoding: .utf8) ?? "[]"
+        let keptJSON = try String(data: JSONEncoder().encode(kept), encoding: .utf8) ?? "[]"
+        let record = await fetchOrCreate(recipeBoxRecordID, type: Self.recipeBoxRecordType)
+        record["recipesJSON"] = recipesJSON
+        record["keptJSON"] = keptJSON
+        record["householdID"] = household
+        record["updatedAt"] = Date()
+        try await save(record)
+    }
+
+    /// Returns the archive and pins plus the record's freshness date so the
+    /// caller can skip applying a cloud copy that is older than local edits.
+    func fetchRecipeBox() async -> (recipes: [Recipe], kept: [Recipe], updatedAt: Date)? {
+        guard let record = try? await database.record(for: recipeBoxRecordID),
+              let recipesJSON = record["recipesJSON"] as? String,
+              let recipesData = recipesJSON.data(using: .utf8),
+              let recipes = try? JSONDecoder().decode([Recipe].self, from: recipesData)
+        else { return nil }
+        var kept: [Recipe] = []
+        if let keptJSON = record["keptJSON"] as? String,
+           let keptData = keptJSON.data(using: .utf8),
+           let decoded = try? JSONDecoder().decode([Recipe].self, from: keptData) {
+            kept = decoded
+        }
+        return (recipes, kept, freshness(of: record))
     }
 
     // MARK: - Subscriptions
@@ -148,7 +198,7 @@ final class CloudKitStore {
         let types = [
             Self.planRecordType, Self.groceryRecordType,
             Self.favoritesRecordType, Self.historyRecordType,
-            Self.ratingsRecordType
+            Self.ratingsRecordType, Self.recipeBoxRecordType
         ]
         for type in types {
             let subscriptionID = "sub-\(type)-\(household)"
@@ -168,6 +218,13 @@ final class CloudKitStore {
 
     // MARK: - Helpers
 
+    /// Freshness date for a fetched record: the explicit "updatedAt" field,
+    /// then CloudKit's modification date, then distantPast so a record with
+    /// no date never beats local data.
+    private func freshness(of record: CKRecord) -> Date {
+        (record["updatedAt"] as? Date) ?? record.modificationDate ?? .distantPast
+    }
+
     private func fetchOrCreate(_ id: CKRecord.ID, type: String) async -> CKRecord {
         if let existing = try? await database.record(for: id) {
             return existing
@@ -177,14 +234,23 @@ final class CloudKitStore {
 
     /// Saves the record. On a version conflict (the other phone wrote in
     /// between), retries once by applying our keys onto the server's copy,
-    /// so a simultaneous check-off does not fail the write.
+    /// so a simultaneous check-off does not fail the write. The grocery
+    /// record's checkedIDs field is special-cased: the retry writes the
+    /// union of both phones' arrays so neither side's check-offs are lost.
     private func save(_ record: CKRecord) async throws {
         do {
             _ = try await database.save(record)
         } catch let error as CKError where error.code == .serverRecordChanged {
             guard let server = error.serverRecord else { throw error }
             for key in record.allKeys() {
-                server[key] = record[key]
+                if record.recordType == Self.groceryRecordType,
+                   key == "checkedIDs",
+                   let localIDs = record[key] as? [String],
+                   let serverIDs = server[key] as? [String] {
+                    server[key] = Array(Set(localIDs).union(serverIDs))
+                } else {
+                    server[key] = record[key]
+                }
             }
             _ = try await database.save(server)
         }
