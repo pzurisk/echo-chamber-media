@@ -136,6 +136,16 @@ week and recipes each have exactly 5 entries, one per weekday, in order. grocery
             // Room for a full week: 5 recipes with ingredients and steps, plus
             // the grocery list. 8000 could clip a verbose plan mid-JSON.
             "max_tokens": 16000,
+            // claude-sonnet-5 runs adaptive (extended) thinking by DEFAULT when
+            // the thinking field is omitted, and max_tokens caps thinking +
+            // output combined. On a rich request (taste-history notes + the
+            // retry reminder) the model spent ~8k+ tokens thinking before any
+            // JSON, crowding out or truncating the plan and returning empty or
+            // partial recipes. This is a strict structured-JSON task driven by
+            // a detailed system prompt, so thinking adds little; disabling it
+            // cut output from ~14k tokens to ~4k and made recipes reliably
+            // complete. (Sonnet 5 accepts "disabled"; only Fable 5 rejects it.)
+            "thinking": ["type": "disabled"],
             "system": systemPrompt,
             "messages": [
                 ["role": "user", "content": userText]
