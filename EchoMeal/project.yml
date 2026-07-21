@@ -29,5 +29,6 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.echochambermedia.echomeal
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         INFOPLIST_FILE: EchoMeal/Info.plist
         CODE_SIGN_ENTITLEMENTS: EchoMeal/EchoMeal.entitlements
