@@ -37,7 +37,7 @@ const primaryLinks: LinkItem[] = [
   {
     label: "Get a Free Quote",
     description: "Tell us about your project and we'll get back the same day.",
-    href: "mailto:Echochambermediasales@gmail.com",
+    href: "mailto:sales@echochambermedia.com",
     external: true,
   },
   {
@@ -134,8 +134,8 @@ const socials: SocialItem[] = [
   },
   {
     label: "Email",
-    handle: "Echochambermediasales@gmail.com",
-    href: "mailto:Echochambermediasales@gmail.com",
+    handle: "sales@echochambermedia.com",
+    href: "mailto:sales@echochambermedia.com",
     icon: MailIcon,
   },
 ];
@@ -300,7 +300,7 @@ export default function LinksPage() {
               you need and we&apos;ll put a plan together.
             </p>
             <a
-              href="mailto:Echochambermediasales@gmail.com"
+              href="mailto:sales@echochambermedia.com"
               className="inline-block bg-brand-gold text-brand-black font-heading font-bold py-4 px-8 rounded-lg hover:bg-brand-gold-hover transition-all uppercase tracking-editorial"
             >
               Tell Us About Your Project

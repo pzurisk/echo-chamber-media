@@ -49,7 +49,7 @@ export default function Contact() {
     e.preventDefault();
     setSending(true);
     try {
-      await fetch("https://formsubmit.co/ajax/Echochambermediasales@gmail.com", {
+      await fetch("https://formsubmit.co/ajax/sales@echochambermedia.com", {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify({
@@ -76,7 +76,7 @@ export default function Contact() {
 
       setSubmitted(true);
     } catch {
-      alert("Something went wrong. Please call us at (989) 308-1633 or email Echochambermediasales@gmail.com");
+      alert("Something went wrong. Please call us at (989) 308-1633 or email sales@echochambermedia.com");
     } finally {
       setSending(false);
     }
@@ -173,10 +173,10 @@ export default function Contact() {
           <div className="border-t border-brand-charcoal pt-5">
             <p className={labelBase}>Email</p>
             <a
-              href="mailto:Echochambermediasales@gmail.com"
+              href="mailto:sales@echochambermedia.com"
               className="text-brand-off-white hover:text-brand-gold transition-colors font-body text-sm break-all"
             >
-              Echochambermediasales@gmail.com
+              sales@echochambermedia.com
             </a>
           </div>
 

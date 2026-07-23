@@ -85,7 +85,7 @@ const jsonLd = {
   url: "https://echochambermedia.com",
   image: "https://echochambermedia.com/images/the%20classified%20mind.png",
   telephone: "+1-989-308-1633",
-  email: "Echochambermediasales@gmail.com",
+  email: "sales@echochambermedia.com",
   description:
     "Cinematic video production company based in Las Vegas specializing in wedding films, brand content, commercials, documentaries, music videos, and property walk-throughs.",
   priceRange: "$$",

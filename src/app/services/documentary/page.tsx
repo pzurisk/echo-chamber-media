@@ -338,7 +338,7 @@ export default function DocumentaryPage() {
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
             <a
-              href="mailto:Echochambermediasales@gmail.com?subject=Documentary%20Production%20Inquiry"
+              href="mailto:sales@echochambermedia.com?subject=Documentary%20Production%20Inquiry"
               className="px-8 py-4 bg-brand-gold text-brand-black font-heading font-black uppercase tracking-editorial hover:bg-opacity-90 transition duration-300 rounded-lg"
             >
               Start a Conversation

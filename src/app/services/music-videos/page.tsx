@@ -449,7 +449,7 @@ export default function MusicVideosPage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a
-                href="mailto:Echochambermediasales@gmail.com"
+                href="mailto:sales@echochambermedia.com"
                 className="inline-block bg-brand-gold text-brand-black font-heading font-bold py-4 px-8 rounded-lg hover:bg-opacity-90 transition-all"
               >
                 Inquire About Your Project
@@ -476,7 +476,7 @@ export default function MusicVideosPage() {
             image: 'https://echochambermedia.com/og-image.jpg',
             description: 'Professional music video production in Las Vegas. Cinematic music videos for artists, from performance captures to concept narratives.',
             telephone: '+1-702-555-ECHO',
-            email: 'Echochambermediasales@gmail.com',
+            email: 'sales@echochambermedia.com',
             address: {
               '@type': 'PostalAddress',
               addressLocality: 'Las Vegas',

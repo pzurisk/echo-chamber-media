@@ -80,7 +80,7 @@ export default function MealTimePrivacyPage() {
               Deleting your data
             </h2>
             <p className="font-body text-brand-off-white leading-relaxed">
-              Delete recipes in the app from the Recipe Box, or delete the app and your device cache goes with it. Starting a new household in Settings disconnects your phone from the old shared data. To have the old household data removed from iCloud entirely, email us at Echochambermediasales@gmail.com with your household code and we will delete it.
+              Delete recipes in the app from the Recipe Box, or delete the app and your device cache goes with it. Starting a new household in Settings disconnects your phone from the old shared data. To have the old household data removed from iCloud entirely, email us at sales@echochambermedia.com with your household code and we will delete it.
             </p>
 
             <h2 className="font-heading text-2xl uppercase tracking-editorial text-brand-gold mt-12 mb-4">
@@ -88,8 +88,8 @@ export default function MealTimePrivacyPage() {
             </h2>
             <p className="font-body text-brand-off-white leading-relaxed">
               Questions about this policy? Email{' '}
-              <a href="mailto:Echochambermediasales@gmail.com" className="text-brand-gold hover:underline">
-                Echochambermediasales@gmail.com
+              <a href="mailto:sales@echochambermedia.com" className="text-brand-gold hover:underline">
+                sales@echochambermedia.com
               </a>
               . For help using the app, see{' '}
               <Link href="/mealtime/support" className="text-brand-gold hover:underline">

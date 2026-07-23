@@ -31,10 +31,10 @@ export default function Footer() {
               (989) 308-1633
             </a>
             <a
-              href="mailto:Echochambermediasales@gmail.com"
+              href="mailto:sales@echochambermedia.com"
               className="block text-sm text-brand-gray hover:text-brand-gold font-body transition-colors duration-300 break-all"
             >
-              Echochambermediasales@gmail.com
+              sales@echochambermedia.com
             </a>
             <Link
               href="/#contact"
