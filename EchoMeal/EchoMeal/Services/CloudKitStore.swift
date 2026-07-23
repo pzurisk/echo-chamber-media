@@ -14,6 +14,12 @@ import Foundation
 /// CKQuerySubscriptions (predicate: householdID == code) push a silent
 /// notification to the other phone whenever a record changes. The one-time
 /// CloudKit Console step for this is in the README.
+///
+/// The household code lives in UserDefaults and can change while the app
+/// is running (create, join, or leave a household), so it is read fresh on
+/// every call rather than captured at init. While no code is set (first
+/// launch before onboarding), every fetch returns nil and every save and
+/// subscription call is a no-op.
 final class CloudKitStore {
 
     static let planRecordType = "HouseholdPlan"
@@ -23,7 +29,8 @@ final class CloudKitStore {
     static let ratingsRecordType = "Ratings"
     static let recipeBoxRecordType = "RecipeBox"
 
-    private let household = HouseholdConfig.code
+    /// Always the current code, never a stale copy from init.
+    private var household: String { HouseholdConfig.code }
     private let database: CKDatabase
     private let container: CKContainer
 
@@ -51,6 +58,7 @@ final class CloudKitStore {
     // MARK: - Plan
 
     func savePlan(_ plan: MealPlan) async throws {
+        guard !household.isEmpty else { return }
         let json = try String(data: JSONEncoder().encode(plan), encoding: .utf8) ?? "{}"
         let record = await fetchOrCreate(planRecordID, type: Self.planRecordType)
         record["planJSON"] = json
@@ -62,7 +70,8 @@ final class CloudKitStore {
     /// Returns the plan plus the record's freshness date so the caller can
     /// skip applying a cloud copy that is older than local edits.
     func fetchPlan() async -> (plan: MealPlan, updatedAt: Date)? {
-        guard let record = try? await database.record(for: planRecordID),
+        guard !household.isEmpty,
+              let record = try? await database.record(for: planRecordID),
               let json = record["planJSON"] as? String,
               let data = json.data(using: .utf8),
               let plan = try? JSONDecoder().decode(MealPlan.self, from: data)
@@ -73,6 +82,7 @@ final class CloudKitStore {
     // MARK: - Grocery checked state
 
     func saveChecked(_ ids: Set<String>) async throws {
+        guard !household.isEmpty else { return }
         let record = await fetchOrCreate(groceryRecordID, type: Self.groceryRecordType)
         record["checkedIDs"] = Array(ids)
         record["householdID"] = household
@@ -83,7 +93,8 @@ final class CloudKitStore {
     /// Returns the checked IDs plus the record's freshness date so the caller
     /// can skip applying a cloud copy that is older than local edits.
     func fetchChecked() async -> (checked: Set<String>, updatedAt: Date)? {
-        guard let record = try? await database.record(for: groceryRecordID),
+        guard !household.isEmpty,
+              let record = try? await database.record(for: groceryRecordID),
               let ids = record["checkedIDs"] as? [String]
         else { return nil }
         return (Set(ids), freshness(of: record))
@@ -92,6 +103,7 @@ final class CloudKitStore {
     // MARK: - Favorites
 
     func saveFavorites(_ recipes: [Recipe]) async throws {
+        guard !household.isEmpty else { return }
         let json = try String(data: JSONEncoder().encode(recipes), encoding: .utf8) ?? "[]"
         let record = await fetchOrCreate(favoritesRecordID, type: Self.favoritesRecordType)
         record["recipesJSON"] = json
@@ -103,7 +115,8 @@ final class CloudKitStore {
     /// Returns the favorites plus the record's freshness date so the caller
     /// can skip applying a cloud copy that is older than local edits.
     func fetchFavorites() async -> (recipes: [Recipe], updatedAt: Date)? {
-        guard let record = try? await database.record(for: favoritesRecordID),
+        guard !household.isEmpty,
+              let record = try? await database.record(for: favoritesRecordID),
               let json = record["recipesJSON"] as? String,
               let data = json.data(using: .utf8),
               let recipes = try? JSONDecoder().decode([Recipe].self, from: data)
@@ -114,6 +127,7 @@ final class CloudKitStore {
     // MARK: - Taste history
 
     func saveHistory(_ dinners: [PastDinner]) async throws {
+        guard !household.isEmpty else { return }
         let json = try String(data: JSONEncoder().encode(dinners), encoding: .utf8) ?? "[]"
         let record = await fetchOrCreate(historyRecordID, type: Self.historyRecordType)
         record["historyJSON"] = json
@@ -125,7 +139,8 @@ final class CloudKitStore {
     /// Returns the history plus the record's freshness date so the caller
     /// can skip applying a cloud copy that is older than local edits.
     func fetchHistory() async -> (dinners: [PastDinner], updatedAt: Date)? {
-        guard let record = try? await database.record(for: historyRecordID),
+        guard !household.isEmpty,
+              let record = try? await database.record(for: historyRecordID),
               let json = record["historyJSON"] as? String,
               let data = json.data(using: .utf8),
               let dinners = try? JSONDecoder().decode([PastDinner].self, from: data)
@@ -137,6 +152,7 @@ final class CloudKitStore {
 
     /// Star ratings keyed by recipe title, 1 through 5.
     func saveRatings(_ ratings: [String: Int]) async throws {
+        guard !household.isEmpty else { return }
         let json = try String(data: JSONEncoder().encode(ratings), encoding: .utf8) ?? "{}"
         let record = await fetchOrCreate(ratingsRecordID, type: Self.ratingsRecordType)
         record["ratingsJSON"] = json
@@ -148,7 +164,8 @@ final class CloudKitStore {
     /// Returns the ratings plus the record's freshness date so the caller
     /// can skip applying a cloud copy that is older than local edits.
     func fetchRatings() async -> (ratings: [String: Int], updatedAt: Date)? {
-        guard let record = try? await database.record(for: ratingsRecordID),
+        guard !household.isEmpty,
+              let record = try? await database.record(for: ratingsRecordID),
               let json = record["ratingsJSON"] as? String,
               let data = json.data(using: .utf8),
               let ratings = try? JSONDecoder().decode([String: Int].self, from: data)
@@ -162,6 +179,7 @@ final class CloudKitStore {
     /// recipes locked into the next generation. Both live on one record so
     /// they sync together.
     func saveRecipeBox(_ recipes: [Recipe], kept: [Recipe]) async throws {
+        guard !household.isEmpty else { return }
         let recipesJSON = try String(data: JSONEncoder().encode(recipes), encoding: .utf8) ?? "[]"
         let keptJSON = try String(data: JSONEncoder().encode(kept), encoding: .utf8) ?? "[]"
         let record = await fetchOrCreate(recipeBoxRecordID, type: Self.recipeBoxRecordType)
@@ -175,7 +193,8 @@ final class CloudKitStore {
     /// Returns the archive and pins plus the record's freshness date so the
     /// caller can skip applying a cloud copy that is older than local edits.
     func fetchRecipeBox() async -> (recipes: [Recipe], kept: [Recipe], updatedAt: Date)? {
-        guard let record = try? await database.record(for: recipeBoxRecordID),
+        guard !household.isEmpty,
+              let record = try? await database.record(for: recipeBoxRecordID),
               let recipesJSON = record["recipesJSON"] as? String,
               let recipesData = recipesJSON.data(using: .utf8),
               let recipes = try? JSONDecoder().decode([Recipe].self, from: recipesData)
@@ -194,15 +213,29 @@ final class CloudKitStore {
     /// Registers silent-push query subscriptions so this phone refreshes
     /// when the other one changes something. Safe to call on every launch;
     /// saving an existing subscription ID just succeeds or errors quietly.
+    /// Subscription IDs include the household code, so stale subscriptions
+    /// left behind by a previous code (after joining or starting a new
+    /// household) are found and deleted first.
     func ensureSubscriptions() async {
+        let code = household
+        guard !code.isEmpty else { return }
         let types = [
             Self.planRecordType, Self.groceryRecordType,
             Self.favoritesRecordType, Self.historyRecordType,
             Self.ratingsRecordType, Self.recipeBoxRecordType
         ]
+        let wantedIDs = Set(types.map { "sub-\($0)-\(code)" })
+
+        // Drop subscriptions that belong to a different household code.
+        if let existing = try? await database.allSubscriptions() {
+            for subscription in existing where !wantedIDs.contains(subscription.subscriptionID) {
+                _ = try? await database.deleteSubscription(withID: subscription.subscriptionID)
+            }
+        }
+
         for type in types {
-            let subscriptionID = "sub-\(type)-\(household)"
-            let predicate = NSPredicate(format: "householdID == %@", household)
+            let subscriptionID = "sub-\(type)-\(code)"
+            let predicate = NSPredicate(format: "householdID == %@", code)
             let subscription = CKQuerySubscription(
                 recordType: type,
                 predicate: predicate,

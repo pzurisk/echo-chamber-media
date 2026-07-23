@@ -8,7 +8,8 @@ data). Only the display name and user-facing text say MealTime.
 A private iOS app for Billy and Melissa. Speak your dinner cravings, get a
 full week of dinners, one checkable grocery list, and saved recipes, all
 synced live between both phones through CloudKit. Distributed through
-TestFlight only. No App Store submission.
+TestFlight and, as of this round, prepared for an unlisted App Store
+release.
 
 ## What it does
 
@@ -36,7 +37,8 @@ TestFlight only. No App Store submission.
   also cross-checks the list against every recipe's ingredients and adds
   anything missing to a "From recipes" section, so the list is always
   complete.
-- **Settings.** Budget target, dinners per week, household code.
+- **Settings.** Budget target, dinners per week, household code (view it,
+  share it, start a new household, or join a different one).
 
 ## Project layout
 
@@ -49,13 +51,13 @@ EchoMeal/
     Info.plist                 Usage descriptions, background modes, API key slot
     EchoMeal.entitlements      CloudKit + push entitlements
     Theme.swift                Colors and card styling
-    Config/HouseholdConfig.swift   Household code + container ID
+    Config/HouseholdConfig.swift   Household code storage, generation, migration + container ID
     Models/MealPlanModels.swift    Codable types matching Claude's JSON schema
     Services/SpeechRecorder.swift  Mic + SFSpeechRecognizer, tap to start and stop
     Services/ClaudeService.swift   Anthropic Messages API call + JSON parsing
     Services/CloudKitStore.swift   Public-database records + subscriptions
     State/AppState.swift           App-wide state, sync, local cache
-    Views/                     Speak, Week, RecipeDetail, Favorites, RecipeBox, List, Settings
+    Views/                     Onboarding, Speak, Week, RecipeDetail, Favorites, RecipeBox, List, Settings
 ```
 
 ## 1. Create the Xcode project
@@ -126,16 +128,26 @@ them too.
 ## 4. CloudKit setup
 
 The app uses the **public database** with a small set of records keyed by
-the fixed household code (`ZURISK-KITCHEN` in `HouseholdConfig.swift`):
+a per-household code. There is no fixed code anymore. On first launch the
+app shows onboarding: one phone taps "Start our household" and gets a
+fresh code in the format `MEAL-XXXXXX`, and the other phone joins by
+typing that code. Installs from before per-household codes (the ones that
+already synced under `ZURISK-KITCHEN`) adopt that legacy code
+automatically on update, so existing phones keep their data and keep
+syncing with each other. The code is visible and changeable in Settings.
 
-| Record type   | Record name              | Fields                                |
-|---------------|--------------------------|---------------------------------------|
-| HouseholdPlan | `plan-ZURISK-KITCHEN`      | planJSON, householdID, updatedAt      |
-| GroceryState  | `grocery-ZURISK-KITCHEN`   | checkedIDs, householdID, updatedAt    |
-| Favorites     | `favorites-ZURISK-KITCHEN` | recipesJSON, householdID, updatedAt   |
-| TasteHistory  | `history-ZURISK-KITCHEN`   | historyJSON, householdID, updatedAt   |
-| Ratings       | `ratings-ZURISK-KITCHEN`   | ratingsJSON, householdID, updatedAt   |
-| RecipeBox     | `recipebox-ZURISK-KITCHEN` | recipesJSON, keptJSON, householdID, updatedAt |
+The code works like a house key. Anyone who has it can see and edit the
+meal plan, the grocery list, and the saved recipes, so share it only with
+your household.
+
+| Record type   | Record name         | Fields                                |
+|---------------|---------------------|---------------------------------------|
+| HouseholdPlan | `plan-<code>`       | planJSON, householdID, updatedAt      |
+| GroceryState  | `grocery-<code>`    | checkedIDs, householdID, updatedAt    |
+| Favorites     | `favorites-<code>`  | recipesJSON, householdID, updatedAt   |
+| TasteHistory  | `history-<code>`    | historyJSON, householdID, updatedAt   |
+| Ratings       | `ratings-<code>`    | ratingsJSON, householdID, updatedAt   |
+| RecipeBox     | `recipebox-<code>`  | recipesJSON, keptJSON, householdID, updatedAt |
 
 Steps:
 
@@ -155,7 +167,10 @@ Steps:
    again any time the schema changes.
 
 The app registers the subscriptions itself on every launch
-(`CloudKitStore.ensureSubscriptions`), so there is nothing to create by hand.
+(`CloudKitStore.ensureSubscriptions`), so there is nothing to create by
+hand. Subscription IDs include the household code, and stale subscriptions
+left over from an old code are deleted automatically when a phone starts
+or joins a different household.
 
 Both phones must be signed into iCloud (any two Apple IDs, they do not need
 to share one). The app shows a banner if iCloud is off.
@@ -201,11 +216,21 @@ development for device builds. When you archive and upload through the
 organizer, Xcode automatically re-signs the build with the production APS
 environment, so nothing needs changing by hand there.
 
-## A more secure key setup (recommended eventually)
+## A more secure key setup (built in now)
 
-Two lines, as promised: instead of shipping the Anthropic key inside the
-app, put the key in a tiny serverless proxy (a Cloudflare Worker or Vercel
-function) that forwards requests to api.anthropic.com, and point
-`ClaudeService` at that URL with no key on the device at all. Anyone who
-unzips an IPA can read an embedded key; a proxy keeps it server-side and
-lets you rotate or rate-limit without shipping a new build.
+This is no longer hypothetical. The repo ships a tiny Cloudflare Worker
+relay in `Proxy/` that holds the Anthropic key server side. Deployment
+steps, key rotation, and the xcconfig gotchas are all in
+[Proxy/README.md](Proxy/README.md).
+
+How the app picks a mode: when `CLAUDE_PROXY_URL` is set in
+`Secrets.xcconfig`, `ClaudeService` automatically sends requests through
+the Worker with no key on the device (plus an `x-app-token` header if
+`CLAUDE_PROXY_TOKEN` is set). When it is not set, the app falls back to
+calling api.anthropic.com directly with the embedded `ANTHROPIC_API_KEY`,
+exactly as before, so nothing breaks until the relay is deployed.
+
+App Store builds should ALWAYS use the proxy, with `ANTHROPIC_API_KEY`
+left empty so no key ships in the binary. Anyone who unzips an IPA can
+read an embedded key; the relay keeps it server side and lets you rotate
+or rate-limit without shipping a new build.

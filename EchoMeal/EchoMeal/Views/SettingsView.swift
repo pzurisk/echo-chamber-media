@@ -8,6 +8,10 @@ struct SettingsView: View {
     @AppStorage(HouseholdConfig.Keys.budgetTarget) private var budgetTarget = 100.0
     @AppStorage(HouseholdConfig.Keys.dinnersPerWeek) private var dinnersPerWeek = 5
 
+    @State private var showNewHouseholdConfirm = false
+    @State private var joinCode = ""
+    @State private var joinError: String?
+
     var body: some View {
         NavigationStack {
             Form {
@@ -37,11 +41,37 @@ struct SettingsView: View {
                     HStack {
                         Text("Code")
                         Spacer()
-                        Text(HouseholdConfig.code)
+                        Text(appState.householdCode)
                             .font(.body.monospaced())
                             .foregroundStyle(Color.echoTextSecondary)
+                        ShareLink(item: appState.householdCode) {
+                            Image(systemName: "square.and.arrow.up")
+                        }
+                        .tint(.echoRed)
                     }
-                    Text("Both phones use this code, so you both see the same week, list, and favorites.")
+                    Text("Both phones use this code, so you both see the same week, list, and favorites. Share it only with your household; anyone who has it can see and edit your plan.")
+                        .font(.caption)
+                        .foregroundStyle(Color.echoTextSecondary)
+                    Button("Start a new household", role: .destructive) {
+                        showNewHouseholdConfirm = true
+                    }
+                }
+
+                Section("Join a different household") {
+                    TextField("MEAL-ABC123", text: $joinCode)
+                        .font(.body.monospaced())
+                        .textInputAutocapitalization(.characters)
+                        .autocorrectionDisabled()
+                        .submitLabel(.join)
+                        .onSubmit(attemptJoin)
+                    if let joinError {
+                        Text(joinError)
+                            .font(.caption)
+                            .foregroundStyle(.orange)
+                    }
+                    Button("Join") { attemptJoin() }
+                        .disabled(joinCode.trimmingCharacters(in: .whitespaces).isEmpty)
+                    Text("Joining switches this phone to that household's shared plan, list, and favorites.")
                         .font(.caption)
                         .foregroundStyle(Color.echoTextSecondary)
                 }
@@ -72,7 +102,26 @@ struct SettingsView: View {
                     Button("Done") { dismiss() }
                 }
             }
+            .alert("Start a new household?", isPresented: $showNewHouseholdConfirm) {
+                Button("Cancel", role: .cancel) {}
+                Button("Start new", role: .destructive) {
+                    appState.leaveHouseholdAndStartNew()
+                }
+            } message: {
+                Text("This disconnects this phone from the current shared data and makes a fresh code. Your partner keeps the old data. Continue?")
+            }
         }
         .preferredColorScheme(.dark)
+    }
+
+    /// Shared by the text field's submit and the Join button. On success
+    /// the field clears; on a too-short code an inline error shows.
+    private func attemptJoin() {
+        if appState.joinHousehold(code: joinCode) {
+            joinError = nil
+            joinCode = ""
+        } else {
+            joinError = "That code looks too short. Double check it and try again."
+        }
     }
 }

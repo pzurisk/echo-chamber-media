@@ -2,9 +2,13 @@ import Foundation
 
 /// Calls the Anthropic Messages API and turns a voice transcript into a MealPlan.
 ///
-/// The API key is read from Info.plist (ANTHROPIC_API_KEY), which is filled in
-/// at build time from the gitignored Secrets.xcconfig. See README for the more
-/// secure serverless-proxy option.
+/// Two modes, chosen at build time from the gitignored Secrets.xcconfig:
+/// - Proxy mode: if CLAUDE_PROXY_URL is set in Info.plist, requests go to the
+///   Cloudflare Worker relay (see Proxy/README.md). The Anthropic key lives
+///   server side and no key ships on the device. An optional CLAUDE_PROXY_TOKEN
+///   is sent as the x-app-token header so only the app can use the relay.
+/// - Direct mode: if no proxy is configured, the app calls api.anthropic.com
+///   with the embedded ANTHROPIC_API_KEY from Info.plist, as before.
 enum ClaudeService {
 
     enum ClaudeError: LocalizedError {
@@ -16,7 +20,7 @@ enum ClaudeService {
         var errorDescription: String? {
             switch self {
             case .missingKey:
-                return "No API key found. Add ANTHROPIC_API_KEY to Secrets.xcconfig and rebuild."
+                return "No API key found. Add ANTHROPIC_API_KEY (or CLAUDE_PROXY_URL for the relay) to Secrets.xcconfig and rebuild."
             case .badStatus(let code, let body):
                 return "The planning service returned an error (\(code)). \(body)"
             case .emptyReply:
@@ -113,21 +117,43 @@ week and recipes each have exactly 5 entries, one per weekday, in order. grocery
 
     // MARK: - Request
 
-    private static func requestPlan(userText: String) async throws -> MealPlan {
+    /// Reads an optional value from Info.plist. Values arrive there from
+    /// Secrets.xcconfig via build settings, so an entry that was never set
+    /// shows up as an empty string or as the raw unresolved "$(NAME)"
+    /// placeholder. Both count as not configured.
+    private static func configValue(_ key: String) -> String? {
         guard
-            let key = Bundle.main.object(forInfoDictionaryKey: "ANTHROPIC_API_KEY") as? String,
-            !key.isEmpty, !key.hasPrefix("$(")
+            let value = Bundle.main.object(forInfoDictionaryKey: key) as? String,
+            !value.isEmpty, !value.hasPrefix("$(")
         else {
-            throw ClaudeError.missingKey
+            return nil
         }
+        return value
+    }
 
-        var request = URLRequest(url: URL(string: "https://api.anthropic.com/v1/messages")!)
+    private static func requestPlan(userText: String) async throws -> MealPlan {
+        var request: URLRequest
+        if let proxyString = configValue("CLAUDE_PROXY_URL"),
+           let proxyURL = URL(string: proxyString) {
+            // Proxy mode. The Worker holds the Anthropic key server side and
+            // relays the response verbatim, so no key is needed on the device.
+            request = URLRequest(url: proxyURL)
+            if let token = configValue("CLAUDE_PROXY_TOKEN") {
+                request.setValue(token, forHTTPHeaderField: "x-app-token")
+            }
+        } else {
+            // Direct mode. Requires the embedded API key, exactly as before.
+            guard let key = configValue("ANTHROPIC_API_KEY") else {
+                throw ClaudeError.missingKey
+            }
+            request = URLRequest(url: URL(string: "https://api.anthropic.com/v1/messages")!)
+            request.setValue(key, forHTTPHeaderField: "x-api-key")
+        }
         request.httpMethod = "POST"
         // Planning a full week can take a while. Give the model room.
         request.timeoutInterval = 240
-        request.setValue(key, forHTTPHeaderField: "x-api-key")
         // Note: the API version header is 2023-06-01. That value is the
-        // current, correct one for the Messages API.
+        // current, correct one for the Messages API. The proxy forwards it.
         request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
         request.setValue("application/json", forHTTPHeaderField: "content-type")
 
