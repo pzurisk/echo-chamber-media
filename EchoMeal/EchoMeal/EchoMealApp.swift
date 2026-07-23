@@ -7,12 +7,23 @@ struct EchoMealApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var appState = AppState()
     @Environment(\.scenePhase) private var scenePhase
+    /// Drives the first-launch onboarding cover. Set once at launch from
+    /// AppState.isOnboarded; OnboardingView dismisses the cover itself when
+    /// setup is done (after showing the new code, or after a join).
+    @State private var needsOnboarding = false
 
     var body: some Scene {
         WindowGroup {
             RootView()
                 .environmentObject(appState)
                 .preferredColorScheme(.dark)
+                .fullScreenCover(isPresented: $needsOnboarding) {
+                    OnboardingView()
+                        .environmentObject(appState)
+                }
+                .onAppear {
+                    needsOnboarding = !appState.isOnboarded
+                }
         }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {

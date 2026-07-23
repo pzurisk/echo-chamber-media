@@ -8,6 +8,10 @@ struct SpeakView: View {
     @StateObject private var recorder = SpeechRecorder()
     @State private var showSettings = false
     @State private var pulse = false
+    @State private var showAINotice = false
+    /// What to run once the one-time AI notice is accepted.
+    @State private var pendingTranscript: String?
+    @State private var pendingSurprise = false
 
     var body: some View {
         NavigationStack {
@@ -51,8 +55,41 @@ struct SpeakView: View {
             }
             .onAppear {
                 recorder.onFinish = { transcript in
-                    appState.generatePlan(from: transcript)
+                    if appState.aiNoticeAccepted {
+                        appState.generatePlan(from: transcript)
+                    } else {
+                        pendingTranscript = transcript
+                        showAINotice = true
+                    }
                 }
+            }
+            .sheet(isPresented: $showAINotice, onDismiss: {
+                // Swiping the sheet down skips the buttons. Treat it as
+                // "Not now" so a stale transcript cannot fire later.
+                if !appState.aiNoticeAccepted {
+                    pendingTranscript = nil
+                    pendingSurprise = false
+                }
+            }) {
+                AINoticeSheet(
+                    onAccept: {
+                        appState.acceptAINotice()
+                        showAINotice = false
+                        if let transcript = pendingTranscript {
+                            pendingTranscript = nil
+                            appState.generatePlan(from: transcript)
+                        } else if pendingSurprise {
+                            pendingSurprise = false
+                            appState.surpriseMe()
+                        }
+                    },
+                    onDecline: {
+                        pendingTranscript = nil
+                        pendingSurprise = false
+                        showAINotice = false
+                    }
+                )
+                .presentationDetents([.medium, .large])
             }
             .alert(
                 "Something went wrong",
@@ -174,7 +211,12 @@ struct SpeakView: View {
                     .padding(.horizontal, 28)
             }
             Button {
-                appState.surpriseMe()
+                if appState.aiNoticeAccepted {
+                    appState.surpriseMe()
+                } else {
+                    pendingSurprise = true
+                    showAINotice = true
+                }
             } label: {
                 Label("Surprise me", systemImage: "sparkles")
                     .font(.subheadline.weight(.semibold))
@@ -183,6 +225,56 @@ struct SpeakView: View {
             }
             .buttonStyle(.bordered)
             .tint(.echoRed)
+        }
+    }
+
+    /// One-time disclosure shown before the first plan generation. Apple
+    /// requires clear notice before user content is sent to a third-party
+    /// AI, and it is the honest thing to do anyway.
+    private struct AINoticeSheet: View {
+        let onAccept: () -> Void
+        let onDecline: () -> Void
+
+        var body: some View {
+            ZStack {
+                Color.echoBackground.ignoresSafeArea()
+                VStack(alignment: .leading, spacing: 18) {
+                    Text("Before your first plan")
+                        .font(.title2.weight(.bold))
+                        .foregroundStyle(.white)
+                        .padding(.top, 26)
+
+                    Text("MealTime sends the words you speak (as text), along with your budget, taste notes, and meal history, to Anthropic's Claude AI to build your dinner plan and grocery list. No audio ever leaves your phone, and nothing is used for ads or tracking.")
+                        .font(.subheadline)
+                        .foregroundStyle(.white)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    Link("Read the full privacy policy",
+                         destination: URL(string: "https://echochambermedia.com/mealtime/privacy")!)
+                        .font(.subheadline)
+                        .foregroundStyle(Color.echoRed)
+
+                    Spacer()
+
+                    Button {
+                        onAccept()
+                    } label: {
+                        Text("Sounds good, plan my week")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 6)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.echoRed)
+
+                    Button("Not now", action: onDecline)
+                        .font(.subheadline)
+                        .foregroundStyle(Color.echoTextSecondary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.bottom, 14)
+                }
+                .padding(.horizontal, 24)
+            }
         }
     }
 

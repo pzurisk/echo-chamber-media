@@ -36,6 +36,13 @@ final class AppState: ObservableObject {
     @Published var phase: Phase = .idle
     @Published var selectedTab: Tab = .speak
     @Published var iCloudAvailable = true
+    /// True once this phone belongs to a household (a code is stored).
+    /// Drives the onboarding cover: false shows setup, true shows the app.
+    @Published var isOnboarded = false
+    /// True once the one-time notice about sending meal data to Claude has
+    /// been accepted. Apple requires clear in-app disclosure before user
+    /// content goes to a third-party AI, so planning is gated on this.
+    @Published var aiNoticeAccepted = UserDefaults.standard.bool(forKey: HouseholdConfig.Keys.aiNoticeAccepted)
 
     /// Cap on the rolling dinner history used for taste learning.
     private static let historyLimit = 60
@@ -53,11 +60,16 @@ final class AppState: ObservableObject {
     private var isRefreshing = false
 
     init() {
+        // Adopt the legacy fixed code on phones that synced before
+        // per-household codes existed, before anything reads the code.
+        HouseholdConfig.migrateIfNeeded()
+
         UserDefaults.standard.register(defaults: [
             HouseholdConfig.Keys.budgetTarget: 100.0,
             HouseholdConfig.Keys.dinnersPerWeek: 5
         ])
 
+        isOnboarded = !HouseholdConfig.code.isEmpty
         loadLocalCache()
 
         NotificationCenter.default.publisher(for: .cloudDataChanged)
@@ -67,11 +79,85 @@ final class AppState: ObservableObject {
             }
             .store(in: &cancellables)
 
+        // Before onboarding there is no code, so there is nothing to
+        // subscribe to or fetch. createHousehold and joinHousehold kick
+        // off this same work once a code exists.
+        if isOnboarded {
+            Task {
+                iCloudAvailable = await store.isSignedIn()
+                await store.ensureSubscriptions()
+                await refreshFromCloud()
+            }
+        }
+    }
+
+    // MARK: - Household membership
+
+    /// The code this phone syncs under. Empty until onboarding finishes.
+    var householdCode: String {
+        HouseholdConfig.code
+    }
+
+    /// Starts a brand new household: fresh code, clean slate, new
+    /// subscriptions. Returns the code so onboarding can show it big.
+    @discardableResult
+    func createHousehold() -> String {
+        let code = HouseholdConfig.generateCode()
+        switchToHousehold(code)
+        return code
+    }
+
+    /// Joins an existing household by its code. Local data is cleared and
+    /// the partner's data arrives from the cloud on the refresh. Returns
+    /// false (and changes nothing) when the code is too short to be real.
+    func joinHousehold(code raw: String) -> Bool {
+        let code = HouseholdConfig.normalize(raw)
+        guard code.count >= 4 else { return false }
+        switchToHousehold(code)
+        return true
+    }
+
+    /// Settings uses this to disconnect from the current household and
+    /// start a fresh one. The partner keeps the old data under the old code.
+    func leaveHouseholdAndStartNew() {
+        createHousehold()
+    }
+
+    /// Stores the code, wipes every in-memory collection and the offline
+    /// cache (they belong to the old household), then subscribes and pulls
+    /// whatever the new household already has in CloudKit.
+    private func switchToHousehold(_ code: String) {
+        objectWillChange.send()
+        HouseholdConfig.code = code
+        isOnboarded = true
+        clearLocalData()
         Task {
             iCloudAvailable = await store.isSignedIn()
             await store.ensureSubscriptions()
             await refreshFromCloud()
         }
+    }
+
+    /// Resets everything this phone holds locally, memory and UserDefaults
+    /// cache both, so no data leaks between households.
+    private func clearLocalData() {
+        plan = nil
+        checkedItemIDs = []
+        favorites = []
+        recipeBox = []
+        keptRecipes = []
+        pastDinners = []
+        ratings = [:]
+        localEditDates = [:]
+        let defaults = UserDefaults.standard
+        defaults.removeObject(forKey: HouseholdConfig.Keys.cachedPlan)
+        defaults.removeObject(forKey: HouseholdConfig.Keys.cachedChecked)
+        defaults.removeObject(forKey: HouseholdConfig.Keys.cachedFavorites)
+        defaults.removeObject(forKey: HouseholdConfig.Keys.cachedHistory)
+        defaults.removeObject(forKey: HouseholdConfig.Keys.cachedRatings)
+        defaults.removeObject(forKey: HouseholdConfig.Keys.cachedRecipeBox)
+        defaults.removeObject(forKey: HouseholdConfig.Keys.cachedKeptRecipes)
+        defaults.removeObject(forKey: HouseholdConfig.Keys.cachedEditDates)
     }
 
     // MARK: - Settings
@@ -217,6 +303,12 @@ final class AppState: ObservableObject {
         if case .error = phase { phase = .idle }
     }
 
+    /// Records that the user saw and accepted the one-time AI notice.
+    func acceptAINotice() {
+        aiNoticeAccepted = true
+        UserDefaults.standard.set(true, forKey: HouseholdConfig.Keys.aiNoticeAccepted)
+    }
+
     // MARK: - Grocery list
 
     func isChecked(section: String, item: String) -> Bool {
@@ -357,6 +449,7 @@ final class AppState: ObservableObject {
     /// entirely mid-generation so a stale fetch cannot revert a brand-new
     /// plan, and never runs twice at once.
     func refreshFromCloud() async {
+        guard isOnboarded else { return }
         guard phase != .planning else { return }
         guard !isRefreshing else { return }
         isRefreshing = true
