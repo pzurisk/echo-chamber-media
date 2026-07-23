@@ -19,6 +19,14 @@ export const metadata: Metadata = {
 
 const posts = [
   {
+    slug: 'classified-mind-behind-the-scenes',
+    title: 'Behind The Classified Mind',
+    excerpt: 'How we built an award-winning indie horror in-house — writing, shooting, cutting, scoring, and finishing under one roof. Multi-festival winner including Best Horror and Best Film Score at Las Vegas Indie Film Festival, Award Winner at The Dunwich Horror Fest, and Finalist at the RED Movie Awards.',
+    date: 'July 23, 2026',
+    category: 'Case Study',
+    readTime: '7 min read',
+  },
+  {
     slug: 'best-las-vegas-wedding-venues-for-video',
     title: 'Best Las Vegas Wedding Venues for Cinematic Video',
     excerpt: 'The venues that actually film well, picked by a working videographer. Rooftops above the Strip, Red Rock desert gardens, luxury ballrooms, and an old west ghost town.',

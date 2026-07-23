@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import SectionWrapper from "@/components/SectionWrapper";
 import Heading from "@/components/Heading";
 
@@ -193,6 +194,25 @@ export default function FeaturedFilm() {
                   </div>
                 ))}
               </div>
+            </div>
+
+            {/* Case study CTA */}
+            <div className="mt-10 pt-8 border-t border-brand-charcoal">
+              <Link
+                href="/blog/classified-mind-behind-the-scenes"
+                className="inline-flex items-center gap-2 text-brand-gold font-body text-sm uppercase tracking-editorial border-b border-brand-gold/30 hover:border-brand-gold transition-colors pb-1"
+              >
+                Read the Production Story
+                <svg
+                  className="w-4 h-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M5 12h14M12 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </Link>
             </div>
           </div>
         </div>

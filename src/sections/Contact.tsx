@@ -126,8 +126,11 @@ export default function Contact() {
           {/* Google Calendar appointment scheduling, primary booking CTA */}
           <div className="bg-brand-gold/5 border border-brand-gold/30 p-5">
             <p className={labelBase}>Book a Free Consultation</p>
-            <p className="text-brand-off-white font-body text-sm mb-4">
-              20-minute call to scope your project. Pick a time that works for you.
+            <p className="text-brand-off-white font-body text-sm mb-1">
+              20-minute call. Real calendar, real availability, no back-and-forth.
+            </p>
+            <p className="text-brand-gray font-body text-xs mb-4">
+              Mon–Fri, 10 AM – 6 PM Pacific
             </p>
             <a
               href="https://calendar.app.google/V6EFC7Cv3rJHxAdGA"
@@ -146,6 +149,9 @@ export default function Contact() {
             >
               Pick a Time →
             </a>
+            <p className="text-brand-gray font-body text-[11px] mt-3 text-center">
+              Outside those hours? Call our 24/7 AI line below.
+            </p>
           </div>
 
           <div className="border-t border-brand-charcoal pt-5">
