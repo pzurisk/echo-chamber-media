@@ -17,45 +17,55 @@ Owner: Billy Zurisk, Las Vegas video production company.
 
 ## How this site is built & deployed
 - **Stack:** Next.js 14 (App Router), TypeScript, Tailwind. Source in `src/`.
-- **Hosting:** runs on Billy's **Mac mini** ("the Chad", ~192.168.0.195) via `npm run dev`
-  launched by double-clicking **"Start Echo Chamber Site.command"** in this folder.
+- **Location on the mini:** `/Users/chad/Sites/echo-chamber-media`. There is a
+  `~/Desktop/echo-chamber-media` symlink pointing at it. It is NOT stored on the Desktop
+  anymore, and it must not go back there (see the auto-pull section for why).
+- **Hosting:** runs on Billy's **Mac mini** ("the Chad", ~192.168.0.195) via `npm run dev`.
+  It is started automatically by the launchd job `com.echochamber.site` (RunAtLoad plus
+  KeepAlive, so it survives reboots and crashes). The **"Start Echo Chamber Site.command"**
+  file starts the same thing by hand, but you rarely need it now, and running both at once
+  will collide on port 3000.
   It serves on the local network at `http://192.168.0.195:3000` and is exposed publicly
   as **echochambermedia.com**. There is NO Vercel/Netlify. Dev mode hot-reloads, so saved
-  edits appear after the dev server picks them up; restart the .command to force a clean reload.
+  edits appear after the dev server picks them up. To force a clean reload:
+  `launchctl kickstart -k gui/$(id -u)/com.echochamber.site`.
 - **Repo:** GitHub `pzurisk/echo-chamber-media` (remote `origin`, branch `main`).
 
-## Auto-pull on the mini: KNOWN BROKEN, needs a one-time decision
-The launchd job `com.echochamber.autopull` (every 2 minutes) is meant to keep the mini
-in sync so pushes go live on their own. It silently died on 2026-07-05 and the mini fell
-22 commits behind until someone noticed on 2026-07-26.
+## Auto-pull on the mini: FIXED 2026-07-26. Do not move this folder back to the Desktop.
+The launchd job `com.echochamber.autopull` (every 2 minutes) keeps the mini in sync so
+pushes go live on their own. It silently died on 2026-07-05 and the mini fell 22 commits
+behind until someone noticed on 2026-07-26.
 
-**Root cause (confirmed by test, not a guess):** this repo lives in `~/Desktop`, which macOS
-protects with TCC. A launchd agent has no Full Disk Access, so every read inside the folder
-returns `Operation not permitted`. Git reports that as the misleading
-`fatal: not a git repository: '.../.git'`. Writes succeed, reads do not, which is why the
-failure looked so strange. The old script also sent stderr to `/dev/null`, so a dead job
-and a healthy one produced identical (empty) logs.
+**Root cause (confirmed by controlled test, not a guess):** the repo used to live in
+`~/Desktop`, which macOS protects with TCC. A launchd agent has no Full Disk Access, so
+every read inside that folder returned `Operation not permitted`. Git reports that as the
+misleading `fatal: not a git repository: '.../.git'`. Writes succeeded and reads did not,
+which is why the failure looked so strange. The old script also sent stderr to `/dev/null`,
+so a dead job and a healthy one produced identical (empty) logs.
 
-**Fixed already:** `scripts/auto-pull.sh` now logs every error instead of discarding it,
-names the Full Disk Access cause explicitly, and writes `.auto-pull-heartbeat` on every run
-so a dead job is distinguishable from a quiet one. The plist was also rebuilt, since someone
-had hand-edited it into a `--git-dir` one-liner that no longer matched the setup script.
+**The fix:** the repo now lives at `/Users/chad/Sites/echo-chamber-media`, which is not
+TCC-protected. `~/Desktop/echo-chamber-media` is now a symlink to it, so opening it from the
+Desktop still works. **If you ever move this folder back under `~/Desktop`, `~/Documents`, or
+`~/Downloads`, auto-pull will silently break again in exactly the same way.**
 
-**Still needs Billy to pick one (the job cannot work until then):**
-1. Grant Full Disk Access to `/bin/zsh` in System Settings > Privacy & Security.
-   Least disruptive, but it is a broad grant that covers every shell script on the machine.
-2. Move this repo out of `~/Desktop` (for example to `~/Sites/echo-chamber-media`).
-   No security grant needed and permanently fixes it, but the site plist, the
-   "Start Echo Chamber Site.command" launcher, and these notes all need the new path.
+Also fixed: `scripts/auto-pull.sh` logs every error instead of discarding it, names the Full
+Disk Access cause when reads fail, and writes `.auto-pull-heartbeat` on every run so a dead
+job is distinguishable from a quiet one. Both plists were rebuilt for the new path (one had
+been hand-edited into a `--git-dir` one-liner that no longer matched the setup script).
 
-Until then, sync the mini by hand: `git pull --ff-only origin main` in this folder.
-Check `.auto-pull.log` and `.auto-pull-heartbeat` to see whether the job is alive.
+**Verified end to end:** local was rolled back one commit, and the job pulled it forward on
+its own and logged `updated 56aa10f -> 3070c56`.
+
+**To check whether the job is alive:** `cat .auto-pull-heartbeat` (updated every 2 minutes,
+even when there is nothing to pull) and `cat .auto-pull.log` (errors and updates only).
+To sync by hand: `git pull --ff-only origin main`.
 
 ## Git: IMPORTANT gotchas (these caused real problems, avoid them)
-1. **The sandbox CANNOT write to `.git`** (permission denied on index.lock/objects).
-   Do ALL git operations (add/commit/push/branch/checkout) via the **Desktop Commander**
-   MCP (`start_process`), which runs on Billy's actual Mac. File edits (Read/Write/Edit)
-   work fine on the mounted folder; only git writes must go through Desktop Commander.
+1. **Git writes may fail from a sandboxed tool** (permission denied on index.lock/objects).
+   If that happens, run git through the **Desktop Commander** MCP (`start_process`) instead.
+   Note: this was NOT a problem in the 2026-07-26 session, where ordinary Bash handled
+   fetch/pull/commit/push/branch fine from `~/Sites`. Try Bash first and fall back to
+   Desktop Commander only if you actually hit a permission error.
 2. **ALWAYS `git fetch` and check branch sync BEFORE committing.** This repo gets pushed
    to from more than one machine (Billy edits here; commits also arrive from elsewhere).
    The local clone can be behind `origin/main`.
