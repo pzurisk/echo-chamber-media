@@ -33,8 +33,11 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# auto-pull activity log (created on the mini)
+# auto-pull activity files (created on the mini)
 .auto-pull.log
+.auto-pull-heartbeat
+.auto-pull-err
+.write-test
 
 # Echo Meal iOS app
 EchoMeal/Secrets.xcconfig

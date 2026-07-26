@@ -24,6 +24,33 @@ Owner: Billy Zurisk, Las Vegas video production company.
   edits appear after the dev server picks them up; restart the .command to force a clean reload.
 - **Repo:** GitHub `pzurisk/echo-chamber-media` (remote `origin`, branch `main`).
 
+## Auto-pull on the mini: KNOWN BROKEN, needs a one-time decision
+The launchd job `com.echochamber.autopull` (every 2 minutes) is meant to keep the mini
+in sync so pushes go live on their own. It silently died on 2026-07-05 and the mini fell
+22 commits behind until someone noticed on 2026-07-26.
+
+**Root cause (confirmed by test, not a guess):** this repo lives in `~/Desktop`, which macOS
+protects with TCC. A launchd agent has no Full Disk Access, so every read inside the folder
+returns `Operation not permitted`. Git reports that as the misleading
+`fatal: not a git repository: '.../.git'`. Writes succeed, reads do not, which is why the
+failure looked so strange. The old script also sent stderr to `/dev/null`, so a dead job
+and a healthy one produced identical (empty) logs.
+
+**Fixed already:** `scripts/auto-pull.sh` now logs every error instead of discarding it,
+names the Full Disk Access cause explicitly, and writes `.auto-pull-heartbeat` on every run
+so a dead job is distinguishable from a quiet one. The plist was also rebuilt, since someone
+had hand-edited it into a `--git-dir` one-liner that no longer matched the setup script.
+
+**Still needs Billy to pick one (the job cannot work until then):**
+1. Grant Full Disk Access to `/bin/zsh` in System Settings > Privacy & Security.
+   Least disruptive, but it is a broad grant that covers every shell script on the machine.
+2. Move this repo out of `~/Desktop` (for example to `~/Sites/echo-chamber-media`).
+   No security grant needed and permanently fixes it, but the site plist, the
+   "Start Echo Chamber Site.command" launcher, and these notes all need the new path.
+
+Until then, sync the mini by hand: `git pull --ff-only origin main` in this folder.
+Check `.auto-pull.log` and `.auto-pull-heartbeat` to see whether the job is alive.
+
 ## Git: IMPORTANT gotchas (these caused real problems, avoid them)
 1. **The sandbox CANNOT write to `.git`** (permission denied on index.lock/objects).
    Do ALL git operations (add/commit/push/branch/checkout) via the **Desktop Commander**
