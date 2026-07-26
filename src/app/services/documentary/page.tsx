@@ -23,6 +23,26 @@ export const metadata: Metadata = {
   },
 }
 
+const CHAIR_YOUTUBE_ID = 'QXUg9BVl2yo'
+
+const chairVideoLd = {
+  '@context': 'https://schema.org',
+  '@type': 'VideoObject',
+  name: 'The Chair, a documentary by Echo Chamber Media',
+  description:
+    'A short documentary portrait of Melissa Zurisk, a tattoo artist at Club Tattoo inside The LINQ in Las Vegas. About the craft, the trust between an artist and a stranger, and what it costs to carry other people’s stories all day.',
+  thumbnailUrl: `https://i.ytimg.com/vi/${CHAIR_YOUTUBE_ID}/maxresdefault.jpg`,
+  uploadDate: '2026-07-26',
+  contentUrl: `https://www.youtube.com/watch?v=${CHAIR_YOUTUBE_ID}`,
+  embedUrl: `https://www.youtube.com/embed/${CHAIR_YOUTUBE_ID}`,
+  director: { '@type': 'Person', name: 'Billy Zurisk' },
+  publisher: {
+    '@type': 'Organization',
+    name: 'Echo Chamber Media',
+    url: 'https://echochambermedia.com',
+  },
+}
+
 export default function DocumentaryPage() {
   return (
     <>
@@ -154,13 +174,29 @@ export default function DocumentaryPage() {
                 <p className="font-body text-brand-off-white text-lg leading-relaxed mb-6">
                   Compelling stories told in 3-15 minutes. Ideal for social media, web platforms, and festival submissions. Still cinematic in production value without the time commitment of a feature.
                 </p>
-                <p className="font-body text-brand-gray text-base">
-                  Maximize engagement and shareability across digital platforms.
+                <p className="font-body text-brand-off-white text-base leading-relaxed mb-6">
+                  <span className="text-brand-gold font-heading uppercase tracking-editorial">The Chair</span> is our latest. A portrait of tattoo artist Melissa Zurisk at Club Tattoo inside The LINQ, about the craft, the trust that builds between an artist and a stranger, and what it costs to carry other people&apos;s stories all day. Directed, shot, and edited in house.
                 </p>
+                <Link
+                  href="/blog/the-chair-tattoo-documentary"
+                  className="inline-block font-heading text-sm uppercase tracking-editorial text-brand-gold border-b border-brand-gold border-opacity-40 hover:border-opacity-100 pb-1 transition-all"
+                >
+                  Read how we made it
+                </Link>
               </div>
-              <div className="lg:order-1 bg-brand-charcoal h-80 rounded-lg flex items-center justify-center border border-brand-gold border-opacity-30">
-                <p className="font-body text-brand-gray text-lg">
-                  [Documentary Demo - Short Form]
+              <div className="lg:order-1">
+                <div className="relative w-full aspect-video rounded-lg overflow-hidden border border-brand-gold border-opacity-30 bg-brand-charcoal">
+                  <iframe
+                    src={`https://www.youtube.com/embed/${CHAIR_YOUTUBE_ID}`}
+                    title="The Chair, a documentary by Echo Chamber Media"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                    loading="lazy"
+                    className="absolute inset-0 w-full h-full"
+                  />
+                </div>
+                <p className="font-body text-brand-gray text-sm mt-3">
+                  The Chair, an Echo Chamber Media production. Las Vegas.
                 </p>
               </div>
             </div>
@@ -358,6 +394,10 @@ export default function DocumentaryPage() {
       </section>
 
       {/* JSON-LD Schema */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(chairVideoLd) }}
+      />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{

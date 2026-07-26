@@ -19,6 +19,14 @@ export const metadata: Metadata = {
 
 const posts = [
   {
+    slug: 'the-chair-tattoo-documentary',
+    title: 'Behind The Chair',
+    excerpt: 'How we made a short documentary portrait of a Las Vegas tattoo artist on a working shop floor. Finding the idea before the shoot, getting sound in a loud room, cutting from a transcript instead of the timeline, and why a doc outperforms an ad.',
+    date: 'July 26, 2026',
+    category: 'Case Study',
+    readTime: '6 min read',
+  },
+  {
     slug: 'classified-mind-behind-the-scenes',
     title: 'Behind The Classified Mind',
     excerpt: 'How we built an award-winning indie horror in-house — writing, shooting, cutting, scoring, and finishing under one roof. Multi-festival winner including Best Horror and Best Film Score at Las Vegas Indie Film Festival, Award Winner at The Dunwich Horror Fest, and Finalist at the RED Movie Awards.',

@@ -16,6 +16,14 @@ const projects: {
   uploadDate: string;
 }[] = [
   {
+    title: "The Chair",
+    type: "Documentary",
+    description: "A short portrait of tattoo artist Melissa Zurisk at Club Tattoo inside The LINQ. The craft, the trust between an artist and a stranger, and what it costs to carry other people's stories all day.",
+    youtubeId: "QXUg9BVl2yo",
+    href: "/blog/the-chair-tattoo-documentary",
+    uploadDate: "2026-07-26",
+  },
+  {
     title: "The Naked City Underground",
     type: "Music Video",
     description: "Outlaw country meets surf punk. Raw energy from Las Vegas' genre-bending band. \"Coming To Me\" & \"Everything's Alright.\"",
