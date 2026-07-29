@@ -155,53 +155,54 @@ export default function CorporateVideoPage() {
               WHAT WE CREATE
             </h2>
 
-            <div className="space-y-16">
+            <div className="max-w-4xl mx-auto mb-20">
+              <div className="relative w-full aspect-video rounded-lg overflow-hidden border border-brand-gold border-opacity-30 bg-brand-charcoal">
+                <iframe
+                  src="https://www.youtube.com/embed/zFlXJVtnv-U"
+                  title="Doritos, spec commercial by Echo Chamber Media"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                  loading="lazy"
+                  className="absolute inset-0 w-full h-full"
+                />
+              </div>
+              <p className="font-body text-brand-gray text-sm mt-3 text-center">
+                A spec commercial for Doritos. The same cinematic playbook and production process we bring to brand films, product showcases, and event coverage.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
               {/* Brand Films & Company Stories */}
-              <div className="flex flex-col md:flex-row gap-8 items-center">
-                <div className="md:w-1/2">
-                  <h3 className="font-heading text-2xl font-bold text-brand-gold mb-4">Brand Films & Company Stories</h3>
-                  <p className="font-body text-brand-off-white text-lg leading-relaxed mb-4">
-                    Transform your company&apos;s mission into a compelling visual story. We craft brand films that communicate your values, introduce your team, and establish emotional connections with your audience. Perfect for your website, investor meetings, and corporate events.
-                  </p>
-                  <p className="font-body text-brand-gray text-sm">
-                    Ideal for: Mission statements, company culture, executive introductions, brand positioning
-                  </p>
-                </div>
-                <div className="md:w-1/2 h-64 bg-brand-charcoal rounded-lg flex items-center justify-center border border-brand-gold border-opacity-30">
-                  <p className="text-brand-gray text-center">[Corporate Video Demo - Brand Film]</p>
-                </div>
+              <div>
+                <h3 className="font-heading text-2xl font-bold text-brand-gold mb-4">Brand Films & Company Stories</h3>
+                <p className="font-body text-brand-off-white text-lg leading-relaxed mb-4">
+                  Transform your company&apos;s mission into a compelling visual story. We craft brand films that communicate your values, introduce your team, and establish emotional connections with your audience. Perfect for your website, investor meetings, and corporate events.
+                </p>
+                <p className="font-body text-brand-gray text-sm">
+                  Ideal for: Mission statements, company culture, executive introductions, brand positioning
+                </p>
               </div>
 
               {/* Product & Service Showcases */}
-              <div className="flex flex-col md:flex-row gap-8 items-center">
-                <div className="md:w-1/2 h-64 bg-brand-charcoal rounded-lg flex items-center justify-center border border-brand-gold border-opacity-30 order-2 md:order-1">
-                  <p className="text-brand-gray text-center">[Corporate Video Demo - Product Showcase]</p>
-                </div>
-                <div className="md:w-1/2 order-1 md:order-2">
-                  <h3 className="font-heading text-2xl font-bold text-brand-gold mb-4">Product & Service Showcases</h3>
-                  <p className="font-body text-brand-off-white text-lg leading-relaxed mb-4">
-                    Demonstrate your product or service in action. We create engaging product videos that highlight features, show real-world applications, and convert viewers into customers. Professional demonstrations that build confidence and drive sales.
-                  </p>
-                  <p className="font-body text-brand-gray text-sm">
-                    Ideal for: Product launches, feature explanations, tutorials, sales enablement, promotional content
-                  </p>
-                </div>
+              <div>
+                <h3 className="font-heading text-2xl font-bold text-brand-gold mb-4">Product & Service Showcases</h3>
+                <p className="font-body text-brand-off-white text-lg leading-relaxed mb-4">
+                  Demonstrate your product or service in action. We create engaging product videos that highlight features, show real-world applications, and convert viewers into customers. Professional demonstrations that build confidence and drive sales.
+                </p>
+                <p className="font-body text-brand-gray text-sm">
+                  Ideal for: Product launches, feature explanations, tutorials, sales enablement, promotional content
+                </p>
               </div>
 
               {/* Event Coverage & Recaps */}
-              <div className="flex flex-col md:flex-row gap-8 items-center">
-                <div className="md:w-1/2">
-                  <h3 className="font-heading text-2xl font-bold text-brand-gold mb-4">Event Coverage & Recaps</h3>
-                  <p className="font-body text-brand-off-white text-lg leading-relaxed mb-4">
-                    Capture the energy and impact of your corporate events. From conferences and product launches to gala dinners and networking events, we provide professional coverage and polished recap videos that extend your event&apos;s reach far beyond the live audience.
-                  </p>
-                  <p className="font-body text-brand-gray text-sm">
-                    Ideal for: Live event coverage, highlight reels, conference recaps, awards ceremonies, networking events
-                  </p>
-                </div>
-                <div className="md:w-1/2 h-64 bg-brand-charcoal rounded-lg flex items-center justify-center border border-brand-gold border-opacity-30">
-                  <p className="text-brand-gray text-center">[Corporate Video Demo - Event Recap]</p>
-                </div>
+              <div>
+                <h3 className="font-heading text-2xl font-bold text-brand-gold mb-4">Event Coverage & Recaps</h3>
+                <p className="font-body text-brand-off-white text-lg leading-relaxed mb-4">
+                  Capture the energy and impact of your corporate events. From conferences and product launches to gala dinners and networking events, we provide professional coverage and polished recap videos that extend your event&apos;s reach far beyond the live audience.
+                </p>
+                <p className="font-body text-brand-gray text-sm">
+                  Ideal for: Live event coverage, highlight reels, conference recaps, awards ceremonies, networking events
+                </p>
               </div>
             </div>
           </div>

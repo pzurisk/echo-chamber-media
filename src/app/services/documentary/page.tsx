@@ -7,6 +7,7 @@ export const metadata: Metadata = {
   title: 'Documentary Production Las Vegas | Cinematic Documentary Filmmaker',
   description: 'Documentary production in Las Vegas. From concept to distribution, we craft authentic stories with cinematic precision. Tell us about your project.',
   keywords: 'documentary production Las Vegas, documentary filmmaker, video production Las Vegas, documentary services, story-driven content',
+  alternates: { canonical: 'https://echochambermedia.com/services/documentary' },
   openGraph: {
     title: 'Documentary Production | Echo Chamber Media',
     description: 'Documentary production in Las Vegas. From concept to distribution, we craft authentic stories with cinematic precision. Tell us about your project.',
@@ -143,25 +144,16 @@ export default function DocumentaryPage() {
           </h2>
 
           {/* Feature-Length Documentaries */}
-          <div className="mb-20">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-              <div>
-                <h3 className="font-heading text-3xl md:text-4xl font-black text-brand-gold mb-6 uppercase tracking-editorial">
-                  Feature-Length Documentaries
-                </h3>
-                <p className="font-body text-brand-off-white text-lg leading-relaxed mb-6">
-                  In-depth explorations of compelling subjects, characters, and stories. Our feature documentaries span 60-90 minutes with cinematic production value, complex narratives, and professional distribution readiness.
-                </p>
-                <p className="font-body text-brand-gray text-base">
-                  Perfect for film festivals, streaming platforms, and theatrical distribution.
-                </p>
-              </div>
-              <div className="bg-brand-charcoal h-80 rounded-lg flex items-center justify-center border border-brand-gold border-opacity-30">
-                <p className="font-body text-brand-gray text-lg">
-                  [Documentary Demo - Feature Film]
-                </p>
-              </div>
-            </div>
+          <div className="mb-20 max-w-3xl mx-auto text-center">
+            <h3 className="font-heading text-3xl md:text-4xl font-black text-brand-gold mb-6 uppercase tracking-editorial">
+              Feature-Length Documentaries
+            </h3>
+            <p className="font-body text-brand-off-white text-lg leading-relaxed mb-6">
+              In-depth explorations of compelling subjects, characters, and stories. Our feature documentaries span 60-90 minutes with cinematic production value, complex narratives, and professional distribution readiness.
+            </p>
+            <p className="font-body text-brand-gray text-base">
+              Perfect for film festivals, streaming platforms, and theatrical distribution.
+            </p>
           </div>
 
           {/* Short-Form Documentaries */}
@@ -203,25 +195,16 @@ export default function DocumentaryPage() {
           </div>
 
           {/* Docuseries & Episodic */}
-          <div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-              <div>
-                <h3 className="font-heading text-3xl md:text-4xl font-black text-brand-gold mb-6 uppercase tracking-editorial">
-                  Docuseries & Episodic Content
-                </h3>
-                <p className="font-body text-brand-off-white text-lg leading-relaxed mb-6">
-                  Multi-episode storytelling that builds narrative momentum. We handle arc development, episode structure, continuity, and the unique challenges of maintaining quality across multiple installments.
-                </p>
-                <p className="font-body text-brand-gray text-base">
-                  Built for streaming platforms, broadcast, and subscription services.
-                </p>
-              </div>
-              <div className="bg-brand-charcoal h-80 rounded-lg flex items-center justify-center border border-brand-gold border-opacity-30">
-                <p className="font-body text-brand-gray text-lg">
-                  [Documentary Demo - Docuseries]
-                </p>
-              </div>
-            </div>
+          <div className="max-w-3xl mx-auto text-center">
+            <h3 className="font-heading text-3xl md:text-4xl font-black text-brand-gold mb-6 uppercase tracking-editorial">
+              Docuseries & Episodic Content
+            </h3>
+            <p className="font-body text-brand-off-white text-lg leading-relaxed mb-6">
+              Multi-episode storytelling that builds narrative momentum. We handle arc development, episode structure, continuity, and the unique challenges of maintaining quality across multiple installments.
+            </p>
+            <p className="font-body text-brand-gray text-base">
+              Built for streaming platforms, broadcast, and subscription services.
+            </p>
           </div>
         </div>
       </section>
