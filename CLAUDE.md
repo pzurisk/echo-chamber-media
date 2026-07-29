@@ -77,6 +77,30 @@ To sync by hand: `git pull --ff-only origin main`.
    your unique changes (clean files via `git checkout <yourcommit> -- <paths>`, overlapping
    files by hand), then fast-forward `main`. Don't blind-merge or force-push `main`.
 
+## SEO work completed (commit 048b7b7 on main, 2026-07-29)
+- Fixed `/services/documentary` canonical bug: page had no `alternates.canonical`, so it
+  inherited the root layout's canonical (`https://echochambermedia.com`), telling Google to
+  index the homepage instead of the page. Every service page needs its own
+  `alternates.canonical` in its metadata export, the root layout's value is NOT safe to
+  inherit. Checked all other service pages, only documentary was missing it.
+- Removed the `[Corporate Video Demo - ...]` and `[Documentary Demo - ...]` bracket
+  placeholder text that was rendering live on `/services/corporate` and
+  `/services/documentary`.
+- `/services/corporate` had zero `<video>`/`<iframe>` elements. Added a real embed of the
+  Doritos spec commercial (youtubeId `zFlXJVtnv-U`) as proof of production value. Do NOT
+  reintroduce empty placeholder boxes, if there is no real footage for a category, use
+  text only.
+- Documentary's Feature-Length and Docuseries subsections still have no real footage (no
+  completed feature or docuseries exists yet). Reflowed to text-only rather than fabricate
+  a demo. Replace with a real embed the moment one exists.
+- Still TODO from the Revision 2 audit: proof content (named clients, testimonials,
+  years in business, awards) on every service page, homepage retargeting for
+  "las vegas video production" / "las vegas corporate video production" (competitors rank
+  with their homepage, not a subpage), Google Business Profile completion, Clutch and
+  ProductionHUB profiles, outreach to Mr. Camera's 2026 guide for inclusion, resubmitting
+  the sitemap in Search Console (GSC's cache is stale, last read July 5 showing 13 pages,
+  live sitemap has 15 and is self-generating via `src/app/sitemap.ts`).
+
 ## Known-good config values (don't break these)
 - **GA4 Measurement ID:** `G-C2R4NNXYCY` (in `src/app/layout.tsx`). Real, in production. Keep it.
 - **Booking:** Google Calendar appointment schedule (NOT Cal.com anymore).
