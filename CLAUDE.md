@@ -15,6 +15,35 @@ Owner: Billy Zurisk, Las Vegas video production company.
   plus an entry in the `posts` array in `src/app/blog/page.tsx`. Add BlogPosting
   and (where relevant) FAQPage JSON-LD. First pricing-guide post is live.
 
+## Security: REQUIRED on every update (added 2026-07-30, Billy's standing order)
+Every change to this site must keep the security setup intact, and every session
+that edits the site must run the check before pushing:
+
+    npm run security-audit
+
+It also runs automatically before every `next build` (the "prebuild" script), so
+a deploy build fails if anything regresses. What it enforces:
+- `next.config.mjs` ships all six security headers (X-Frame-Options,
+  X-Content-Type-Options, Referrer-Policy, Permissions-Policy,
+  Strict-Transport-Security, Content-Security-Policy) plus
+  `poweredByHeader: false`.
+- Every third-party host a page loads from (script, iframe, img, fetch, css url)
+  is allowed by the CSP in `next.config.mjs`. If you add a new external
+  script/embed/image/API anywhere in `src/`, add its host to the matching CSP
+  directive in the same commit, or browsers will silently block it live.
+- No `.env`-style file is tracked by git.
+
+Currently allowed external hosts, and why: www.googletagmanager.com and
+*.google-analytics.com (GA4), i.ytimg.com (YouTube thumbnails), www.youtube.com
+and www.youtube-nocookie.com (demo embeds), kuula.co (360 walkthrough embeds),
+formsubmit.co (contact form AJAX). Do not remove any without checking what uses it.
+
+NOTE ON HOSTING (2026-07-30): the live site now serves from **Vercel**
+(`server: Vercel` response header), NOT the Mac mini dev server described below.
+The mini section is kept for history but the "NO Vercel/Netlify" line is stale.
+Pushing to `origin main` triggers the Vercel deploy, and the prebuild audit runs
+there too.
+
 ## How this site is built & deployed
 - **Stack:** Next.js 14 (App Router), TypeScript, Tailwind. Source in `src/`.
 - **Location on the mini:** `/Users/chad/Sites/echo-chamber-media`. There is a

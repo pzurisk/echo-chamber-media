@@ -4,9 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "node scripts/security-audit.mjs",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "security-audit": "node scripts/security-audit.mjs"
   },
   "dependencies": {
     "autoprefixer": "^10.4.27",
