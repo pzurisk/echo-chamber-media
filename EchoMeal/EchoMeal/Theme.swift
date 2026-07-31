@@ -63,7 +63,14 @@ struct StarRating: View {
                 case .increment:
                     if rating < 5 { onTap(rating + 1) }
                 case .decrement:
-                    if rating > 1 { onTap(rating - 1) }
+                    if rating > 1 {
+                        onTap(rating - 1)
+                    } else if rating == 1 {
+                        // Tapping the current star clears the rating, so
+                        // repeating star 1 drops the rating to none. This
+                        // lets VoiceOver users clear a rating too.
+                        onTap(1)
+                    }
                 @unknown default:
                     break
                 }

@@ -4,6 +4,16 @@ import SwiftUI
 struct WeekView: View {
     @EnvironmentObject private var appState: AppState
     @State private var showSettings = false
+    @State private var showClearConfirm = false
+
+    /// Toolbar destinations pushed by value. Pushing these screens by value
+    /// (instead of view-builder NavigationLinks) keeps the stack's value
+    /// resolution consistent: the Recipe rows inside them push through the
+    /// navigationDestination(for: Recipe.self) declared below, instead of
+    /// iOS misresolving a Recipe tap into a duplicate of the covering list.
+    enum WeekRoute: Hashable {
+        case recipeBox, favorites
+    }
 
     var body: some View {
         NavigationStack {
@@ -51,31 +61,58 @@ struct WeekView: View {
             .navigationDestination(for: Recipe.self) { recipe in
                 RecipeDetailView(recipe: recipe)
             }
+            .navigationDestination(for: WeekRoute.self) { route in
+                switch route {
+                case .recipeBox:
+                    RecipeBoxView()
+                case .favorites:
+                    FavoritesView()
+                }
+            }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     HStack(spacing: 16) {
-                        NavigationLink {
-                            RecipeBoxView()
-                        } label: {
+                        NavigationLink(value: WeekRoute.recipeBox) {
                             Image(systemName: "books.vertical.fill")
                                 .foregroundStyle(Color.echoTextSecondary)
                         }
-                        NavigationLink {
-                            FavoritesView()
-                        } label: {
+                        NavigationLink(value: WeekRoute.favorites) {
                             Image(systemName: "heart.fill")
                                 .foregroundStyle(Color.echoRed)
                         }
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showSettings = true
-                    } label: {
-                        Image(systemName: "gearshape")
-                            .foregroundStyle(Color.echoTextSecondary)
+                    HStack(spacing: 16) {
+                        if appState.plan != nil {
+                            Button {
+                                showClearConfirm = true
+                            } label: {
+                                Image(systemName: "trash")
+                                    .foregroundStyle(Color.echoTextSecondary)
+                            }
+                            .accessibilityLabel("Clear this week")
+                        }
+                        Button {
+                            showSettings = true
+                        } label: {
+                            Image(systemName: "gearshape")
+                                .foregroundStyle(Color.echoTextSecondary)
+                        }
                     }
                 }
+            }
+            .confirmationDialog(
+                "Clear this week?",
+                isPresented: $showClearConfirm,
+                titleVisibility: .visible
+            ) {
+                Button("Clear this week", role: .destructive) {
+                    appState.clearWeek()
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("Your recipes stay saved in the Recipe Box.")
             }
             .sheet(isPresented: $showSettings) {
                 SettingsView()

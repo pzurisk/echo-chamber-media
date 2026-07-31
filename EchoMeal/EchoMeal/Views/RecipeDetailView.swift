@@ -45,7 +45,7 @@ struct RecipeDetailView: View {
                         StarRating(rating: currentRating) { stars in
                             appState.rate(recipe, stars: stars)
                         }
-                        Text("Rate it after you cook it. 4 and 5 stars bring more meals like this. 1 and 2 stars mean it never comes back.")
+                        Text("Rate it after you cook it. 4 and 5 stars bring more meals like this. 1 and 2 stars mean it never comes back. Tap your rating again to clear it.")
                             .font(.caption)
                             .foregroundStyle(Color.echoTextSecondary)
                     }

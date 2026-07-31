@@ -21,37 +21,69 @@ struct FavoritesView: View {
                         .foregroundStyle(Color.echoTextSecondary)
                 }
             } else {
-                ScrollView {
-                    VStack(spacing: 14) {
-                        ForEach(appState.favorites) { recipe in
-                            NavigationLink(value: recipe) {
-                                VStack(alignment: .leading, spacing: 8) {
-                                    Text(recipe.title)
-                                        .font(.title3.weight(.semibold))
-                                        .foregroundStyle(.white)
-                                        .multilineTextAlignment(.leading)
-                                    HStack(spacing: 14) {
-                                        Label("\(recipe.cookTimeMin) min", systemImage: "clock")
-                                        Label("Serves \(recipe.servings)", systemImage: "person.2")
-                                    }
-                                    .font(.footnote)
-                                    .foregroundStyle(Color.echoTextSecondary)
-                                }
-                                .padding(16)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .echoCardStyle()
-                            }
-                            .buttonStyle(.plain)
+                List {
+                    ForEach(appState.favorites) { recipe in
+                        row(for: recipe)
+                    }
+                    .onDelete { offsets in
+                        // No confirmation here: unfavoriting is reversible
+                        // from the recipe's heart, nothing is lost.
+                        let removed = offsets.compactMap { index in
+                            appState.favorites.indices.contains(index)
+                                ? appState.favorites[index] : nil
+                        }
+                        for recipe in removed {
+                            appState.toggleFavorite(recipe)
                         }
                     }
-                    .padding(.horizontal)
-                    .padding(.top, 8)
-                    .padding(.bottom, 24)
                 }
+                .listStyle(.plain)
+                .scrollContentBackground(.hidden)
             }
         }
         .navigationTitle("Favorites")
-        // Recipe taps resolve through the navigationDestination declared on
-        // the Week tab's NavigationStack, which owns this view.
+        .toolbar {
+            if !appState.favorites.isEmpty {
+                ToolbarItem(placement: .topBarTrailing) {
+                    EditButton()
+                }
+            }
+        }
+        // This screen is pushed by value (WeekRoute.favorites) from the Week
+        // tab, and recipe taps resolve through the
+        // navigationDestination(for: Recipe.self) declared on that stack's
+        // root, so a tap pushes the detail instead of a duplicate list.
+    }
+
+    private func row(for recipe: Recipe) -> some View {
+        NavigationLink(value: recipe) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(recipe.title)
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(.white)
+                    .multilineTextAlignment(.leading)
+                HStack(spacing: 14) {
+                    Label("\(recipe.cookTimeMin) min", systemImage: "clock")
+                    Label("Serves \(recipe.servings)", systemImage: "person.2")
+                }
+                .font(.footnote)
+                .foregroundStyle(Color.echoTextSecondary)
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .echoCardStyle()
+        }
+        .buttonStyle(.plain)
+        .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
+        .listRowInsets(EdgeInsets(top: 7, leading: 16, bottom: 7, trailing: 16))
+        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+            Button {
+                appState.toggleFavorite(recipe)
+            } label: {
+                Label("Remove", systemImage: "heart.slash")
+            }
+            .tint(.echoRed)
+        }
     }
 }
