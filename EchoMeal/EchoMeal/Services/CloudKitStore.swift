@@ -9,7 +9,10 @@ import Foundation
 ///   HouseholdPlan  "plan-<code>"       planJSON, householdID, updatedAt
 ///   GroceryState   "grocery-<code>"    checkedIDs [String], householdID, updatedAt
 ///   Favorites      "favorites-<code>"  recipesJSON, householdID, updatedAt
+///   TasteHistory   "history-<code>"    historyJSON, householdID, updatedAt
+///   Ratings        "ratings-<code>"    ratingsJSON, householdID, updatedAt
 ///   RecipeBox      "recipebox-<code>"  recipesJSON, keptJSON, householdID, updatedAt
+///   Pantry         "pantry-<code>"     staplesJSON, householdID, updatedAt
 ///
 /// CKQuerySubscriptions (predicate: householdID == code) push a silent
 /// notification to the other phone whenever a record changes. The one-time
@@ -28,6 +31,7 @@ final class CloudKitStore {
     static let historyRecordType = "TasteHistory"
     static let ratingsRecordType = "Ratings"
     static let recipeBoxRecordType = "RecipeBox"
+    static let pantryRecordType = "Pantry"
 
     /// Always the current code, never a stale copy from init.
     private var household: String { HouseholdConfig.code }
@@ -45,6 +49,7 @@ final class CloudKitStore {
     private var historyRecordID: CKRecord.ID { CKRecord.ID(recordName: "history-\(household)") }
     private var ratingsRecordID: CKRecord.ID { CKRecord.ID(recordName: "ratings-\(household)") }
     private var recipeBoxRecordID: CKRecord.ID { CKRecord.ID(recordName: "recipebox-\(household)") }
+    private var pantryRecordID: CKRecord.ID { CKRecord.ID(recordName: "pantry-\(household)") }
 
     // MARK: - Account
 
@@ -226,6 +231,33 @@ final class CloudKitStore {
         return (recipes, kept, freshness(of: record))
     }
 
+    // MARK: - Pantry staples
+
+    /// Staples the household always has at home (Pantry Memory), stored in
+    /// display order. Plans skip buying these and leave them out of the
+    /// budget estimate.
+    func saveStaples(_ staples: [String]) async throws {
+        guard !household.isEmpty else { return }
+        let json = try String(data: JSONEncoder().encode(staples), encoding: .utf8) ?? "[]"
+        let record = await fetchOrCreate(pantryRecordID, type: Self.pantryRecordType)
+        record["staplesJSON"] = json
+        record["householdID"] = household
+        record["updatedAt"] = Date()
+        try await save(record)
+    }
+
+    /// Returns the staples plus the record's freshness date so the caller
+    /// can skip applying a cloud copy that is older than local edits.
+    func fetchStaples() async -> (staples: [String], updatedAt: Date)? {
+        guard !household.isEmpty,
+              let record = try? await database.record(for: pantryRecordID),
+              let json = record["staplesJSON"] as? String,
+              let data = json.data(using: .utf8),
+              let staples = try? JSONDecoder().decode([String].self, from: data)
+        else { return nil }
+        return (staples, freshness(of: record))
+    }
+
     // MARK: - Subscriptions
 
     /// Registers silent-push query subscriptions so this phone refreshes
@@ -240,7 +272,8 @@ final class CloudKitStore {
         let types = [
             Self.planRecordType, Self.groceryRecordType,
             Self.favoritesRecordType, Self.historyRecordType,
-            Self.ratingsRecordType, Self.recipeBoxRecordType
+            Self.ratingsRecordType, Self.recipeBoxRecordType,
+            Self.pantryRecordType
         ]
         let wantedIDs = Set(types.map { "sub-\($0)-\(code)" })
 

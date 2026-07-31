@@ -1,6 +1,7 @@
 import SwiftUI
 
-/// Small and simple. Budget target, dinners per week, household code.
+/// Small and simple. Budget target, dinners per week, pantry staples,
+/// household code.
 struct SettingsView: View {
     @EnvironmentObject private var appState: AppState
     @Environment(\.dismiss) private var dismiss
@@ -11,6 +12,7 @@ struct SettingsView: View {
     @State private var showNewHouseholdConfirm = false
     @State private var joinCode = ""
     @State private var joinError: String?
+    @State private var newStaple = ""
 
     var body: some View {
         NavigationStack {
@@ -35,6 +37,26 @@ struct SettingsView: View {
                     Text("Applies to the next plan you speak.")
                         .font(.caption)
                         .foregroundStyle(Color.echoTextSecondary)
+                }
+
+                Section("Pantry staples") {
+                    Text("Things you always have at home. Plans will skip buying these.")
+                        .font(.caption)
+                        .foregroundStyle(Color.echoTextSecondary)
+                    ForEach(appState.pantryStaples, id: \.self) { staple in
+                        Text(staple)
+                    }
+                    .onDelete { offsets in
+                        appState.removeStaples(atOffsets: offsets)
+                    }
+                    HStack {
+                        TextField("Add a staple, like rice", text: $newStaple)
+                            .submitLabel(.done)
+                            .onSubmit(addStaple)
+                        Button("Add") { addStaple() }
+                            .buttonStyle(.borderless)
+                            .disabled(newStaple.trimmingCharacters(in: .whitespaces).isEmpty)
+                    }
                 }
 
                 Section("Household") {
@@ -112,6 +134,13 @@ struct SettingsView: View {
             }
         }
         .preferredColorScheme(.dark)
+    }
+
+    /// Shared by the staple field's submit and the Add button. AppState
+    /// trims, ignores empties, and dedupes, so the field just clears.
+    private func addStaple() {
+        appState.addStaple(newStaple)
+        newStaple = ""
     }
 
     /// Shared by the text field's submit and the Join button. On success

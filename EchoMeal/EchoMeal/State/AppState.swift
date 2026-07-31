@@ -31,6 +31,10 @@ final class AppState: ObservableObject {
     /// Pinned dinners locked into the next generation. They survive week
     /// after week until the user unpins them.
     @Published var keptRecipes: [Recipe] = []
+    /// Pantry Memory: staples the household always has at home (rice,
+    /// olive oil, soy sauce), in display order, user-managed in Settings.
+    /// Plans skip buying these and leave them out of the budget estimate.
+    @Published var pantryStaples: [String] = []
     @Published var pastDinners: [PastDinner] = []
     @Published var ratings: [String: Int] = [:]
     @Published var phase: Phase = .idle
@@ -62,7 +66,8 @@ final class AppState: ObservableObject {
     private var statusClearTask: Task<Void, Never>?
 
     /// When each collection was last edited on this device, keyed by
-    /// "plan", "checked", "favorites", "history", "ratings", "recipeBox".
+    /// "plan", "checked", "favorites", "history", "ratings", "recipeBox",
+    /// "pantry".
     /// Newest wins: a cloud copy older than the local edit is never applied,
     /// so a stale fetch cannot roll back fresh local data.
     private var localEditDates: [String: Date] = [:]
@@ -169,6 +174,7 @@ final class AppState: ObservableObject {
         favorites = []
         recipeBox = []
         keptRecipes = []
+        pantryStaples = []
         pastDinners = []
         ratings = [:]
         localEditDates = [:]
@@ -183,6 +189,7 @@ final class AppState: ObservableObject {
         defaults.removeObject(forKey: HouseholdConfig.Keys.cachedRatings)
         defaults.removeObject(forKey: HouseholdConfig.Keys.cachedRecipeBox)
         defaults.removeObject(forKey: HouseholdConfig.Keys.cachedKeptRecipes)
+        defaults.removeObject(forKey: HouseholdConfig.Keys.cachedPantry)
         defaults.removeObject(forKey: HouseholdConfig.Keys.cachedEditDates)
     }
 
@@ -225,7 +232,22 @@ final class AppState: ObservableObject {
         if !disliked.isEmpty {
             parts.append("Meals they cooked and rated 1 or 2 stars. Never suggest these again, or close variations of them: \(disliked.joined(separator: ", ")).")
         }
+        // Pantry Memory rides along inside tasteNotes so both generatePlan
+        // and swapNight carry it through runPlanGeneration into planWeek
+        // without changing ClaudeService's signature.
+        let pantry = pantryNotes
+        if !pantry.isEmpty {
+            parts.append(pantry)
+        }
         return parts.joined(separator: " ")
+    }
+
+    /// One line telling Claude what the household already owns, so plans
+    /// stop re-buying staples and the budget estimate gets honest. Empty
+    /// when no staples are set, so tasteNotes stays clean.
+    var pantryNotes: String {
+        guard !pantryStaples.isEmpty else { return "" }
+        return "Pantry staples this household always has, never add them to the grocery list and never count them in the budget: \(pantryStaples.joined(separator: ", "))."
     }
 
     /// Most common cuisines across the dinner history, best first.
@@ -249,6 +271,74 @@ final class AppState: ObservableObject {
     // MARK: - Planning
 
     func generatePlan(from transcript: String) {
+        // Full week generation: pinned dinners ride along as the locked
+        // set, and the grocery check-offs reset for the new shopping trip.
+        runPlanGeneration(
+            userText: transcript,
+            lockedRecipes: keptRecipes,
+            preserveChecks: false,
+            dinners: dinnersPerWeek
+        )
+    }
+
+    /// Swap One Night: replace a single dinner without touching the rest
+    /// of the week or the grocery check-offs. Every other night rides
+    /// along as a locked dinner, so only the chosen day changes.
+    func swapNight(day: String, transcript: String) {
+        guard phase != .planning else {
+            // Same message generatePlan flashes when a tap lands mid-build.
+            flashStatus("Hold on, still building your last plan.")
+            return
+        }
+        guard let plan, let swappedRecipe = plan.recipe(forDay: day) else {
+            flashStatus("There is no \(day) dinner to swap.")
+            return
+        }
+        // Lock every night except the one being swapped. Pins that are
+        // already in the week are among these locked nights; pins that are
+        // NOT in the current week are deliberately left out. Adding them
+        // would pad the locked set up to (or past) the week size, and the
+        // planning request then says every day is locked and no new dinner
+        // is needed, which contradicts the swap itself. Outside pins belong
+        // to the next full generation, not a one night swap.
+        let locked = plan.recipes.filter { $0.day != day }
+        // Swapping away a pinned dinner also unpins it. Without this the
+        // pin would sneak the replaced dinner back into the next full
+        // generation even though the household just asked it to go.
+        if isKept(swappedRecipe) {
+            toggleKeep(swappedRecipe)
+        }
+        let said = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
+        let userText: String
+        if said.isEmpty {
+            userText = "Swap request: replace only the \(day) dinner with something different that fits this household's taste. Keep every other night exactly as the locked dinners specify."
+        } else {
+            userText = "Swap request: replace only the \(day) dinner. The household said: \(said). Keep every other night exactly as the locked dinners specify."
+        }
+        // A swap regenerates the week at its CURRENT size, not the settings
+        // value, so changing dinners per week mid-week cannot silently
+        // resize the plan (the setting applies to the next spoken week).
+        runPlanGeneration(
+            userText: userText,
+            lockedRecipes: locked,
+            preserveChecks: true,
+            dinners: plan.week.count
+        )
+    }
+
+    /// The one generation pipeline. generatePlan and swapNight both come
+    /// through here so a swap gets everything a full generation gets: the
+    /// deadline watchdog, cancel, ingredient reconciliation, the Recipe
+    /// Box archive, same-day history dedupe, and the CloudKit push.
+    ///
+    /// preserveChecks switches the grocery check-off behavior, and both
+    /// behaviors exist on purpose. A brand new week is a fresh shopping
+    /// trip, so check-offs reset to the new plan's pantry staples
+    /// (carrying old ones over would pre-check groceries that have been
+    /// eaten and must be bought again). A swap happens mid-week against a
+    /// list that is mostly unchanged, so check-offs still present on the
+    /// new list carry over, unioned with the new plan's pantry staples.
+    private func runPlanGeneration(userText: String, lockedRecipes: [Recipe], preserveChecks: Bool, dinners: Int) {
         guard phase != .planning else {
             // Never swallow the tap silently. Tell the user why nothing
             // new started.
@@ -257,14 +347,14 @@ final class AppState: ObservableObject {
         }
         phase = .planning
         let budget = budgetTarget
-        let dinners = dinnersPerWeek
         let notes = tasteNotes
-        let locked = keptRecipes
+        let locked = lockedRecipes
+        let staples = pantryStaples
         planTask = Task {
             do {
                 let rawPlan = try await Self.withPlanningDeadline {
                     try await ClaudeService.planWeek(
-                        transcript: transcript,
+                        transcript: userText,
                         budget: budget,
                         dinners: dinners,
                         tasteNotes: notes,
@@ -274,7 +364,9 @@ final class AppState: ObservableObject {
                 // Safety net: guarantee every recipe ingredient is on the
                 // grocery list before anything downstream uses the plan
                 // (recipe box archive, checked-item IDs, CloudKit save).
-                let newPlan = rawPlan.reconciledWithRecipes()
+                // Pantry Memory staples are deliberately off the list, so
+                // they are passed in and skipped instead of re-added.
+                let newPlan = rawPlan.reconciledWithRecipes(pantryStaples: staples)
                 // Archive before replacing so nothing is ever lost. The old
                 // plan covers weeks generated before the Recipe Box existed;
                 // the new plan is archived right away so it survives the
@@ -285,12 +377,28 @@ final class AppState: ObservableObject {
                 }
                 self.archiveIntoRecipeBox(newPlan.recipes)
                 self.plan = newPlan
-                // A new week means a fresh shopping trip: only the new
-                // plan's pantry staples start checked. Carrying over old
-                // check-offs would pre-check groceries that have been
-                // eaten and must be bought again.
-                self.checkedItemIDs = newPlan.pantryItemIDs
-                self.recordHistory(from: newPlan, replacingTitles: replacedTitles)
+                if preserveChecks {
+                    // Swap: the shopping week is already in motion, so
+                    // check-offs for items still on the new list carry
+                    // over, plus the new plan's pantry staples.
+                    self.checkedItemIDs = self.checkedItemIDs
+                        .intersection(newPlan.allItemIDs)
+                        .union(newPlan.pantryItemIDs)
+                } else {
+                    // A new week means a fresh shopping trip: only the new
+                    // plan's pantry staples start checked. Carrying over old
+                    // check-offs would pre-check groceries that have been
+                    // eaten and must be bought again.
+                    self.checkedItemIDs = newPlan.pantryItemIDs
+                }
+                // A swap logs only the genuinely new dinner(s); re-logging
+                // the unchanged nights would bloat the taste history and
+                // the do-not-repeat notes on every mid-week swap.
+                self.recordHistory(
+                    from: newPlan,
+                    replacingTitles: replacedTitles,
+                    onlyNewDinners: preserveChecks
+                )
                 self.phase = .idle
                 self.selectedTab = .week
                 self.markEdited("plan")
@@ -389,17 +497,28 @@ final class AppState: ObservableObject {
     /// entries are removed first (same calendar day AND a title from the
     /// replaced plan). Otherwise three retries on a Sunday would log three
     /// weeks of phantom dinners that block future suggestions.
-    private func recordHistory(from newPlan: MealPlan, replacingTitles oldTitles: Set<String>) {
+    private func recordHistory(from newPlan: MealPlan, replacingTitles oldTitles: Set<String>, onlyNewDinners: Bool = false) {
         let now = Date()
         let calendar = Calendar.current
         let replaced = Set(oldTitles.map { $0.lowercased() })
-        if !replaced.isEmpty {
+        let newTitles = Set(newPlan.week.map { $0.title.lowercased() })
+        // Same-day dedupe. A full regeneration scrubs today's entries for
+        // every replaced title. A swap scrubs only the title that actually
+        // left the week; the unchanged nights' entries must survive.
+        let removalTargets = onlyNewDinners ? replaced.subtracting(newTitles) : replaced
+        if !removalTargets.isEmpty {
             pastDinners.removeAll {
                 calendar.isDate($0.date, inSameDayAs: now)
-                    && replaced.contains($0.title.lowercased())
+                    && removalTargets.contains($0.title.lowercased())
             }
         }
-        let dinners = newPlan.week.map {
+        // onlyNewDinners (swaps): unchanged nights were already logged when
+        // the week was generated, so only titles absent from the replaced
+        // plan get appended.
+        let entries = onlyNewDinners
+            ? newPlan.week.filter { !replaced.contains($0.title.lowercased()) }
+            : newPlan.week
+        let dinners = entries.map {
             PastDinner(title: $0.title, cuisine: $0.cuisine, date: now)
         }
         pastDinners.append(contentsOf: dinners)
@@ -454,6 +573,35 @@ final class AppState: ObservableObject {
     }
 
     // MARK: - Ratings
+
+    /// Weekday number (1 is Sunday through 7 is Saturday, the same scheme
+    /// Calendar.component(.weekday) uses) for a plan day name like
+    /// "Monday". Nil when the string is not an English day name, so an
+    /// unexpected plan value can never match a real weekday.
+    nonisolated static func weekdayNumber(forDayName name: String) -> Int? {
+        let names = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"]
+        let trimmed = name.trimmingCharacters(in: .whitespaces).lowercased()
+        guard let index = names.firstIndex(of: trimmed) else { return nil }
+        return index + 1
+    }
+
+    /// The plan recipe whose night already passed (yesterday back through
+    /// three days ago, nearest night first) and that has no rating yet.
+    /// Drives the slim rating nudge on the Week tab. Nil when there is no
+    /// plan or every recent dinner is rated.
+    var unratedRecent: Recipe? {
+        guard let plan else { return nil }
+        let calendar = Calendar.current
+        let now = Date()
+        for daysBack in 1...3 {
+            guard let past = calendar.date(byAdding: .day, value: -daysBack, to: now) else { continue }
+            let weekday = calendar.component(.weekday, from: past)
+            for recipe in plan.recipes where Self.weekdayNumber(forDayName: recipe.day) == weekday {
+                if rating(for: recipe) == 0 { return recipe }
+            }
+        }
+        return nil
+    }
 
     /// Ratings are keyed by lowercased title so lookups match no matter how
     /// a title is cased in a plan, the box, or an old record.
@@ -577,6 +725,44 @@ final class AppState: ObservableObject {
         backgroundSave("favorites") { try await self.store.saveFavorites(favs) }
     }
 
+    // MARK: - Pantry staples
+
+    /// Adds a staple to Pantry Memory. Whitespace is trimmed, an empty
+    /// result is ignored, and a title already on the list (compared case
+    /// insensitively) is not added twice.
+    func addStaple(_ raw: String) {
+        let staple = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !staple.isEmpty else { return }
+        guard !pantryStaples.contains(where: {
+            $0.caseInsensitiveCompare(staple) == .orderedSame
+        }) else { return }
+        pantryStaples.append(staple)
+        persistPantry()
+    }
+
+    /// Removes one staple by its display text (matched case insensitively).
+    func removeStaple(_ staple: String) {
+        guard let index = pantryStaples.firstIndex(where: {
+            $0.caseInsensitiveCompare(staple) == .orderedSame
+        }) else { return }
+        pantryStaples.remove(at: index)
+        persistPantry()
+    }
+
+    /// Swipe-to-delete support for the Settings list.
+    func removeStaples(atOffsets offsets: IndexSet) {
+        pantryStaples.remove(atOffsets: offsets)
+        persistPantry()
+    }
+
+    /// Shared persistence tail for every pantry mutation: stamp the local
+    /// edit (which also saves the offline cache), then push to CloudKit.
+    private func persistPantry() {
+        markEdited("pantry")
+        let snapshot = pantryStaples
+        backgroundSave("pantry") { try await self.store.saveStaples(snapshot) }
+    }
+
     // MARK: - Sync
 
     /// Records that a collection was just edited on this device, then
@@ -637,6 +823,9 @@ final class AppState: ObservableObject {
                 let box = recipeBox
                 let kept = keptRecipes
                 backgroundSave("recipeBox") { try await self.store.saveRecipeBox(box, kept: kept) }
+            case "pantry":
+                let snapshot = pantryStaples
+                backgroundSave("pantry") { try await self.store.saveStaples(snapshot) }
             default:
                 break
             }
@@ -723,6 +912,13 @@ final class AppState: ObservableObject {
             }
             localEditDates["recipeBox"] = remote.updatedAt
         }
+        if let remote = await store.fetchStaples(), stillCurrent(),
+           remote.updatedAt > localEditDate(for: "pantry") {
+            if remote.staples != pantryStaples {
+                pantryStaples = remote.staples
+            }
+            localEditDates["pantry"] = remote.updatedAt
+        }
         guard stillCurrent() else { return }
         saveLocalCache()
     }
@@ -766,6 +962,11 @@ final class AppState: ObservableObject {
            let cached = try? JSONDecoder().decode([Recipe].self, from: data) {
             keptRecipes = cached
         }
+        if let json = defaults.string(forKey: HouseholdConfig.Keys.cachedPantry),
+           let data = json.data(using: .utf8),
+           let cached = try? JSONDecoder().decode([String].self, from: data) {
+            pantryStaples = cached
+        }
         if let stamps = defaults.dictionary(forKey: HouseholdConfig.Keys.cachedEditDates) as? [String: Double] {
             localEditDates = stamps.mapValues { Date(timeIntervalSince1970: $0) }
         }
@@ -798,6 +999,10 @@ final class AppState: ObservableObject {
         if let data = try? JSONEncoder().encode(keptRecipes),
            let json = String(data: data, encoding: .utf8) {
             defaults.set(json, forKey: HouseholdConfig.Keys.cachedKeptRecipes)
+        }
+        if let data = try? JSONEncoder().encode(pantryStaples),
+           let json = String(data: data, encoding: .utf8) {
+            defaults.set(json, forKey: HouseholdConfig.Keys.cachedPantry)
         }
         let stamps = localEditDates.mapValues { $0.timeIntervalSince1970 }
         defaults.set(stamps, forKey: HouseholdConfig.Keys.cachedEditDates)

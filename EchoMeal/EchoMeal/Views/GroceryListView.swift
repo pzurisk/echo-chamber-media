@@ -5,6 +5,9 @@ import SwiftUI
 struct GroceryListView: View {
     @EnvironmentObject private var appState: AppState
     @State private var showSettings = false
+    /// Store mode: show only what is still left to grab. Persisted so it
+    /// survives a relaunch in the middle of a shopping trip.
+    @AppStorage("storeModeOn") private var storeModeOn = false
 
     var body: some View {
         NavigationStack {
@@ -12,6 +15,9 @@ struct GroceryListView: View {
                 Color.echoBackground.ignoresSafeArea()
 
                 if let plan = appState.plan {
+                    let totalItems = plan.grocery.sections.reduce(0) { $0 + $1.items.count }
+                    let remainingItems = plan.orderedSections.reduce(0) { $0 + remainingCount(in: $1) }
+
                     VStack(spacing: 0) {
                         BudgetBar(grocery: plan.grocery)
                             .padding(.horizontal)
@@ -20,15 +26,28 @@ struct GroceryListView: View {
 
                         ScrollView {
                             VStack(alignment: .leading, spacing: 18) {
-                                ForEach(plan.orderedSections, id: \.name) { section in
-                                    GrocerySectionView(section: section)
-                                }
+                                if storeModeOn && remainingItems == 0 {
+                                    listDoneState
+                                } else {
+                                    if storeModeOn {
+                                        Text("\(remainingItems) of \(totalItems) items left")
+                                            .font(.title2.weight(.bold))
+                                            .foregroundStyle(.white)
+                                            .padding(.horizontal, 4)
+                                    }
 
-                                if !plan.grocery.notes.isEmpty {
-                                    Text(plan.grocery.notes)
-                                        .font(.footnote)
-                                        .foregroundStyle(Color.echoTextSecondary)
-                                        .padding(.horizontal, 4)
+                                    ForEach(plan.orderedSections, id: \.name) { section in
+                                        if !storeModeOn || remainingCount(in: section) > 0 {
+                                            GrocerySectionView(section: section, hideChecked: storeModeOn)
+                                        }
+                                    }
+
+                                    if !plan.grocery.notes.isEmpty {
+                                        Text(plan.grocery.notes)
+                                            .font(.footnote)
+                                            .foregroundStyle(Color.echoTextSecondary)
+                                            .padding(.horizontal, 4)
+                                    }
                                 }
                             }
                             .padding(.horizontal)
@@ -52,11 +71,22 @@ struct GroceryListView: View {
             .navigationTitle("Grocery List")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showSettings = true
-                    } label: {
-                        Image(systemName: "gearshape")
-                            .foregroundStyle(Color.echoTextSecondary)
+                    HStack(spacing: 16) {
+                        if appState.plan != nil {
+                            Button {
+                                storeModeOn.toggle()
+                            } label: {
+                                Image(systemName: storeModeOn ? "cart.fill" : "cart")
+                                    .foregroundStyle(storeModeOn ? Color.echoRed : Color.echoTextSecondary)
+                            }
+                            .accessibilityLabel(storeModeOn ? "Show all items" : "Show remaining items only")
+                        }
+                        Button {
+                            showSettings = true
+                        } label: {
+                            Image(systemName: "gearshape")
+                                .foregroundStyle(Color.echoTextSecondary)
+                        }
                     }
                 }
             }
@@ -64,6 +94,30 @@ struct GroceryListView: View {
                 SettingsView()
             }
         }
+    }
+
+    /// Items in a section not yet checked off. Pantry staples start
+    /// checked, so they count as already handled, same as the rows show.
+    private func remainingCount(in section: GrocerySection) -> Int {
+        section.items.filter { !appState.isChecked(section: section.name, item: $0.name) }.count
+    }
+
+    /// Friendly full-cart state shown in store mode instead of an empty
+    /// screen once every item is checked.
+    private var listDoneState: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 44))
+                .foregroundStyle(Color.echoGreen)
+            Text("List done. Go home and cook.")
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(.white)
+            Text("Tap the cart up top to see the full list again.")
+                .font(.subheadline)
+                .foregroundStyle(Color.echoTextSecondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 60)
     }
 }
 
@@ -125,6 +179,15 @@ struct BudgetBar: View {
 struct GrocerySectionView: View {
     @EnvironmentObject private var appState: AppState
     let section: GrocerySection
+    /// Store mode: checked items drop out of the section entirely.
+    var hideChecked: Bool = false
+
+    private var visibleItems: [GroceryItem] {
+        guard hideChecked else { return section.items }
+        return section.items.filter {
+            !appState.isChecked(section: section.name, item: $0.name)
+        }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -137,9 +200,9 @@ struct GrocerySectionView: View {
             VStack(spacing: 0) {
                 // Keyed by position, not name, so two same-named items in
                 // one section (possible in model output) cannot collide.
-                ForEach(Array(section.items.enumerated()), id: \.offset) { index, item in
+                ForEach(Array(visibleItems.enumerated()), id: \.offset) { index, item in
                     GroceryRow(sectionName: section.name, item: item)
-                    if index < section.items.count - 1 {
+                    if index < visibleItems.count - 1 {
                         Divider().overlay(Color.echoCardBorder)
                     }
                 }
