@@ -6,6 +6,7 @@ import SwiftUI
 struct RecipeDetailView: View {
     @EnvironmentObject private var appState: AppState
     let recipe: Recipe
+    @State private var showCookMode = false
 
     var body: some View {
         ZStack {
@@ -52,6 +53,17 @@ struct RecipeDetailView: View {
                     .padding(16)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .echoCardStyle()
+
+                    Button {
+                        showCookMode = true
+                    } label: {
+                        Label("Start cooking", systemImage: "flame.fill")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 6)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.echoRed)
 
                     VStack(alignment: .leading, spacing: 10) {
                         Text("Ingredients")
@@ -107,6 +119,9 @@ struct RecipeDetailView: View {
             }
         }
         .navigationBarTitleDisplayMode(.inline)
+        .fullScreenCover(isPresented: $showCookMode) {
+            CookModeView(recipe: recipe)
+        }
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {

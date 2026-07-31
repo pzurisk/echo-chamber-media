@@ -104,6 +104,19 @@ extension MealPlan {
         return ids
     }
 
+    /// Every grocery item ID on the plan. A swap uses this to carry the
+    /// household's check-offs forward: only IDs that still exist on the
+    /// new list survive the intersection.
+    var allItemIDs: Set<String> {
+        var ids = Set<String>()
+        for section in grocery.sections {
+            for item in section.items {
+                ids.insert(Self.itemID(section: section.name, item: item.name))
+            }
+        }
+        return ids
+    }
+
     /// Recipe for a given weekday, matched by day name.
     func recipe(forDay day: String) -> Recipe? {
         recipes.first { $0.day == day }
@@ -135,7 +148,14 @@ extension MealPlan {
     /// normalized name (first qty wins). The new items carry estPrice 0
     /// on purpose: estimatedTotal is a stored value from Claude, and
     /// pricing the extras at 0 keeps the budget bar math honest.
-    func reconciledWithRecipes() -> MealPlan {
+    /// pantryStaples are things the household always has at home (Pantry
+    /// Memory). They are deliberately absent from the grocery list, so an
+    /// ingredient whose normalized name matches a normalized staple (same
+    /// containment matching as coverage) is skipped instead of re-added.
+    func reconciledWithRecipes(pantryStaples: [String] = []) -> MealPlan {
+        let staples = pantryStaples
+            .map(Self.normalizedForMatching)
+            .filter { !$0.isEmpty }
         var groceryNames: [String] = []
         for section in grocery.sections {
             for item in section.items {
@@ -152,6 +172,10 @@ extension MealPlan {
             for ingredient in recipe.ingredients {
                 let name = Self.normalizedForMatching(ingredient.item)
                 guard !name.isEmpty, !missingNames.contains(name) else { continue }
+                let isStaple = staples.contains { staple in
+                    staple.contains(name) || name.contains(staple)
+                }
+                guard !isStaple else { continue }
                 let covered = groceryNames.contains { grocery in
                     grocery.contains(name) || name.contains(grocery)
                 }

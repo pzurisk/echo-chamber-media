@@ -25,6 +25,14 @@ release.
   5 stars pull future plans toward it, 1 and 2 stars mean it never gets
   suggested again. A trash button clears the whole week on both phones;
   the recipes stay saved in the Recipe Box.
+- **Swap one night.** Swipe a dinner on the Week tab (or long press it)
+  to swap just that night, by voice, typing, or a surprise pick. The rest
+  of the week stays exactly as it was, the grocery list updates for the
+  new dinner, and your check-offs stay checked.
+- **Cook Mode.** A Start cooking button on every recipe opens a full
+  screen, one giant step at a time view: tap the right side to advance,
+  the left to go back, with an ingredients checklist up front. The screen
+  stays awake the whole time, and it ends with the star rating.
 - **Recipe Box.** Every generated recipe is archived automatically, newest
   first, and nothing is ever removed on its own. Deleting is manual only,
   from the Recipe Box screen (the books icon on the Week tab), by swipe or
@@ -41,9 +49,14 @@ release.
   start pre-checked. Checking an item syncs to the other phone. The app
   also cross-checks the list against every recipe's ingredients and adds
   anything missing to a "From recipes" section, so the list is always
-  complete.
-- **Settings.** Budget target, dinners per week, household code (view it,
-  share it, start a new household, or join a different one).
+  complete. A cart button turns on store mode: checked items hide, done
+  sections collapse, and a big "9 of 27 items left" count leads the page.
+- **Settings.** Budget target, dinners per week, pantry staples, household
+  code (view it, share it, start a new household, or join a different one).
+  Pantry staples are the things the household always has at home (rice,
+  olive oil, soy sauce). Claude leaves them off the grocery list and out of
+  the budget estimate, and the list they live on syncs between both phones
+  like everything else.
 
 ## Project layout
 
@@ -62,7 +75,7 @@ EchoMeal/
     Services/ClaudeService.swift   Anthropic Messages API call + JSON parsing
     Services/CloudKitStore.swift   Public-database records + subscriptions
     State/AppState.swift           App-wide state, sync, local cache
-    Views/                     Onboarding, Speak, Week, RecipeDetail, Favorites, RecipeBox, List, Settings
+    Views/                     Onboarding, Speak, Week, RecipeDetail, CookMode, Favorites, RecipeBox, List, Settings
 ```
 
 ## 1. Create the Xcode project
@@ -153,6 +166,7 @@ your household.
 | TasteHistory  | `history-<code>`    | historyJSON, householdID, updatedAt   |
 | Ratings       | `ratings-<code>`    | ratingsJSON, householdID, updatedAt   |
 | RecipeBox     | `recipebox-<code>`  | recipesJSON, keptJSON, householdID, updatedAt |
+| Pantry        | `pantry-<code>`     | staplesJSON, householdID, updatedAt   |
 
 Steps:
 
@@ -170,6 +184,13 @@ Steps:
    Changes. TestFlight builds run against the Production environment, so
    this step is required before the TestFlight install will sync. Do it
    again any time the schema changes.
+
+IMPORTANT: the **Pantry** record type (pantry staples) is newer than the
+others. Like every record type, it needs the one-time **Queryable index on
+`householdID`** from step 3 (save a staple once in Development so CloudKit
+creates the type first), and then the schema must be **re-deployed to
+Production** (step 4) before TestFlight or App Store builds will sync
+pantry staples between phones.
 
 The app registers the subscriptions itself on every launch
 (`CloudKitStore.ensureSubscriptions`), so there is nothing to create by
