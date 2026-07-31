@@ -27,6 +27,16 @@ struct RecipeBoxView: View {
                         ForEach(filteredRecipes) { recipe in
                             row(for: recipe)
                         }
+                        .onDelete { offsets in
+                            // Edit-mode delete goes through the same
+                            // confirmation as the swipe path. Offsets index
+                            // the filtered array currently on screen, which
+                            // may be a search subset of the full box.
+                            let displayed = filteredRecipes
+                            if let index = offsets.first, displayed.indices.contains(index) {
+                                recipePendingDelete = displayed[index]
+                            }
+                        }
                     } header: {
                         Text("Every recipe you generate is saved here automatically. Pin one to keep it in your next week. Deleting is up to you, nothing is removed on its own.")
                             .font(.footnote)
@@ -40,8 +50,17 @@ struct RecipeBoxView: View {
             }
         }
         .navigationTitle("Recipe Box")
-        // Recipe taps resolve through the navigationDestination declared on
-        // the Week tab's NavigationStack, which owns this view.
+        .toolbar {
+            if !appState.recipeBox.isEmpty {
+                ToolbarItem(placement: .topBarTrailing) {
+                    EditButton()
+                }
+            }
+        }
+        // This screen is pushed by value (WeekRoute.recipeBox) from the Week
+        // tab, and recipe taps resolve through the
+        // navigationDestination(for: Recipe.self) declared on that stack's
+        // root, so a tap pushes the detail instead of a duplicate list.
         .alert(
             "Delete this recipe for good?",
             isPresented: Binding(

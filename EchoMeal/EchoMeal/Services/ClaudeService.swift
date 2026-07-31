@@ -17,24 +17,52 @@ enum ClaudeService {
         case emptyReply
         case parseFailed
 
+        /// Plain sentences a non-programmer understands. The raw status code
+        /// and body stay in the associated values for retry matching and
+        /// debugging; they never reach the user.
         var errorDescription: String? {
             switch self {
             case .missingKey:
-                return "No API key found. Add ANTHROPIC_API_KEY (or CLAUDE_PROXY_URL for the relay) to Secrets.xcconfig and rebuild."
-            case .badStatus(let code, let body):
-                return "The planning service returned an error (\(code)). \(body)"
+                return "The app is not connected to the planning service. This build is missing its key or proxy."
+            case .badStatus(let code, _):
+                switch code {
+                case 401, 403:
+                    return "The planning service rejected the key. Check the app's setup."
+                case 429:
+                    return "The planning service is busy. Wait a minute and try again."
+                case 500...599:
+                    return "The planning service had a hiccup. Try again."
+                default:
+                    return "The planning service could not be reached."
+                }
             case .emptyReply:
                 return "The planning service sent back an empty reply. Try again."
             case .parseFailed:
-                return "Could not read the meal plan. Try again."
+                return "The plan came back scrambled. Tap the button and try again."
             }
         }
     }
 
-    // MARK: - Runtime system prompt (embedded verbatim)
+    // MARK: - Runtime system prompt
 
-    static let systemPrompt = """
-You plan weekly dinners for a two-person household, Billy and Melissa. You will receive a short, possibly messy voice transcript of cravings, proteins, or dish ideas. Build a full 5-dinner plan, Monday through Friday, around whatever they mention, and fill the remaining nights yourself with dinners that fit.
+    /// Days in plan order. The requested dinner count selects a prefix:
+    /// 5 dinners run Monday through Friday, 3 run Monday through Wednesday,
+    /// 7 run Monday through Sunday.
+    private static let dayNames = [
+        "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"
+    ]
+
+    /// Builds the system prompt for the requested number of dinners. The
+    /// prompt used to be a frozen constant hardcoded to 5 weeknights; the
+    /// dinner count and day list now follow the household's setting.
+    static func systemPrompt(dinners: Int) -> String {
+        let count = min(max(dinners, 1), 7)
+        let days = dayNames.prefix(count)
+        let first = days.first ?? "Monday"
+        let last = days.last ?? "Friday"
+        let span = count == 1 ? "on \(first)" : "\(first) through \(last)"
+        return """
+You plan weekly dinners for a two-person household. You will receive a short, possibly messy voice transcript of cravings, proteins, or dish ideas. Build a full \(count)-dinner plan, \(span), around whatever they mention, and fill the remaining nights yourself with dinners that fit.
 
 Rules:
 - Bold, global flavors. Cook time 30 to 60 minutes per meal.
@@ -65,8 +93,9 @@ Return JSON only. No prose, no markdown, no backticks. Match this schema exactly
   }
 }
 
-week and recipes each have exactly 5 entries, one per weekday, in order. grocery.sections use only these names when relevant: Proteins, Produce, Pantry, Dairy, Bread, Sauces.
+week and recipes each have exactly \(count) entries, one per day, \(span), in order. grocery.sections use only these names when relevant: Proteins, Produce, Pantry, Dairy, Bread, Sauces.
 """
+    }
 
     // MARK: - Public entry point
 
@@ -79,7 +108,8 @@ week and recipes each have exactly 5 entries, one per weekday, in order. grocery
     /// (favorites, cuisines they come back to, recent dinners) so the plan
     /// gets more personal over time.
     /// lockedRecipes are pinned dinners the household wants repeated exactly.
-    /// They go into the user context only; the system prompt never changes.
+    /// They go into the user context only; the system prompt varies only by
+    /// the requested dinner count.
     static func planWeek(transcript: String, budget: Double, dinners: Int, tasteNotes: String = "", lockedRecipes: [Recipe] = []) async throws -> MealPlan {
         var context = "Budget target: \(Int(budget)). Dinners: \(dinners). "
         if !tasteNotes.isEmpty {
@@ -97,16 +127,16 @@ week and recipes each have exactly 5 entries, one per weekday, in order. grocery
         context += "Cravings: \(transcript) "
         context += "Coverage rule: every single ingredient used by any recipe in the plan must appear on the grocery list, either as its own item or as a clearly matching combined item. The household shops from this list alone, so nothing may be missing."
         do {
-            return try await requestPlan(userText: context)
+            return try await requestPlan(userText: context, dinners: dinners)
         } catch ClaudeError.parseFailed {
             let reminder = context + "\n\nReminder: return only valid JSON matching the schema. No prose, no markdown, no backticks. The \"recipes\" array is required and must contain one full recipe object for every day in \"week\" (same count, matching \"day\" values), each with its ingredients and numbered steps. Do not return an empty or partial recipes array."
-            return try await requestPlan(userText: reminder)
+            return try await requestPlan(userText: reminder, dinners: dinners)
         } catch let error as URLError where Self.transientURLErrorCodes.contains(error.code) {
             try await Task.sleep(nanoseconds: 2_000_000_000)
-            return try await requestPlan(userText: context)
+            return try await requestPlan(userText: context, dinners: dinners)
         } catch ClaudeError.badStatus(let code, _) where (500...599).contains(code) {
             try await Task.sleep(nanoseconds: 2_000_000_000)
-            return try await requestPlan(userText: context)
+            return try await requestPlan(userText: context, dinners: dinners)
         }
     }
 
@@ -131,7 +161,7 @@ week and recipes each have exactly 5 entries, one per weekday, in order. grocery
         return value
     }
 
-    private static func requestPlan(userText: String) async throws -> MealPlan {
+    private static func requestPlan(userText: String, dinners: Int) async throws -> MealPlan {
         var request: URLRequest
         if let proxyString = configValue("CLAUDE_PROXY_URL"),
            let proxyURL = URL(string: proxyString) {
@@ -150,8 +180,10 @@ week and recipes each have exactly 5 entries, one per weekday, in order. grocery
             request.setValue(key, forHTTPHeaderField: "x-api-key")
         }
         request.httpMethod = "POST"
-        // Planning a full week can take a while. Give the model room.
-        request.timeoutInterval = 240
+        // Planning a full week can take a while, but past 90 seconds it is
+        // almost certainly stuck. Fail fast so the retry ladder and the
+        // AppState watchdog keep the total wait reasonable.
+        request.timeoutInterval = 90
         // Note: the API version header is 2023-06-01. That value is the
         // current, correct one for the Messages API. The proxy forwards it.
         request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
@@ -159,8 +191,9 @@ week and recipes each have exactly 5 entries, one per weekday, in order. grocery
 
         let body: [String: Any] = [
             "model": "claude-sonnet-5",
-            // Room for a full week: 5 recipes with ingredients and steps, plus
-            // the grocery list. 8000 could clip a verbose plan mid-JSON.
+            // Room for a full week: up to 7 recipes with ingredients and
+            // steps, plus the grocery list. 8000 could clip a verbose plan
+            // mid-JSON.
             "max_tokens": 16000,
             // claude-sonnet-5 runs adaptive (extended) thinking by DEFAULT when
             // the thinking field is omitted, and max_tokens caps thinking +
@@ -172,7 +205,7 @@ week and recipes each have exactly 5 entries, one per weekday, in order. grocery
             // cut output from ~14k tokens to ~4k and made recipes reliably
             // complete. (Sonnet 5 accepts "disabled"; only Fable 5 rejects it.)
             "thinking": ["type": "disabled"],
-            "system": systemPrompt,
+            "system": systemPrompt(dinners: dinners),
             "messages": [
                 ["role": "user", "content": userText]
             ]
@@ -213,7 +246,7 @@ week and recipes each have exactly 5 entries, one per weekday, in order. grocery
         // decodes fine yet bricks the Week tab: every card looks up its recipe
         // by day, finds none, and renders a dead, non-tappable cell with no way
         // to favorite or rate. Treat a plan whose recipes do not cover every
-        // weekday as a parse failure so planWeek retries with a corrective
+        // planned day as a parse failure so planWeek retries with a corrective
         // reminder instead of saving an unusable plan.
         guard !plan.week.isEmpty, plan.recipes.count >= plan.week.count else {
             throw ClaudeError.parseFailed

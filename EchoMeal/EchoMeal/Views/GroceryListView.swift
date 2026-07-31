@@ -135,7 +135,9 @@ struct GrocerySectionView: View {
                 .padding(.horizontal, 4)
 
             VStack(spacing: 0) {
-                ForEach(Array(section.items.enumerated()), id: \.element.name) { index, item in
+                // Keyed by position, not name, so two same-named items in
+                // one section (possible in model output) cannot collide.
+                ForEach(Array(section.items.enumerated()), id: \.offset) { index, item in
                     GroceryRow(sectionName: section.name, item: item)
                     if index < section.items.count - 1 {
                         Divider().overlay(Color.echoCardBorder)
@@ -187,9 +189,13 @@ struct GroceryRow: View {
 
                 Spacer()
 
-                Text(String(format: "$%.2f", item.estPrice))
-                    .font(.footnote)
-                    .foregroundStyle(Color.echoTextSecondary)
+                // Items added by the recipe reconciliation carry estPrice 0
+                // on purpose; a "$0.00" label would just read as broken.
+                if item.estPrice > 0 {
+                    Text(String(format: "$%.2f", item.estPrice))
+                        .font(.footnote)
+                        .foregroundStyle(Color.echoTextSecondary)
+                }
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 13)

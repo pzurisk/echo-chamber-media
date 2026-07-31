@@ -2,16 +2,33 @@ import SwiftUI
 
 /// Tab 1. One large red circular button, centered, on a dark background.
 /// Tap once to listen, tap again to stop. There is no auto-stop. While
-/// Claude plans, shows "Planning your week."
+/// Claude plans, shows "Planning your week." with a Cancel button. A typed
+/// alternative sits under the Surprise button for loud rooms.
 struct SpeakView: View {
     @EnvironmentObject private var appState: AppState
     @StateObject private var recorder = SpeechRecorder()
-    @State private var showSettings = false
     @State private var pulse = false
-    @State private var showAINotice = false
+
+    /// The one sheet this screen can show. Driving all three presentations
+    /// through a single item means they can never collide or swallow each
+    /// other's dismissal.
+    private enum ActiveSheet: Identifiable {
+        case settings, aiNotice, typeIn
+        var id: Self { self }
+    }
+
+    @State private var activeSheet: ActiveSheet?
+    /// Which sheet was showing, remembered for onDismiss. The item binding
+    /// is already nil by the time onDismiss runs, so it cannot tell us.
+    @State private var lastSheet: ActiveSheet?
     /// What to run once the one-time AI notice is accepted.
     @State private var pendingTranscript: String?
     @State private var pendingSurprise = false
+    /// Draft in the type-in sheet. Kept on cancel so nothing typed is lost.
+    @State private var typedText = ""
+    /// Set by the type-in sheet's Plan button. Submitted from onDismiss,
+    /// not before, so the AI notice can present cleanly afterward if needed.
+    @State private var typedSubmission: String?
 
     var body: some View {
         NavigationStack {
@@ -36,6 +53,14 @@ struct SpeakView: View {
                         }
                     }
 
+                    if let status = appState.statusMessage {
+                        Text(status)
+                            .font(.caption)
+                            .foregroundStyle(.orange)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 32)
+                    }
+
                     Spacer()
                     Spacer()
                 }
@@ -43,67 +68,92 @@ struct SpeakView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
-                        showSettings = true
+                        show(.settings)
                     } label: {
                         Image(systemName: "gearshape")
                             .foregroundStyle(Color.echoTextSecondary)
                     }
                 }
             }
-            .sheet(isPresented: $showSettings) {
-                SettingsView()
-            }
             .onAppear {
                 recorder.onFinish = { transcript in
-                    if appState.aiNoticeAccepted {
-                        appState.generatePlan(from: transcript)
-                    } else {
-                        pendingTranscript = transcript
-                        showAINotice = true
-                    }
+                    submit(transcript)
                 }
             }
-            .sheet(isPresented: $showAINotice, onDismiss: {
-                // Swiping the sheet down skips the buttons. Treat it as
-                // "Not now" so a stale transcript cannot fire later.
-                if !appState.aiNoticeAccepted {
-                    pendingTranscript = nil
-                    pendingSurprise = false
-                }
-            }) {
-                AINoticeSheet(
-                    onAccept: {
-                        appState.acceptAINotice()
-                        showAINotice = false
-                        if let transcript = pendingTranscript {
-                            pendingTranscript = nil
-                            appState.generatePlan(from: transcript)
-                        } else if pendingSurprise {
-                            pendingSurprise = false
-                            appState.surpriseMe()
+            .sheet(item: $activeSheet, onDismiss: handleSheetDismiss) { sheet in
+                switch sheet {
+                case .settings:
+                    SettingsView()
+                case .aiNotice:
+                    AINoticeSheet(
+                        onAccept: {
+                            appState.acceptAINotice()
+                            activeSheet = nil
+                            if let transcript = pendingTranscript {
+                                pendingTranscript = nil
+                                appState.generatePlan(from: transcript)
+                            } else if pendingSurprise {
+                                pendingSurprise = false
+                                appState.surpriseMe()
+                            }
+                        },
+                        onDecline: {
+                            activeSheet = nil
                         }
-                    },
-                    onDecline: {
-                        pendingTranscript = nil
-                        pendingSurprise = false
-                        showAINotice = false
+                    )
+                    .presentationDetents([.large])
+                case .typeIn:
+                    TypeInSheet(text: $typedText) { text in
+                        typedSubmission = text
+                        activeSheet = nil
                     }
-                )
-                .presentationDetents([.medium, .large])
-            }
-            .alert(
-                "Something went wrong",
-                isPresented: Binding(
-                    get: { if case .error = appState.phase { return true } else { return false } },
-                    set: { if !$0 { appState.clearError() } }
-                )
-            ) {
-                Button("OK") { appState.clearError() }
-            } message: {
-                if case .error(let message) = appState.phase {
-                    Text(message)
                 }
             }
+        }
+    }
+
+    // MARK: - Flow
+
+    /// Presents a sheet and remembers which one, for handleSheetDismiss.
+    private func show(_ sheet: ActiveSheet) {
+        lastSheet = sheet
+        activeSheet = sheet
+    }
+
+    /// The single gate between captured input (spoken or typed) and plan
+    /// generation. Goes straight to planning once the one-time AI notice
+    /// has been accepted; otherwise stashes the transcript and shows the
+    /// notice first.
+    private func submit(_ transcript: String) {
+        if appState.aiNoticeAccepted {
+            appState.generatePlan(from: transcript)
+        } else {
+            pendingTranscript = transcript
+            show(.aiNotice)
+        }
+    }
+
+    /// Runs after any sheet fully dismisses, whether by button or swipe.
+    private func handleSheetDismiss() {
+        let dismissed = lastSheet
+        lastSheet = nil
+        switch dismissed {
+        case .aiNotice:
+            // Declining, or swiping the notice away, must never be silent.
+            // Drop the stashed input and say plainly that nothing happened.
+            if !appState.aiNoticeAccepted {
+                pendingTranscript = nil
+                pendingSurprise = false
+                appState.flashStatus("Your week was not planned. Tap the button when you are ready.")
+            }
+        case .typeIn:
+            if let text = typedSubmission {
+                typedSubmission = nil
+                typedText = ""
+                submit(text)
+            }
+        case .settings, nil:
+            break
         }
     }
 
@@ -199,8 +249,8 @@ struct SpeakView: View {
         .frame(minHeight: 90)
     }
 
-    /// Idea hints learned from favorites and history, plus a button that
-    /// plans a week with no talking at all.
+    /// Idea hints learned from favorites and history, a button that plans a
+    /// week with no talking at all, and a typed fallback for loud rooms.
     private var ideasAndSurprise: some View {
         VStack(spacing: 12) {
             if !appState.suggestionIdeas.isEmpty {
@@ -215,7 +265,7 @@ struct SpeakView: View {
                     appState.surpriseMe()
                 } else {
                     pendingSurprise = true
-                    showAINotice = true
+                    show(.aiNotice)
                 }
             } label: {
                 Label("Surprise me", systemImage: "sparkles")
@@ -225,12 +275,25 @@ struct SpeakView: View {
             }
             .buttonStyle(.bordered)
             .tint(.echoRed)
+
+            Button {
+                show(.typeIn)
+            } label: {
+                Label("Type it instead", systemImage: "keyboard")
+                    .font(.subheadline.weight(.semibold))
+                    .padding(.horizontal, 18)
+                    .padding(.vertical, 10)
+            }
+            .buttonStyle(.bordered)
+            .tint(.echoTextSecondary)
         }
     }
 
     /// One-time disclosure shown before the first plan generation. Apple
     /// requires clear notice before user content is sent to a third-party
-    /// AI, and it is the honest thing to do anyway.
+    /// AI, and it is the honest thing to do anyway. The content scrolls and
+    /// the sheet opens at the large detent, so the accept button can never
+    /// be clipped on small screens.
     private struct AINoticeSheet: View {
         let onAccept: () -> Void
         let onDecline: () -> Void
@@ -238,43 +301,105 @@ struct SpeakView: View {
         var body: some View {
             ZStack {
                 Color.echoBackground.ignoresSafeArea()
-                VStack(alignment: .leading, spacing: 18) {
-                    Text("Before your first plan")
-                        .font(.title2.weight(.bold))
-                        .foregroundStyle(.white)
-                        .padding(.top, 26)
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 18) {
+                        Text("Before your first plan")
+                            .font(.title2.weight(.bold))
+                            .foregroundStyle(.white)
+                            .padding(.top, 26)
 
-                    Text("MealTime sends the words you speak (as text), along with your budget, taste notes, and meal history, to Anthropic's Claude AI to build your dinner plan and grocery list. No audio ever leaves your phone, and nothing is used for ads or tracking.")
-                        .font(.subheadline)
-                        .foregroundStyle(.white)
-                        .fixedSize(horizontal: false, vertical: true)
+                        Text("MealTime sends the words you speak (as text), along with your budget, taste notes, and meal history, to Anthropic's Claude AI to build your dinner plan and grocery list. No audio ever leaves your phone, and nothing is used for ads or tracking.")
+                            .font(.subheadline)
+                            .foregroundStyle(.white)
+                            .fixedSize(horizontal: false, vertical: true)
 
-                    Link("Read the full privacy policy",
-                         destination: URL(string: "https://echochambermedia.com/mealtime/privacy")!)
-                        .font(.subheadline)
-                        .foregroundStyle(Color.echoRed)
+                        Link("Read the full privacy policy",
+                             destination: URL(string: "https://echochambermedia.com/mealtime/privacy")!)
+                            .font(.subheadline)
+                            .foregroundStyle(Color.echoRed)
 
-                    Spacer()
+                        Button {
+                            onAccept()
+                        } label: {
+                            Text("Sounds good, plan my week")
+                                .font(.headline)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 6)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(.echoRed)
+                        .padding(.top, 10)
 
-                    Button {
-                        onAccept()
-                    } label: {
-                        Text("Sounds good, plan my week")
-                            .font(.headline)
+                        Button("Not now", action: onDecline)
+                            .font(.subheadline)
+                            .foregroundStyle(Color.echoTextSecondary)
                             .frame(maxWidth: .infinity)
-                            .padding(.vertical, 6)
+                            .padding(.bottom, 14)
                     }
-                    .buttonStyle(.borderedProminent)
-                    .tint(.echoRed)
-
-                    Button("Not now", action: onDecline)
-                        .font(.subheadline)
-                        .foregroundStyle(Color.echoTextSecondary)
-                        .frame(maxWidth: .infinity)
-                        .padding(.bottom, 14)
+                    .padding(.horizontal, 24)
                 }
-                .padding(.horizontal, 24)
             }
+        }
+    }
+
+    /// Typed alternative to the mic, for loud rooms or quiet moments.
+    /// Cancel keeps the draft; Plan hands the text back to the parent,
+    /// which submits it after the sheet has fully dismissed.
+    private struct TypeInSheet: View {
+        @Binding var text: String
+        let onPlan: (String) -> Void
+        @Environment(\.dismiss) private var dismiss
+        @FocusState private var focused: Bool
+
+        private var trimmed: String {
+            text.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+
+        var body: some View {
+            NavigationStack {
+                ZStack {
+                    Color.echoBackground.ignoresSafeArea()
+                    VStack(spacing: 20) {
+                        TextField(
+                            "What sounds good this week?",
+                            text: $text,
+                            axis: .vertical
+                        )
+                        .lineLimit(3...8)
+                        .font(.body)
+                        .foregroundStyle(.white)
+                        .padding(14)
+                        .echoCardStyle()
+                        .focused($focused)
+
+                        Button {
+                            onPlan(trimmed)
+                        } label: {
+                            Text("Plan")
+                                .font(.headline)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 6)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(.echoRed)
+                        .disabled(trimmed.isEmpty)
+
+                        Spacer()
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.top, 20)
+                }
+                .navigationTitle("Type your week")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Cancel") { dismiss() }
+                            .foregroundStyle(Color.echoTextSecondary)
+                    }
+                }
+                .onAppear { focused = true }
+            }
+            .preferredColorScheme(.dark)
         }
     }
 
@@ -286,9 +411,18 @@ struct SpeakView: View {
             Text("Planning your week.")
                 .font(.title3.weight(.semibold))
                 .foregroundStyle(.white)
-            Text("Building 5 dinners and one grocery list.")
+            Text("Building \(appState.dinnersPerWeek) dinners and one grocery list.")
                 .font(.subheadline)
                 .foregroundStyle(Color.echoTextSecondary)
+            Text("This usually takes under a minute.")
+                .font(.caption)
+                .foregroundStyle(Color.echoTextSecondary)
+            Button("Cancel") {
+                appState.cancelPlanning()
+            }
+            .buttonStyle(.bordered)
+            .tint(.echoTextSecondary)
+            .padding(.top, 8)
         }
     }
 }

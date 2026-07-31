@@ -67,15 +67,33 @@ final class CloudKitStore {
         try await save(record)
     }
 
+    /// Clear This Week, cloud side. Writes the plan record with an empty
+    /// planJSON (a tombstone) and a fresh updatedAt through the same
+    /// conflict-merge save path, so the other phone's newest-wins refresh
+    /// drops its local plan too instead of resurrecting the cleared week.
+    func saveClearedPlan() async throws {
+        guard !household.isEmpty else { return }
+        let record = await fetchOrCreate(planRecordID, type: Self.planRecordType)
+        record["planJSON"] = ""
+        record["householdID"] = household
+        record["updatedAt"] = Date()
+        try await save(record)
+    }
+
     /// Returns the plan plus the record's freshness date so the caller can
-    /// skip applying a cloud copy that is older than local edits.
-    func fetchPlan() async -> (plan: MealPlan, updatedAt: Date)? {
+    /// skip applying a cloud copy that is older than local edits. Three
+    /// outcomes: nil means no record exists at all; (nil, date) is a
+    /// tombstone left by saveClearedPlan (empty or unparseable planJSON),
+    /// which a caller applies by clearing its local plan when the date is
+    /// newer; (plan, date) is a real plan.
+    func fetchPlan() async -> (plan: MealPlan?, updatedAt: Date)? {
         guard !household.isEmpty,
-              let record = try? await database.record(for: planRecordID),
-              let json = record["planJSON"] as? String,
+              let record = try? await database.record(for: planRecordID)
+        else { return nil }
+        guard let json = record["planJSON"] as? String,
               let data = json.data(using: .utf8),
               let plan = try? JSONDecoder().decode(MealPlan.self, from: data)
-        else { return nil }
+        else { return (nil, freshness(of: record)) }
         return (plan, freshness(of: record))
     }
 
@@ -226,9 +244,13 @@ final class CloudKitStore {
         ]
         let wantedIDs = Set(types.map { "sub-\($0)-\(code)" })
 
-        // Drop subscriptions that belong to a different household code.
+        // Drop only OUR stale subscriptions: IDs this app created (the
+        // "sub-" prefix) for a different household code. Anything else in
+        // the container is left untouched.
         if let existing = try? await database.allSubscriptions() {
-            for subscription in existing where !wantedIDs.contains(subscription.subscriptionID) {
+            for subscription in existing
+            where subscription.subscriptionID.hasPrefix("sub-")
+                && !wantedIDs.contains(subscription.subscriptionID) {
                 _ = try? await database.deleteSubscription(withID: subscription.subscriptionID)
             }
         }

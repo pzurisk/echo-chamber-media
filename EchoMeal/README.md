@@ -17,15 +17,20 @@ release.
   (no auto-stop). Apple's Speech framework transcribes, then the transcript
   goes to Claude (claude-sonnet-5) to plan the week, along with taste notes
   the app learns over time (favorites, repeat cuisines, recent dinners).
-  A Surprise Me button plans a week from the taste notes alone.
-- **Week tab.** Five dinner cards, Monday through Friday. Tap for the full
-  recipe. Heart a recipe to save it to Favorites. Rate a meal 1 to 5 stars
-  after cooking it: 4 and 5 stars pull future plans toward it, 1 and 2
-  stars mean it never gets suggested again.
+  A Surprise Me button plans a week from the taste notes alone, and a
+  typed input option covers loud rooms or a dead mic.
+- **Week tab.** One card per dinner, 3 to 7 nights depending on the
+  dinners-per-week setting. Tap for the full recipe. Heart a recipe to
+  save it to Favorites. Rate a meal 1 to 5 stars after cooking it: 4 and
+  5 stars pull future plans toward it, 1 and 2 stars mean it never gets
+  suggested again. A trash button clears the whole week on both phones;
+  the recipes stay saved in the Recipe Box.
 - **Recipe Box.** Every generated recipe is archived automatically, newest
   first, and nothing is ever removed on its own. Deleting is manual only,
-  from the Recipe Box screen (the books icon on the Week tab), with a
-  confirmation first. Searchable by title.
+  from the Recipe Box screen (the books icon on the Week tab), by swipe or
+  Edit mode, always with a confirmation first. Searchable by title.
+  Favorites has no confirmation: swipe (or use Edit) to remove one, and
+  the heart on the recipe brings it back any time.
 - **Keep pins.** Pin any recipe (from the Recipe Box, a swipe, or the pin
   in the recipe detail toolbar) to lock that exact dinner into the next
   generated week. Claude places pinned dinners on sensible days, invents

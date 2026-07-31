@@ -34,6 +34,10 @@ final class AppState: ObservableObject {
     @Published var pastDinners: [PastDinner] = []
     @Published var ratings: [String: Int] = [:]
     @Published var phase: Phase = .idle
+    /// Short transient notice shown near the Speak tab's status area, for
+    /// example when a tap lands while the last plan is still building.
+    /// Set via flashStatus, which clears it again after a few seconds.
+    @Published var statusMessage: String?
     @Published var selectedTab: Tab = .speak
     @Published var iCloudAvailable = true
     /// True once this phone belongs to a household (a code is stored).
@@ -50,6 +54,13 @@ final class AppState: ObservableObject {
     private let store = CloudKitStore()
     private var cancellables = Set<AnyCancellable>()
 
+    /// Handle for the in-flight generation so it can be cancelled from the
+    /// UI and checked by the foreground stuck-state recovery.
+    private var planTask: Task<Void, Never>?
+
+    /// Auto-clear timer for statusMessage, replaced on every flash.
+    private var statusClearTask: Task<Void, Never>?
+
     /// When each collection was last edited on this device, keyed by
     /// "plan", "checked", "favorites", "history", "ratings", "recipeBox".
     /// Newest wins: a cloud copy older than the local edit is never applied,
@@ -58,6 +69,17 @@ final class AppState: ObservableObject {
 
     /// Guards against overlapping refreshes (a push can land mid-refresh).
     private var isRefreshing = false
+
+    /// Bumped every time the household changes. refreshFromCloud captures
+    /// the value at entry and re-checks it before each apply, so an
+    /// in-flight refresh for the old household can never write its data
+    /// into the new one.
+    private var refreshGeneration = 0
+
+    /// Collections whose last background CloudKit save failed, by the same
+    /// keys as localEditDates. retryDirtySaves pushes the current state for
+    /// each next time the app comes to the foreground.
+    private var dirtyKinds: Set<String> = []
 
     init() {
         // Adopt the legacy fixed code on phones that synced before
@@ -128,6 +150,7 @@ final class AppState: ObservableObject {
     /// whatever the new household already has in CloudKit.
     private func switchToHousehold(_ code: String) {
         objectWillChange.send()
+        refreshGeneration += 1
         HouseholdConfig.code = code
         isOnboarded = true
         clearLocalData()
@@ -149,6 +172,9 @@ final class AppState: ObservableObject {
         pastDinners = []
         ratings = [:]
         localEditDates = [:]
+        // Failed saves from the old household must not be retried into the
+        // new one, so pending retries are dropped with the data.
+        dirtyKinds = []
         let defaults = UserDefaults.standard
         defaults.removeObject(forKey: HouseholdConfig.Keys.cachedPlan)
         defaults.removeObject(forKey: HouseholdConfig.Keys.cachedChecked)
@@ -189,11 +215,13 @@ final class AppState: ObservableObject {
         if !recent.isEmpty {
             parts.append("Dinners from recent weeks, do not repeat these exactly: \(recent.joined(separator: ", ")).")
         }
-        let loved = ratings.filter { $0.value >= 4 }.keys.sorted().prefix(12)
+        // Rating keys are stored lowercased; capitalize them back into
+        // something that reads like a dish title.
+        let loved = ratings.filter { $0.value >= 4 }.keys.sorted().prefix(12).map(Self.displayTitle)
         if !loved.isEmpty {
             parts.append("Meals they cooked and rated 4 or 5 stars, lean toward more like these: \(loved.joined(separator: ", ")).")
         }
-        let disliked = ratings.filter { $0.value <= 2 }.keys.sorted().prefix(12)
+        let disliked = ratings.filter { $0.value <= 2 }.keys.sorted().prefix(12).map(Self.displayTitle)
         if !disliked.isEmpty {
             parts.append("Meals they cooked and rated 1 or 2 stars. Never suggest these again, or close variations of them: \(disliked.joined(separator: ", ")).")
         }
@@ -221,17 +249,28 @@ final class AppState: ObservableObject {
     // MARK: - Planning
 
     func generatePlan(from transcript: String) {
-        guard phase != .planning else { return }
+        guard phase != .planning else {
+            // Never swallow the tap silently. Tell the user why nothing
+            // new started.
+            flashStatus("Hold on, still building your last plan.")
+            return
+        }
         phase = .planning
-        Task {
+        let budget = budgetTarget
+        let dinners = dinnersPerWeek
+        let notes = tasteNotes
+        let locked = keptRecipes
+        planTask = Task {
             do {
-                let rawPlan = try await ClaudeService.planWeek(
-                    transcript: transcript,
-                    budget: budgetTarget,
-                    dinners: dinnersPerWeek,
-                    tasteNotes: tasteNotes,
-                    lockedRecipes: keptRecipes
-                )
+                let rawPlan = try await Self.withPlanningDeadline {
+                    try await ClaudeService.planWeek(
+                        transcript: transcript,
+                        budget: budget,
+                        dinners: dinners,
+                        tasteNotes: notes,
+                        lockedRecipes: locked
+                    )
+                }
                 // Safety net: guarantee every recipe ingredient is on the
                 // grocery list before anything downstream uses the plan
                 // (recipe box archive, checked-item IDs, CloudKit save).
@@ -240,24 +279,18 @@ final class AppState: ObservableObject {
                 // plan covers weeks generated before the Recipe Box existed;
                 // the new plan is archived right away so it survives the
                 // next replacement too.
+                let replacedTitles = Set(self.plan?.week.map(\.title) ?? [])
                 if let oldPlan = self.plan {
                     self.archiveIntoRecipeBox(oldPlan.recipes)
                 }
                 self.archiveIntoRecipeBox(newPlan.recipes)
                 self.plan = newPlan
-                // Keep check-offs the household already made for items that
-                // are still on the new list, and pre-check the new plan's
-                // pantry staples as before.
-                var newPlanItemIDs = Set<String>()
-                for section in newPlan.grocery.sections {
-                    for item in section.items {
-                        newPlanItemIDs.insert(MealPlan.itemID(section: section.name, item: item.name))
-                    }
-                }
-                self.checkedItemIDs = self.checkedItemIDs
-                    .intersection(newPlanItemIDs)
-                    .union(newPlan.pantryItemIDs)
-                self.recordHistory(from: newPlan)
+                // A new week means a fresh shopping trip: only the new
+                // plan's pantry staples start checked. Carrying over old
+                // check-offs would pre-check groceries that have been
+                // eaten and must be bought again.
+                self.checkedItemIDs = newPlan.pantryItemIDs
+                self.recordHistory(from: newPlan, replacingTitles: replacedTitles)
                 self.phase = .idle
                 self.selectedTab = .week
                 self.markEdited("plan")
@@ -270,15 +303,78 @@ final class AppState: ObservableObject {
                 let history = self.pastDinners
                 let box = self.recipeBox
                 let kept = self.keptRecipes
-                Task {
-                    try? await self.store.savePlan(newPlan)
-                    try? await self.store.saveChecked(checked)
-                    try? await self.store.saveHistory(history)
-                    try? await self.store.saveRecipeBox(box, kept: kept)
-                }
+                self.backgroundSave("plan") { try await self.store.savePlan(newPlan) }
+                self.backgroundSave("checked") { try await self.store.saveChecked(checked) }
+                self.backgroundSave("history") { try await self.store.saveHistory(history) }
+                self.backgroundSave("recipeBox") { try await self.store.saveRecipeBox(box, kept: kept) }
+            } catch is CancellationError {
+                // cancelPlanning already reset the phase. Nothing to show.
             } catch {
+                // A cancel can also surface as URLError.cancelled from the
+                // network layer. Either way the user asked for it, so stay
+                // quiet instead of raising an error alert.
+                guard !Task.isCancelled else { return }
                 self.phase = .error(error.localizedDescription)
             }
+        }
+    }
+
+    /// Stops the in-flight generation and returns the app to idle. Safe to
+    /// call at any time; does nothing when no plan is being built.
+    func cancelPlanning() {
+        planTask?.cancel()
+        planTask = nil
+        if phase == .planning { phase = .idle }
+    }
+
+    /// Foreground safety net, called when the scene becomes active. If the
+    /// phase is stuck in .planning with no live task behind it (the app was
+    /// killed mid-generation, or the task was cancelled without the phase
+    /// resetting), fall back to idle so the Speak button works again.
+    func recoverIfStuck() {
+        guard phase == .planning else { return }
+        if planTask == nil || planTask!.isCancelled {
+            phase = .idle
+        }
+    }
+
+    /// Shows a short status line, then clears it after a few seconds. A new
+    /// flash replaces the old one and restarts the clock.
+    func flashStatus(_ message: String) {
+        statusMessage = message
+        statusClearTask?.cancel()
+        statusClearTask = Task {
+            try? await Task.sleep(nanoseconds: 5_000_000_000)
+            guard !Task.isCancelled else { return }
+            self.statusMessage = nil
+        }
+    }
+
+    /// Hard ceiling on one generation, retries included. Races the planning
+    /// call against a 240 second deadline so the phase always reaches .idle
+    /// or .error within about 4 minutes, even if the network layer hangs.
+    private static func withPlanningDeadline<T: Sendable>(
+        _ work: @escaping @Sendable () async throws -> T
+    ) async throws -> T {
+        try await withThrowingTaskGroup(of: T.self) { group in
+            group.addTask { try await work() }
+            group.addTask {
+                try await Task.sleep(nanoseconds: 240_000_000_000)
+                throw PlanningTimeoutError()
+            }
+            // First child to finish wins; the loser is cancelled.
+            guard let winner = try await group.next() else {
+                throw PlanningTimeoutError()
+            }
+            group.cancelAll()
+            return winner
+        }
+    }
+
+    /// Thrown when a generation blows past the deadline.
+    private struct PlanningTimeoutError: LocalizedError {
+        var errorDescription: String? {
+            "That took too long. Check your connection and try again."
         }
     }
 
@@ -288,8 +384,21 @@ final class AppState: ObservableObject {
         generatePlan(from: "No specific cravings this time. Build a week you are confident this household will love based on the taste notes, and include one new dish worth trying that fits their pattern.")
     }
 
-    private func recordHistory(from newPlan: MealPlan) {
+    /// Appends the new plan's dinners to the rolling history. A same-day
+    /// regeneration replaces the plan it logged earlier today, so those
+    /// entries are removed first (same calendar day AND a title from the
+    /// replaced plan). Otherwise three retries on a Sunday would log three
+    /// weeks of phantom dinners that block future suggestions.
+    private func recordHistory(from newPlan: MealPlan, replacingTitles oldTitles: Set<String>) {
         let now = Date()
+        let calendar = Calendar.current
+        let replaced = Set(oldTitles.map { $0.lowercased() })
+        if !replaced.isEmpty {
+            pastDinners.removeAll {
+                calendar.isDate($0.date, inSameDayAs: now)
+                    && replaced.contains($0.title.lowercased())
+            }
+        }
         let dinners = newPlan.week.map {
             PastDinner(title: $0.title, cuisine: $0.cuisine, date: now)
         }
@@ -297,6 +406,23 @@ final class AppState: ObservableObject {
         if pastDinners.count > Self.historyLimit {
             pastDinners.removeFirst(pastDinners.count - Self.historyLimit)
         }
+    }
+
+    /// Clear This Week: drops the plan and the grocery check-offs on this
+    /// phone, writes a tombstone to CloudKit so the other phone clears too,
+    /// and leaves the Recipe Box, pins, and history alone. Recipes are
+    /// never lost by clearing a week.
+    func clearWeek() {
+        plan = nil
+        checkedItemIDs = []
+        markEdited("plan")
+        markEdited("checked")
+        // saveLocalCache leaves the cached plan untouched when plan is nil,
+        // so the stale copy is removed here explicitly. Without this a
+        // relaunch would resurrect the cleared week from the cache.
+        UserDefaults.standard.removeObject(forKey: HouseholdConfig.Keys.cachedPlan)
+        backgroundSave("plan") { try await self.store.saveClearedPlan() }
+        backgroundSave("checked") { try await self.store.saveChecked([]) }
     }
 
     func clearError() {
@@ -324,30 +450,54 @@ final class AppState: ObservableObject {
         }
         markEdited("checked")
         let snapshot = checkedItemIDs
-        Task { try? await store.saveChecked(snapshot) }
+        backgroundSave("checked") { try await self.store.saveChecked(snapshot) }
     }
 
     // MARK: - Ratings
 
+    /// Ratings are keyed by lowercased title so lookups match no matter how
+    /// a title is cased in a plan, the box, or an old record.
     func rating(for recipe: Recipe) -> Int {
-        ratings[recipe.title] ?? 0
+        ratings[recipe.title.lowercased()] ?? 0
     }
 
     func rating(forTitle title: String) -> Int? {
-        ratings[title]
+        ratings[title.lowercased()]
     }
 
     /// Rate a cooked meal 1 through 5. Tapping the current star again clears
     /// the rating. Low ratings (1 or 2) are excluded from future suggestions.
     func rate(_ recipe: Recipe, stars: Int) {
-        if ratings[recipe.title] == stars {
-            ratings.removeValue(forKey: recipe.title)
+        let key = recipe.title.lowercased()
+        if ratings[key] == stars {
+            ratings.removeValue(forKey: key)
         } else {
-            ratings[recipe.title] = stars
+            ratings[key] = stars
         }
         markEdited("ratings")
         let snapshot = ratings
-        Task { try? await store.saveRatings(snapshot) }
+        backgroundSave("ratings") { try await self.store.saveRatings(snapshot) }
+    }
+
+    /// Lowercases every ratings key so lookups are case-insensitive.
+    /// Older mixed-case keys that collide merge deterministically (sorted
+    /// key order, first wins) so both phones normalize identically.
+    private static func normalizedRatings(_ raw: [String: Int]) -> [String: Int] {
+        var normalized: [String: Int] = [:]
+        for (key, value) in raw.sorted(by: { $0.key < $1.key }) {
+            let lowered = key.lowercased()
+            if normalized[lowered] == nil {
+                normalized[lowered] = value
+            }
+        }
+        return normalized
+    }
+
+    /// Ratings keys are stored lowercased; capitalizing the first letter
+    /// makes them readable again in the taste notes.
+    private static func displayTitle(_ key: String) -> String {
+        guard let first = key.first else { return key }
+        return first.uppercased() + key.dropFirst()
     }
 
     // MARK: - Favorites
@@ -364,7 +514,7 @@ final class AppState: ObservableObject {
         }
         markEdited("favorites")
         let snapshot = favorites
-        Task { try? await store.saveFavorites(snapshot) }
+        backgroundSave("favorites") { try await self.store.saveFavorites(snapshot) }
     }
 
     // MARK: - Recipe box and keep pins
@@ -403,7 +553,7 @@ final class AppState: ObservableObject {
         markEdited("recipeBox")
         let box = recipeBox
         let kept = keptRecipes
-        Task { try? await store.saveRecipeBox(box, kept: kept) }
+        backgroundSave("recipeBox") { try await self.store.saveRecipeBox(box, kept: kept) }
     }
 
     /// The only way a recipe leaves the archive. Also clears its pin and
@@ -423,10 +573,8 @@ final class AppState: ObservableObject {
         let box = recipeBox
         let kept = keptRecipes
         let favs = favorites
-        Task {
-            try? await store.saveRecipeBox(box, kept: kept)
-            try? await store.saveFavorites(favs)
-        }
+        backgroundSave("recipeBox") { try await self.store.saveRecipeBox(box, kept: kept) }
+        backgroundSave("favorites") { try await self.store.saveFavorites(favs) }
     }
 
     // MARK: - Sync
@@ -444,6 +592,57 @@ final class AppState: ObservableObject {
         localEditDates[key] ?? .distantPast
     }
 
+    /// Runs a fire-and-forget CloudKit save. On failure the kind is marked
+    /// dirty so retryDirtySaves can push the then-current state for it the
+    /// next time the app comes to the foreground.
+    private func backgroundSave(_ kind: String, _ op: @escaping () async throws -> Void) {
+        Task {
+            do {
+                try await op()
+            } catch {
+                self.dirtyKinds.insert(kind)
+            }
+        }
+    }
+
+    /// Re-runs the CloudKit save for every collection whose last background
+    /// save failed, using a fresh snapshot of the current state. Called from
+    /// the scenePhase .active path so an offline check-off or rating still
+    /// reaches the other phone once the network is back.
+    func retryDirtySaves() {
+        guard !dirtyKinds.isEmpty else { return }
+        let kinds = dirtyKinds
+        dirtyKinds = []
+        for kind in kinds {
+            switch kind {
+            case "plan":
+                if let plan {
+                    backgroundSave("plan") { try await self.store.savePlan(plan) }
+                } else {
+                    backgroundSave("plan") { try await self.store.saveClearedPlan() }
+                }
+            case "checked":
+                let snapshot = checkedItemIDs
+                backgroundSave("checked") { try await self.store.saveChecked(snapshot) }
+            case "favorites":
+                let snapshot = favorites
+                backgroundSave("favorites") { try await self.store.saveFavorites(snapshot) }
+            case "history":
+                let snapshot = pastDinners
+                backgroundSave("history") { try await self.store.saveHistory(snapshot) }
+            case "ratings":
+                let snapshot = ratings
+                backgroundSave("ratings") { try await self.store.saveRatings(snapshot) }
+            case "recipeBox":
+                let box = recipeBox
+                let kept = keptRecipes
+                backgroundSave("recipeBox") { try await self.store.saveRecipeBox(box, kept: kept) }
+            default:
+                break
+            }
+        }
+    }
+
     /// Pulls each record from CloudKit and applies it only when the cloud
     /// copy is newer than the last local edit (newest wins). Skipped
     /// entirely mid-generation so a stale fetch cannot revert a brand-new
@@ -455,45 +654,66 @@ final class AppState: ObservableObject {
         isRefreshing = true
         defer { isRefreshing = false }
 
+        // Snapshot the household this refresh belongs to. Every apply block
+        // re-checks it, so a refresh that was in flight when the user
+        // switched households bails instead of writing stale data into the
+        // new household.
+        let generation = refreshGeneration
+        let code = householdCode
+        func stillCurrent() -> Bool {
+            generation == refreshGeneration && code == householdCode
+        }
+
         iCloudAvailable = await store.isSignedIn()
         guard iCloudAvailable else { return }
 
-        if let remote = await store.fetchPlan(),
+        if let remote = await store.fetchPlan(), stillCurrent(),
            remote.updatedAt > localEditDate(for: "plan") {
-            if remote.plan != plan {
-                plan = remote.plan
+            if let remotePlan = remote.plan {
+                if remotePlan != plan {
+                    plan = remotePlan
+                }
+            } else {
+                // Tombstone: the other phone cleared the week. Clear the
+                // plan and the check-offs here too so both phones agree,
+                // and drop the cached plan so a relaunch stays empty.
+                plan = nil
+                checkedItemIDs = []
+                UserDefaults.standard.removeObject(forKey: HouseholdConfig.Keys.cachedPlan)
+                localEditDates["checked"] = remote.updatedAt
             }
             localEditDates["plan"] = remote.updatedAt
         }
-        if let remote = await store.fetchChecked(),
+        if let remote = await store.fetchChecked(), stillCurrent(),
            remote.updatedAt > localEditDate(for: "checked") {
             if remote.checked != checkedItemIDs {
                 checkedItemIDs = remote.checked
             }
             localEditDates["checked"] = remote.updatedAt
         }
-        if let remote = await store.fetchFavorites(),
+        if let remote = await store.fetchFavorites(), stillCurrent(),
            remote.updatedAt > localEditDate(for: "favorites") {
             if remote.recipes != favorites {
                 favorites = remote.recipes
             }
             localEditDates["favorites"] = remote.updatedAt
         }
-        if let remote = await store.fetchHistory(),
+        if let remote = await store.fetchHistory(), stillCurrent(),
            remote.updatedAt > localEditDate(for: "history") {
             if remote.dinners != pastDinners {
                 pastDinners = remote.dinners
             }
             localEditDates["history"] = remote.updatedAt
         }
-        if let remote = await store.fetchRatings(),
+        if let remote = await store.fetchRatings(), stillCurrent(),
            remote.updatedAt > localEditDate(for: "ratings") {
-            if remote.ratings != ratings {
-                ratings = remote.ratings
+            let normalized = Self.normalizedRatings(remote.ratings)
+            if normalized != ratings {
+                ratings = normalized
             }
             localEditDates["ratings"] = remote.updatedAt
         }
-        if let remote = await store.fetchRecipeBox(),
+        if let remote = await store.fetchRecipeBox(), stillCurrent(),
            remote.updatedAt > localEditDate(for: "recipeBox") {
             if remote.recipes != recipeBox {
                 recipeBox = remote.recipes
@@ -503,6 +723,7 @@ final class AppState: ObservableObject {
             }
             localEditDates["recipeBox"] = remote.updatedAt
         }
+        guard stillCurrent() else { return }
         saveLocalCache()
     }
 
@@ -531,7 +752,9 @@ final class AppState: ObservableObject {
         if let json = defaults.string(forKey: HouseholdConfig.Keys.cachedRatings),
            let data = json.data(using: .utf8),
            let cached = try? JSONDecoder().decode([String: Int].self, from: data) {
-            ratings = cached
+            // Migrates mixed-case keys from older builds to the lowercased
+            // keying the accessors use now.
+            ratings = Self.normalizedRatings(cached)
         }
         if let json = defaults.string(forKey: HouseholdConfig.Keys.cachedRecipeBox),
            let data = json.data(using: .utf8),

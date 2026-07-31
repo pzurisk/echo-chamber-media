@@ -21,11 +21,19 @@ final class SpeechRecorder: NSObject, ObservableObject {
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
 
+    /// True from the moment start() is tapped until recording actually
+    /// begins or fails. Debounces the button: a fast double-tap lands
+    /// during the async permission checks, before isRecording flips, and
+    /// without this flag it would spin up a second recognition session.
+    private var isStarting = false
+
     func toggle() {
         if isRecording { stop() } else { start() }
     }
 
     func start() {
+        guard !isStarting else { return }
+        isStarting = true
         transcript = ""
         errorMessage = nil
 
@@ -34,6 +42,7 @@ final class SpeechRecorder: NSObject, ObservableObject {
                 guard let self else { return }
                 guard status == .authorized else {
                     self.errorMessage = "Speech recognition is turned off. Enable it for MealTime in Settings."
+                    self.isStarting = false
                     return
                 }
                 self.requestMicThenRecord()
@@ -53,6 +62,7 @@ final class SpeechRecorder: NSObject, ObservableObject {
                 guard let self else { return }
                 guard granted else {
                     self.errorMessage = "Microphone access is off. Enable it for MealTime in Settings."
+                    self.isStarting = false
                     return
                 }
                 self.beginRecording()
@@ -63,6 +73,7 @@ final class SpeechRecorder: NSObject, ObservableObject {
     private func beginRecording() {
         guard let recognizer, recognizer.isAvailable else {
             errorMessage = "Speech recognition is not available on this device right now."
+            isStarting = false
             return
         }
 
@@ -89,6 +100,7 @@ final class SpeechRecorder: NSObject, ObservableObject {
             audioEngine.prepare()
             try audioEngine.start()
             isRecording = true
+            isStarting = false
 
             recognitionTask = recognizer.recognitionTask(with: request) { [weak self] result, error in
                 DispatchQueue.main.async {
@@ -107,6 +119,7 @@ final class SpeechRecorder: NSObject, ObservableObject {
         } catch {
             errorMessage = "Could not start the microphone. \(error.localizedDescription)"
             isRecording = false
+            isStarting = false
         }
     }
 
