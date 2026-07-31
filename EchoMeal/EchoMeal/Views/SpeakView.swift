@@ -235,14 +235,31 @@ struct SpeakView: View {
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 32)
                 if !appState.keptRecipes.isEmpty {
+                    // Report what actually rides along, not the raw pin count.
+                    // generatePlan caps the locked set one short of the week so
+                    // at least one dinner is always new, and anything over the
+                    // cap waits for the week after. Saying "keeping 5" when only
+                    // 4 ride is the kind of small lie that makes a plan look
+                    // broken.
                     let count = appState.keptRecipes.count
-                    Text(count == 1
-                        ? "Keeping 1 pinned dinner in your next week."
-                        : "Keeping \(count) pinned dinners in your next week.")
-                        .font(.footnote.weight(.semibold))
-                        .foregroundStyle(Color.echoRed)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 32)
+                    let riding = min(count, max(0, appState.dinnersPerWeek - 1))
+                    let waiting = count - riding
+                    VStack(spacing: 4) {
+                        Text(riding == 1
+                            ? "Keeping 1 pinned dinner in your next week."
+                            : "Keeping \(riding) pinned dinners in your next week.")
+                        if waiting > 0 {
+                            Text(waiting == 1
+                                ? "1 more pin waits for the week after, so every week gets at least one new dinner."
+                                : "\(waiting) more pins wait for the week after, so every week gets at least one new dinner.")
+                                .font(.caption)
+                                .foregroundStyle(Color.echoTextSecondary)
+                        }
+                    }
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(Color.echoRed)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 32)
                 }
             }
         }

@@ -273,11 +273,21 @@ final class AppState: ObservableObject {
     func generatePlan(from transcript: String) {
         // Full week generation: pinned dinners ride along as the locked
         // set, and the grocery check-offs reset for the new shopping trip.
+        //
+        // The locked set is capped one short of the week so at least one
+        // dinner is always genuinely new. Without the cap, a household that
+        // pinned as many dinners as it eats in a week built a request whose
+        // context said every day was locked and no new dinners were needed
+        // (see ClaudeService.planWeek), so asking for a fresh week replayed
+        // the pinned week verbatim. Pins past the cap are not dropped, they
+        // simply wait for the following week.
+        let ridingAlong = Array(keptRecipes.prefix(max(0, dinnersPerWeek - 1)))
         runPlanGeneration(
             userText: transcript,
-            lockedRecipes: keptRecipes,
+            lockedRecipes: ridingAlong,
             preserveChecks: false,
-            dinners: dinnersPerWeek
+            dinners: dinnersPerWeek,
+            consumingPins: ridingAlong
         )
     }
 
@@ -338,7 +348,15 @@ final class AppState: ObservableObject {
     /// eaten and must be bought again). A swap happens mid-week against a
     /// list that is mostly unchanged, so check-offs still present on the
     /// new list carry over, unioned with the new plan's pantry staples.
-    private func runPlanGeneration(userText: String, lockedRecipes: [Recipe], preserveChecks: Bool, dinners: Int) {
+    ///
+    /// consumingPins lists the pins that rode along as locked dinners and
+    /// should release once the plan lands. Pins are one-shot: pinning carries
+    /// a dinner into the next week and then lets go, which is what the "Keep
+    /// in next week" label has always promised. Permanent pins accumulated
+    /// silently until they filled the week and every new request came back as
+    /// a replay. Swaps pass nothing here, so a mid-week swap never releases a
+    /// pin.
+    private func runPlanGeneration(userText: String, lockedRecipes: [Recipe], preserveChecks: Bool, dinners: Int, consumingPins: [Recipe] = []) {
         guard phase != .planning else {
             // Never swallow the tap silently. Tell the user why nothing
             // new started.
@@ -401,6 +419,15 @@ final class AppState: ObservableObject {
                 )
                 self.phase = .idle
                 self.selectedTab = .week
+                // Release the pins that rode along. Only those release: a pin
+                // held back by the cap stays pinned for the following week.
+                // Matching is by title, the same rule isKept and toggleKeep
+                // use, so a pin still releases when the model returns the
+                // locked dinner on a different day.
+                if !consumingPins.isEmpty {
+                    let consumed = Set(consumingPins.map { $0.title.lowercased() })
+                    self.keptRecipes.removeAll { consumed.contains($0.title.lowercased()) }
+                }
                 self.markEdited("plan")
                 self.markEdited("checked")
                 self.markEdited("history")
