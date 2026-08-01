@@ -18,7 +18,7 @@ const montserrat = Montserrat({
 export const metadata: Metadata = {
   metadataBase: new URL("https://echochambermedia.com"),
   title: {
-    default: "Echo Chamber Media | Cinematic Video Production in Las Vegas",
+    default: "Las Vegas Video Production Company | Echo Chamber Media",
     template: "%s | Echo Chamber Media",
   },
   description:
@@ -51,7 +51,7 @@ export const metadata: Metadata = {
     canonical: "https://echochambermedia.com",
   },
   openGraph: {
-    title: "Echo Chamber Media | Cinematic Video Production in Las Vegas",
+    title: "Las Vegas Video Production Company | Echo Chamber Media",
     description:
       "Award-winning video production in Las Vegas. Cinematic wedding films, corporate video, documentaries & real estate tours. Get a free consultation today.",
     type: "website",
@@ -61,7 +61,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Echo Chamber Media | Cinematic Video Production in Las Vegas",
+    title: "Las Vegas Video Production Company | Echo Chamber Media",
     description:
       "Award-winning video production in Las Vegas. Cinematic wedding films, corporate video, documentaries & real estate tours. Get a free consultation today.",
   },
