@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     template: "%s | Echo Chamber Media",
   },
   description:
-    "Award-winning video production in Las Vegas. Cinematic wedding films, corporate video, documentaries & real estate tours. Get a free consultation today.",
+    "Las Vegas video production for commercial, documentary, wedding, and political campaign work, plus AI consulting. Free consultation.",
   keywords: [
     "video production Las Vegas",
     "Las Vegas videographer",
@@ -43,6 +43,10 @@ export const metadata: Metadata = {
     "Echo Chamber Media",
     "Las Vegas film production",
     "cinematic storytelling",
+    "political campaign video production Las Vegas",
+    "political video production Nevada",
+    "AI consulting Las Vegas",
+    "AI video production consulting",
   ],
   authors: [{ name: "Echo Chamber Media" }],
   creator: "Echo Chamber Media",
@@ -53,7 +57,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Las Vegas Video Production Company | Echo Chamber Media",
     description:
-      "Award-winning video production in Las Vegas. Cinematic wedding films, corporate video, documentaries & real estate tours. Get a free consultation today.",
+      "Las Vegas video production for commercial, documentary, wedding, and political campaign work, plus AI consulting. Free consultation.",
     type: "website",
     locale: "en_US",
     url: "https://echochambermedia.com",
@@ -63,7 +67,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Las Vegas Video Production Company | Echo Chamber Media",
     description:
-      "Award-winning video production in Las Vegas. Cinematic wedding films, corporate video, documentaries & real estate tours. Get a free consultation today.",
+      "Las Vegas video production for commercial, documentary, wedding, and political campaign work, plus AI consulting. Free consultation.",
   },
   robots: {
     index: true,
