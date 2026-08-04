@@ -1,0 +1,16 @@
+{
+  "name": "coproducer",
+  "version": "0.1.0",
+  "private": true,
+  "description": "CoProducer, a Max for Live device that teaches production and helps finish tracks. Personal tool for Billy Zurisk.",
+  "main": "node/main.js",
+  "scripts": {
+    "test": "node --test node/engine/*.test.js node/game/*.test.js node/lom/*.test.js node/main.test.js",
+    "start": "node node/main.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.110.0",
+    "dotenv": "^16.4.5",
+    "ws": "^8.18.0"
+  }
+}

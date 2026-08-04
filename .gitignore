@@ -45,3 +45,11 @@ EchoMeal/Secrets.xcconfig
 EchoMeal/EchoMeal.xcodeproj/
 EchoMeal/DerivedData/
 EchoMeal/build/
+
+# CoProducer (Max for Live device, see coproducer/)
+coproducer/.env
+coproducer/node_modules/
+coproducer/ui/node_modules/
+coproducer/ui/dist/
+coproducer/data/*
+!coproducer/data/.gitkeep

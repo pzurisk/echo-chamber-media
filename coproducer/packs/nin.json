@@ -1,0 +1,37 @@
+{
+  "genre": "nin",
+  "tempoRange": [90, 130],
+  "commonKeys": ["A minor", "C minor", "E phrygian"],
+  "chordVocabulary": ["5", "min7", "sus2", "add9", "7"],
+  "progressionTemplates": [
+    { "name": "verse-phrygian-grind", "roman": ["i", "bII", "i", "bVII"] },
+    { "name": "verse-ostinato-bed", "roman": ["i5", "i5", "bVI5", "bVII5"] },
+    { "name": "prechorus-coil", "roman": ["iv", "bII", "i", "v"] },
+    { "name": "chorus-descent", "roman": ["i", "bVII", "bVI", "v"] },
+    { "name": "chorus-hammer", "roman": ["imin7", "bVI", "iv", "bII"] },
+    { "name": "bridge-hollow", "roman": ["isus2", "bVIadd9", "bVII", "isus2"] }
+  ],
+  "songStructures": [
+    {
+      "name": "sparse-to-dense",
+      "sections": ["intro-pulse", "verse-sparse", "chorus-dense", "verse-sparse", "chorus-dense", "breakdown-noise", "chorus-dense-out"]
+    },
+    {
+      "name": "subtractive-arc",
+      "sections": ["intro-full-loop", "verse-subtract", "prechorus-add", "chorus-full", "verse-subtract", "chorus-full", "outro-strip-to-one-element"]
+    },
+    {
+      "name": "machine-build",
+      "sections": ["intro-drum-machine", "verse-bass-enters", "verse-texture-adds", "chorus-dense", "bridge-collapse", "chorus-dense", "outro-decay"]
+    }
+  ],
+  "productionNotes": [
+    "Build the track as layers over a short repeating bass or synth figure (a one or two bar ostinato pattern, not a melody from any record), then arrange by muting layers. Dynamics come from subtraction, not fader rides.",
+    "Distort the synth bass, not just the guitars. Run it through an amp sim or heavy saturation until it snarls, then high-pass a clean copy underneath for weight.",
+    "Treat noise as an instrument: filtered static, feedback, bit-crushed textures, placed rhythmically in the gaps instead of smeared over everything.",
+    "Sparse verse, dense chorus. A verse can be one bass figure, a drum machine, and a dry vocal. The chorus stacks every layer at once.",
+    "Layer a quantized drum machine underneath live or loose-played drums on top. The grid gives the menace, the human layer gives the push.",
+    "Automate a filter cutoff or distortion amount slowly across 8 or 16 bars so a static loop still moves.",
+    "Keep verse vocals dry, close, and slightly too loud for comfort. Push them into distortion only at peak moments so the effect still means something."
+  ]
+}

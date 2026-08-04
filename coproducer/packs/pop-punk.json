@@ -1,0 +1,37 @@
+{
+  "genre": "pop-punk",
+  "tempoRange": [150, 190],
+  "commonKeys": ["E major", "A major", "D major", "G major"],
+  "chordVocabulary": ["5"],
+  "progressionTemplates": [
+    { "name": "anthem-chorus", "roman": ["I5", "V5", "vi5", "IV5"] },
+    { "name": "workhorse-verse", "roman": ["I5", "IV5", "V5", "IV5"] },
+    { "name": "punk-turnaround", "roman": ["I5", "V5", "IV5", "V5"] },
+    { "name": "prechorus-lift", "roman": ["IV5", "V5", "vi5", "V5"] },
+    { "name": "sensitive-bridge", "roman": ["vi5", "IV5", "I5", "V5"] }
+  ],
+  "songStructures": [
+    {
+      "name": "standard-anthem",
+      "sections": ["intro", "verse", "chorus", "verse", "chorus", "bridge", "chorus", "chorus-out"]
+    },
+    {
+      "name": "chorus-first",
+      "sections": ["intro-chorus-instrumental", "verse", "chorus", "verse", "chorus", "bridge", "double-chorus"]
+    },
+    {
+      "name": "fast-and-done",
+      "sections": ["intro", "verse", "chorus", "verse", "chorus", "outro-gang-vocals"]
+    }
+  ],
+  "productionNotes": [
+    "Eighth-note downstroke power chords the whole way: palm-muted and tight in the verses, open and ringing in the choruses.",
+    "Double-track the rhythm guitars and pan them hard left and hard right. Same part, two takes, no shortcuts.",
+    "Gang vocals on the chorus: stack 4 to 8 takes of everyone in the room shouting the hook together.",
+    "Drums straight and loud. Driving eighth-note hats, big snare on 2 and 4, zero swing, minimal fills until the section changes.",
+    "Play bass with a pick, follow the guitar roots, and keep it bright enough that you hear the attack on every eighth note.",
+    "Strip the bridge down (half-time drums, single guitar, or bass and vocal only), then kick back to full speed for the last chorus.",
+    "Keep the tempo honest. This genre lives at 150 to 190 BPM. If it feels slow, it is slow.",
+    "Lead vocal doubled in the chorus, single in the verse, with a short slap delay instead of a big reverb so it stays punchy."
+  ]
+}

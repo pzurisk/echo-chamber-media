@@ -1,0 +1,65 @@
+[
+  {
+    "id": "finish-ugly-first",
+    "title": "Finish it ugly first",
+    "body": "Most half-finished loops die because they never had a destination. A loop is not a song, it is a bar of raw material. The fastest way out of the noodling trap is to decide the shape before you polish the parts. Pick a simple map, verse, chorus, verse, chorus, bridge, chorus, and commit to filling every slot with something, even something rough. Rough sections can be fixed later. Empty sections cannot. Set one rule for yourself: no new sounds until every section exists in some form. That single rule kills the habit of tweaking a kick drum for an hour while the song stays eight bars long. Finished songs also teach you more than perfect loops ever will, because the hard skills, transitions, contrast, pacing, only show up when sections have to connect to each other. So finish ugly first, then make it good. That order is the whole trick, and it is the loop this device is built around.",
+    "xp": 20,
+    "unlock": { "type": "always" }
+  },
+  {
+    "id": "chorus-lift",
+    "title": "What makes a chorus feel bigger",
+    "body": "A chorus feels bigger because of contrast, not volume. If the verse already uses every instrument at full width, the chorus has nowhere to go. So the real work happens in the verse: pull something back there so the chorus can give it back. A few moves that work in almost any genre. Thin the verse out, drop a pad, mute a doubled guitar, or narrow the stereo image (how wide the sound sits between the speakers). Then open everything up on the chorus downbeat. Lift the top end with a brighter cymbal, an octave-up melody line, or a vocal harmony above the lead. Widen it by doubling parts and panning them hard left and right. Simplify the low end, because choruses hit harder when the bass locks to the kick instead of running fills. And keep the chord rhythm steadier than the verse, since stability reads as size. Try one verse-side subtraction right now and listen to what it buys your chorus.",
+    "xp": 20,
+    "unlock": { "type": "milestone", "milestone": "verse" }
+  },
+  {
+    "id": "energy-map",
+    "title": "Map the energy before you arrange",
+    "body": "Before you arrange anything, sketch the energy instead of the parts. Draw a line across the song from 1 to 10, where 1 is near silence and 10 is everything hitting at once. Verses might sit at 4, choruses at 8, and a bridge dips to 3 so the final chorus at 9 lands harder. That drawing is an energy map, and it turns arranging from guesswork into a checklist. Every section gets a number, and every number tells you what to add or remove. If a section should sit at 4 but the mix feels like 7, cut instruments until it drops. If two choruses both sit at 8 and feel same-y, push the last one to 9 with one new element, not five. The most common arrangement mistake is a flat line, everything at 7 the whole way through, which reads as boring even when every individual part is good. Loud only means something when it sits next to quiet.",
+    "xp": 25,
+    "unlock": { "type": "milestone", "milestone": "chorus" }
+  },
+  {
+    "id": "bridge-one-job",
+    "title": "The bridge has one job",
+    "body": "The bridge has one job: make the last chorus feel new again. By the third time a chorus arrives the listener knows it inside out, so the bridge resets their ears. That means the bridge should be different on purpose, not just another section that happens to exist. Reliable moves. Change the harmony, borrow one chord from outside the key, or sit on a chord the song has been avoiding. Drop the drums entirely, or strip down to just drums and one instrument. Move the melody register, so if the choruses sing high, let the bridge sit low. Pull the rhythmic feel in half, or push it forward. Eight to sixteen bars is usually enough, and the bridge does not need a hook of its own. It needs contrast. Then come back to the chorus with everything at once: full drums, the widest guitars, the top harmony. The gap you created is exactly what makes that return hit.",
+    "xp": 25,
+    "unlock": { "type": "milestone", "milestone": "chorus" }
+  },
+  {
+    "id": "half-time-drop",
+    "title": "The half-time drop",
+    "body": "Half-time is when the drums stretch out so the snare lands half as often, the backbeat moves from beats 2 and 4 to beat 3, and everything suddenly feels twice as heavy without the tempo changing at all. It is one of the cheapest big moments in production. Use it where a song risks going flat: the last pre-chorus, the back half of a bridge, or the first half of a final chorus. Eight bars is usually plenty, because any longer and it stops feeling like an event. Make the drop obvious. Cut the hi-hats, let the guitars or synths ring longer, and give the bass room to slide between notes instead of pumping eighths. Then snap back to the normal groove on a downbeat, ideally with a drum fill leading in. That snap-back is the real payoff. The half-time section exists to make the return feel fast, and the contrast does the work for you.",
+    "xp": 25,
+    "unlock": { "type": "suggestion", "kind": "structure" }
+  },
+  {
+    "id": "clean-over-distorted",
+    "title": "Clean over distorted layering",
+    "body": "Stacking a clean guitar or synth on top of a distorted one is how heavy music gets weight and clarity at the same time. Distortion fills the midrange and adds sustain, but it smears note definition. A clean layer playing the same part restores the attack, the small click at the front of each note, so riffs stay articulate under all that gain. Keep the clean layer quieter than you think it should be. The test is that muting it feels wrong, not that you can pick it out on its own. Pan the distorted tracks wide and keep the clean layer nearer the middle so it glues the two sides together. The trick also works in reverse. In a soft section, tuck a barely audible distorted layer under a clean part to add body without the section reading as heavy. The listener never notices either layer. They just notice that the part sounds expensive.",
+    "xp": 25,
+    "unlock": { "type": "suggestion", "kind": "chord-progression" }
+  },
+  {
+    "id": "texture-as-instrument",
+    "title": "Texture is an instrument",
+    "body": "Texture is any sound whose job is atmosphere instead of notes: room tone, tape hiss, a reversed cymbal, a pad filtered down until it is basically air, vinyl crackle, feedback held right at the edge. Treat one of these as a real instrument in the arrangement, with its own entrances and exits, not as a blanket laid over the whole song. A texture that runs the entire track disappears from the listener's attention within a minute. A texture that arrives at the bridge and leaves before the last chorus shapes the song. Cheap sources are everywhere. Record thirty seconds of your room. Stretch a single guitar note until it lasts eight bars. Reverse a reverb tail. Pitch a cymbal down two octaves. Whatever you use, filter out its low end so it never fights the bass. When a section feels empty but another melody would clutter it, texture is usually the answer.",
+    "xp": 25,
+    "unlock": { "type": "milestone", "milestone": "bridge" }
+  },
+  {
+    "id": "rough-mix-gain-staging",
+    "title": "Gain staging a rough mix",
+    "body": "Gain staging means setting levels so nothing runs hotter than it needs to, and it is the difference between a rough mix that grows and one that fights you the whole way. Start every mix the same way. Pull all the faders down. Bring the drums up until they sit around minus 10 dB on the master meter. That headroom (spare level before clipping) is not wasted space, it is where the rest of the song will live. Add the bass under the drums, then the main instrument, then vocals, each one just loud enough to sit. If the master ever touches the red, do not reach for the master fader. Lower the tracks feeding it instead. Balance first, effects second. A mix that works with faders alone already sounds close to right, and every EQ and compression decision after that gets easier, because you are shaping a mix that already holds together.",
+    "xp": 30,
+    "unlock": { "type": "milestone", "milestone": "arrangement" }
+  },
+  {
+    "id": "export-loudness",
+    "title": "Loudness at export",
+    "body": "Your export sounds quieter than commercial tracks because streaming services turn everything down to a common loudness, around minus 14 LUFS (a loudness measure that tracks how loud a song feels over time, not just its peaks). Chasing extreme loudness at export only means the platform turns you down harder, and the dynamics you crushed to get there stay crushed. A practical setup: put a limiter (a device that stops the signal from passing a set ceiling) last on the master, set the ceiling to minus 1 dB, and push into it until the track reads somewhere around minus 14 to minus 9 LUFS depending on genre. Heavier music sits toward the loud end. Listen for the moment the drums stop punching, then back off a little. Then check the export on earbuds and a phone speaker, not just your monitors. If the chorus still lifts and the kick still hits on a phone, the loudness is right.",
+    "xp": 30,
+    "unlock": { "type": "milestone", "milestone": "mix" }
+  }
+]

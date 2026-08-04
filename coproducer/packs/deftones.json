@@ -1,0 +1,38 @@
+{
+  "genre": "deftones",
+  "tempoRange": [80, 100],
+  "commonKeys": ["Bb minor", "D minor", "F minor"],
+  "chordVocabulary": ["min7", "maj7#11", "sus2", "add9", "5"],
+  "progressionTemplates": [
+    { "name": "verse-tension", "roman": ["i", "bVI", "iv", "v"] },
+    { "name": "verse-suspended-drift", "roman": ["isus2", "bVIadd9", "isus2", "bVImaj7#11"] },
+    { "name": "prechorus-climb", "roman": ["iv", "v", "bVI", "bVII"] },
+    { "name": "chorus-weight", "roman": ["imin7", "bVI", "bIII", "bVII"] },
+    { "name": "chorus-lift", "roman": ["bVI", "bVII", "i", "iadd9"] },
+    { "name": "bridge-floating", "roman": ["bVImaj7#11", "iadd9", "bIII", "bVII"] }
+  ],
+  "songStructures": [
+    {
+      "name": "quiet-loud",
+      "sections": ["intro", "verse-clean", "prechorus-build", "chorus-heavy", "verse-clean", "chorus-heavy", "bridge-atmospheric", "chorus-heavy-out"]
+    },
+    {
+      "name": "slow-burn",
+      "sections": ["intro-ambient", "verse-clean", "verse-thicker", "chorus-heavy", "bridge-atmospheric", "chorus-heavy", "outro-fade"]
+    },
+    {
+      "name": "drop-and-crush",
+      "sections": ["intro-riff", "verse-halftime", "chorus-heavy", "verse-halftime", "chorus-heavy", "breakdown-quiet", "chorus-heavy-out"]
+    }
+  ],
+  "productionNotes": [
+    "Layer one clean guitar and one distorted guitar on the same part, pan them apart, and ride the clean layer louder in verses, the distorted layer louder in choruses.",
+    "Wide atmospheric reverb sends on chorus vocals and lead guitar. Keep verse vocals close and nearly dry so the chorus feels like the room opens up.",
+    "Drums pull back in verses: tighter kit, rim clicks or side stick, less cymbal wash. In choruses hit hard with open hats and crashes.",
+    "Tune low and let open low strings ring under moving chord shapes higher up the neck. The clash between the drone and the chord is the sound.",
+    "Whisper-to-wail vocal arc: intimate close-mic delivery in the verse, doubled and screamed layers stacked in the chorus.",
+    "Slow chorus effect or a subtle pitch shimmer on the clean guitars gives the verses that floating, underwater quality.",
+    "Bass sticks to guitar root notes with light drive so the low end stays solid even when the guitars go ambient.",
+    "Leave space. One sparse clean guitar figure and a vocal is a valid verse. Density is saved for the chorus."
+  ]
+}
