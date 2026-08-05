@@ -15,7 +15,6 @@ final class Module {
     var accentColorHex: String
     var ledColorHex: String
     var sortOrder: Int
-    var isUnlocked: Bool
 
     @Relationship(deleteRule: .cascade, inverse: \Objective.module)
     var objectives: [Objective] = []
@@ -32,8 +31,7 @@ final class Module {
         panelColorHex: String,
         accentColorHex: String,
         ledColorHex: String,
-        sortOrder: Int,
-        isUnlocked: Bool = false
+        sortOrder: Int
     ) {
         self.id = id
         self.device = device
@@ -44,7 +42,6 @@ final class Module {
         self.accentColorHex = accentColorHex
         self.ledColorHex = ledColorHex
         self.sortOrder = sortOrder
-        self.isUnlocked = isUnlocked
     }
 
     var completionFraction: Double {
@@ -55,5 +52,17 @@ final class Module {
 
     var isFullyComplete: Bool {
         !objectives.isEmpty && objectives.allSatisfy(\.isComplete)
+    }
+
+    /// Unlock state is derived, not stored: the first module is always
+    /// unlocked, and each following one unlocks once the previous is fully
+    /// complete. Computing it live (rather than caching it on a stored
+    /// property) means it can never go stale after an objective completes
+    /// elsewhere in the app; it reads straight off `isFullyComplete`, which
+    /// SwiftData's Observation tracks automatically.
+    /// `orderedModules` must be sorted by `sortOrder`.
+    static func isUnlocked(_ module: Module, orderedModules: [Module]) -> Bool {
+        guard let index = orderedModules.firstIndex(where: { $0.id == module.id }) else { return false }
+        return index == 0 || orderedModules[index - 1].isFullyComplete
     }
 }

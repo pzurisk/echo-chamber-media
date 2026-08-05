@@ -147,8 +147,7 @@ enum SeedContent {
                 panelColorHex: seed.panelHex,
                 accentColorHex: seed.accentHex,
                 ledColorHex: seed.ledHex,
-                sortOrder: index,
-                isUnlocked: index == 0
+                sortOrder: index
             )
             context.insert(module)
             for (objIndex, text) in seed.objectives.enumerated() {
@@ -174,8 +173,7 @@ enum SeedContent {
             context.insert(quizCard)
         }
 
-        let progress = UserProgress(totalXP: 0, currentLevel: XPCalculator.levelName(forXP: 0))
-        context.insert(progress)
+        context.insert(UserProgress())
 
         try? context.save()
     }

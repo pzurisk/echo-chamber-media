@@ -1,17 +1,16 @@
 import Foundation
 import SwiftData
 
-/// Singleton row. There is always exactly one; SeedContent creates it once
-/// on first launch and everything else updates it in place.
+/// Singleton row, created once on first launch. XP and level are not
+/// stored here: they are computed live from objectives and quiz cards
+/// (see XPCalculator) so they can never drift out of sync with the data
+/// that actually determines them. This model only holds state that has no
+/// other source of truth.
 @Model
 final class UserProgress {
-    var totalXP: Int
-    var currentLevel: String
     var lastOpenedModuleID: String?
 
-    init(totalXP: Int = 0, currentLevel: String, lastOpenedModuleID: String? = nil) {
-        self.totalXP = totalXP
-        self.currentLevel = currentLevel
+    init(lastOpenedModuleID: String? = nil) {
         self.lastOpenedModuleID = lastOpenedModuleID
     }
 }

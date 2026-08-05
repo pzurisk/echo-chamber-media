@@ -14,12 +14,25 @@ struct RootView: View {
     @Query private var progress: [UserProgress]
     @State private var selection: Destination?
 
+    /// Computed live from the source data on every render, not cached, so
+    /// XP and unlock state can never go stale after an objective completes
+    /// somewhere else in the app. SwiftData's Observation tracks the
+    /// `isComplete`/`isLearned` reads inside these and re-renders RootView
+    /// automatically when any of them change.
+    private var totalXP: Int {
+        XPCalculator.totalXP(modules: modules, quizCards: quizCards)
+    }
+
+    private var levelName: String {
+        XPCalculator.levelName(forXP: totalXP)
+    }
+
     var body: some View {
         NavigationSplitView {
             List(selection: $selection) {
                 Section("The Rack") {
                     ForEach(modules) { module in
-                        ModuleRow(module: module)
+                        ModuleRow(module: module, isUnlocked: Module.isUnlocked(module, orderedModules: modules))
                             .tag(Destination.module(module.id))
                     }
                 }
@@ -40,7 +53,7 @@ struct RootView: View {
                 }
             }
             .safeAreaInset(edge: .bottom) {
-                XPFooter(userProgress: currentProgress)
+                XPFooter(levelName: levelName, totalXP: totalXP)
             }
         } detail: {
             switch selection {
@@ -60,62 +73,45 @@ struct RootView: View {
         }
         .background(Theme.rackBackground)
         .task {
-            recalculateXP()
+            ensureUserProgressExists()
             if selection == nil, let last = progress.first?.lastOpenedModuleID,
                modules.contains(where: { $0.id == last }) {
                 selection = .module(last)
             }
         }
         .onChange(of: selection) { _, newValue in
-            if case .module(let id) = newValue {
-                currentProgress.lastOpenedModuleID = id
-                try? context.save()
-            }
+            guard case .module(let id) = newValue else { return }
+            ensureUserProgressExists()
+            progress.first?.lastOpenedModuleID = id
+            try? context.save()
         }
     }
 
-    private var currentProgress: UserProgress {
-        if let existing = progress.first { return existing }
-        let created = UserProgress(totalXP: 0, currentLevel: XPCalculator.levelName(forXP: 0))
-        context.insert(created)
-        return created
-    }
-
-    /// Recomputes XP/level and unlock state from scratch. Cheap at this
-    /// scale (five modules, ~25 objectives, 12 quiz cards) so it is simplest
-    /// to just rerun it whenever the rack view appears rather than track
-    /// incremental deltas.
-    func recalculateXP() {
-        let progress = currentProgress
-        progress.totalXP = XPCalculator.totalXP(modules: modules, quizCards: quizCards)
-        progress.currentLevel = XPCalculator.levelName(forXP: progress.totalXP)
-
-        let ordered = modules.sorted(by: { $0.sortOrder < $1.sortOrder })
-        for (index, module) in ordered.enumerated() {
-            if index == 0 {
-                module.isUnlocked = true
-            } else {
-                module.isUnlocked = ordered[index - 1].isFullyComplete
-            }
-        }
+    /// Runs from `.task` and `onChange`, both async/event contexts, never
+    /// from `body` itself, so inserting here never risks mutating state
+    /// mid view-update.
+    private func ensureUserProgressExists() {
+        guard progress.isEmpty else { return }
+        context.insert(UserProgress())
         try? context.save()
     }
 }
 
 private struct ModuleRow: View {
     let module: Module
+    let isUnlocked: Bool
 
     var body: some View {
         HStack(spacing: 10) {
             Circle()
-                .fill(module.isUnlocked ? Color(hex: module.ledColorHex) : Color.gray.opacity(0.4))
+                .fill(isUnlocked ? Color(hex: module.ledColorHex) : Color.gray.opacity(0.4))
                 .frame(width: 8, height: 8)
             VStack(alignment: .leading, spacing: 2) {
                 Text(module.tag).font(.caption).foregroundStyle(.secondary)
                 Text(module.device).font(Theme.displayFont(14))
             }
             Spacer()
-            if module.isUnlocked {
+            if isUnlocked {
                 Text("\(Int(module.completionFraction * 100))%")
                     .font(Theme.statFont(11))
                     .foregroundStyle(Color(hex: module.accentColorHex))
@@ -123,19 +119,20 @@ private struct ModuleRow: View {
                 Image(systemName: "lock.fill").font(.caption2).foregroundStyle(.secondary)
             }
         }
-        .opacity(module.isUnlocked ? 1 : 0.5)
+        .opacity(isUnlocked ? 1 : 0.5)
     }
 }
 
 private struct XPFooter: View {
-    @Bindable var userProgress: UserProgress
+    let levelName: String
+    let totalXP: Int
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(userProgress.currentLevel)
+            Text(levelName)
                 .font(Theme.displayFont(13))
                 .foregroundStyle(Theme.brass)
-            Text("\(userProgress.totalXP) XP")
+            Text("\(totalXP) XP")
                 .font(Theme.statFont(11))
                 .foregroundStyle(.secondary)
         }
