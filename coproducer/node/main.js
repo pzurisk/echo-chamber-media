@@ -13,9 +13,60 @@
 // Exports createServer(deps) so tests can inject stub lom, engine, and game.
 
 const path = require("path");
+const fs = require("fs");
+const http = require("http");
 
 const PROJECT_ROOT = path.join(__dirname, "..");
 const DEFAULT_PORT = 7400;
+const UI_DIR = path.join(PROJECT_ROOT, "ui", "dist");
+
+const CONTENT_TYPES = {
+  ".html": "text/html; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
+  ".svg": "image/svg+xml",
+  ".woff2": "font/woff2",
+  ".png": "image/png"
+};
+
+// Serve the built UI to jweb. This exists because jweb cannot load the bundle
+// from file://: Vite emits <script type="module">, and Chromium refuses to load
+// ES modules over file:// (the origin is null, so the CORS check always fails).
+// Over HTTP the page has a real origin, so modules load and the WebSocket
+// connection is same origin as well.
+function serveStatic(req, res) {
+  let rel;
+  try {
+    rel = decodeURIComponent(new URL(req.url, "http://127.0.0.1").pathname);
+  } catch (err) {
+    res.writeHead(400);
+    return res.end("bad request");
+  }
+  if (rel === "/" || rel === "") rel = "/index.html";
+
+  // Resolve inside UI_DIR and reject anything that escapes it, so a crafted
+  // path cannot read the rest of the disk.
+  const target = path.resolve(UI_DIR, "." + rel);
+  if (target !== UI_DIR && !target.startsWith(UI_DIR + path.sep)) {
+    res.writeHead(403);
+    return res.end("forbidden");
+  }
+
+  fs.readFile(target, function (err, data) {
+    if (err) {
+      res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
+      return res.end(
+        "CoProducer UI not found at " + target + "\n\n" +
+          "Build it first: cd ui && npm install && npm run build"
+      );
+    }
+    const type = CONTENT_TYPES[path.extname(target).toLowerCase()] ||
+      "application/octet-stream";
+    res.writeHead(200, { "Content-Type": type });
+    res.end(data);
+  });
+}
 
 try {
   require("dotenv").config({ path: path.join(PROJECT_ROOT, ".env") });
@@ -32,9 +83,25 @@ const KNOWN_ERROR_CODES = new Set([
   "internal"
 ]);
 
+// Inside node.script, console output goes to the Max Console window, which is
+// not written to any file. When the backend fails to start there is then
+// nothing to read anywhere. Mirror every log line to data/backend.log so a
+// failed start can be diagnosed after the fact.
+const LOG_FILE = path.join(PROJECT_ROOT, "data", "backend.log");
+
+function fileLog(message) {
+  try {
+    fs.mkdirSync(path.dirname(LOG_FILE), { recursive: true });
+    fs.appendFileSync(LOG_FILE, new Date().toISOString() + " " + message + "\n");
+  } catch (err) {
+    // Logging must never be the thing that takes the backend down.
+  }
+}
+
 function defaultLog(message) {
   // eslint-disable-next-line no-console
   console.log("[coproducer] " + message);
+  fileLog(message);
 }
 
 function envPort() {
@@ -70,10 +137,14 @@ async function createServer(deps) {
   const port = d.port !== undefined ? d.port : envPort();
 
   const { WebSocketServer } = require("ws");
-  const wss = new WebSocketServer({ host: "127.0.0.1", port: port });
+
+  // One HTTP server carries both the built UI and the WebSocket upgrade, so
+  // there is a single port to configure and jweb loads the page same origin.
+  const httpServer = http.createServer(serveStatic);
+  const wss = new WebSocketServer({ server: httpServer });
   await new Promise(function (resolve, reject) {
-    wss.once("listening", resolve);
-    wss.once("error", reject);
+    httpServer.once("error", reject);
+    httpServer.listen(port, "127.0.0.1", resolve);
   });
 
   let pushCounter = 0;
@@ -338,14 +409,18 @@ async function createServer(deps) {
 
   return {
     wss: wss,
-    port: wss.address().port,
+    port: httpServer.address().port,
     broadcast: broadcast,
     close: function () {
       for (const client of wss.clients) {
         client.terminate();
       }
       return new Promise(function (resolve) {
-        wss.close(resolve);
+        wss.close(function () {
+          httpServer.close(function () {
+            resolve();
+          });
+        });
       });
     }
   };
@@ -462,7 +537,38 @@ async function start() {
 
 module.exports = { createServer, start };
 
-if (require.main === module) {
+// Decide whether this process should start the server.
+//
+// `require.main === module` is true when run as `node node/main.js`, but it is
+// NOT reliable inside node.script: Node for Max can load the script through its
+// own bootstrap, which makes the wrapper the main module. When that happens
+// start() never runs, so the device loads with no error anywhere, nothing
+// listens on the port, and the round trip button reports
+// Unhandled Message: "roundtrip" because addHandler was never reached.
+//
+// So also start when max-api resolves, which is only true inside Node for Max.
+// max-api is not an installed dependency (Node for Max injects it), so this
+// stays false under `npm test`, where main.test.js imports createServer only.
+function shouldAutoStart() {
+  if (require.main === module) return true;
+  try {
+    require.resolve("max-api");
+    return true;
+  } catch (err) {
+    return false;
+  }
+}
+
+if (shouldAutoStart()) {
+  // Surface anything that would otherwise die silently inside node.script.
+  process.on("uncaughtException", function (err) {
+    defaultLog("uncaught exception: " + (err && err.stack ? err.stack : err));
+  });
+  process.on("unhandledRejection", function (err) {
+    defaultLog("unhandled rejection: " + (err && err.stack ? err.stack : err));
+  });
+
+  fileLog("--- backend starting (pid " + process.pid + ") ---");
   start().catch(function (err) {
     defaultLog("fatal startup error: " + (err && err.stack ? err.stack : err));
     process.exitCode = 1;

@@ -9,7 +9,8 @@
 			"modernui": 1
 		},
 		"classnamespace": "box",
-		"rect": [59.0, 106.0, 1240.0, 1080.0],
+		"rect": [59.0, 106.0, 1240.0, 800.0],
+		"openrect": [0.0, 0.0, 0.0, 169.0],
 		"bglocked": 0,
 		"openinpresentation": 1,
 		"default_fontsize": 12.0,
@@ -111,7 +112,7 @@
 					"parameter_enable": 1,
 					"patching_rect": [660.0, 85.0, 160.0, 24.0],
 					"presentation": 1,
-					"presentation_rect": [10.0, 8.0, 160.0, 24.0],
+					"presentation_rect": [10.0, 44.0, 160.0, 26.0],
 					"saved_attribute_attributes": {
 						"valueof": {
 							"parameter_enum": ["off", "on"],
@@ -142,19 +143,33 @@
 					"maxclass": "comment",
 					"numinlets": 1,
 					"numoutlets": 0,
-					"patching_rect": [30.0, 215.0, 760.0, 20.0],
-					"text": "4) UI. loadbang points jweb at ../ui/dist/index.html (build the UI first, see BUILD.md). If the page stays blank, retype the message with the absolute path to ui/dist/index.html."
+					"patching_rect": [30.0, 215.0, 900.0, 20.0],
+					"text": "4) UI. The full interface is 900 by 620, far taller than the 169 pixel Live device strip, so it lives in the coproducer-ui subpatcher and opens in its own window. pcontrol opens it."
 				}
 			},
 			{
 				"box": {
 					"id": "obj-10",
-					"maxclass": "newobj",
+					"maxclass": "live.text",
+					"mode": 0,
 					"numinlets": 1,
-					"numoutlets": 1,
-					"outlettype": ["bang"],
-					"patching_rect": [30.0, 245.0, 70.0, 22.0],
-					"text": "loadbang"
+					"numoutlets": 2,
+					"outlettype": ["", ""],
+					"parameter_enable": 1,
+					"patching_rect": [30.0, 245.0, 160.0, 24.0],
+					"presentation": 1,
+					"presentation_rect": [10.0, 10.0, 160.0, 26.0],
+					"saved_attribute_attributes": {
+						"valueof": {
+							"parameter_enum": ["off", "on"],
+							"parameter_longname": "OpenCoProducer",
+							"parameter_mmax": 1,
+							"parameter_shortname": "Open",
+							"parameter_type": 2
+						}
+					},
+					"text": "Open CoProducer",
+					"texton": "Open CoProducer"
 				}
 			},
 			{
@@ -164,8 +179,8 @@
 					"numinlets": 2,
 					"numoutlets": 1,
 					"outlettype": [""],
-					"patching_rect": [30.0, 280.0, 170.0, 22.0],
-					"text": "url ../ui/dist/index.html"
+					"patching_rect": [30.0, 285.0, 46.0, 22.0],
+					"text": "open"
 				}
 			},
 			{
@@ -173,17 +188,150 @@
 					"id": "obj-12",
 					"maxclass": "newobj",
 					"numinlets": 1,
-					"numoutlets": 2,
-					"outlettype": ["", ""],
-					"patching_rect": [30.0, 315.0, 900.0, 620.0],
-					"presentation": 1,
-					"presentation_rect": [10.0, 42.0, 900.0, 620.0],
-					"text": "jweb"
+					"numoutlets": 1,
+					"outlettype": [""],
+					"patching_rect": [30.0, 320.0, 60.0, 22.0],
+					"text": "pcontrol"
 				}
 			},
 			{
 				"box": {
 					"id": "obj-13",
+					"maxclass": "newobj",
+					"numinlets": 1,
+					"numoutlets": 0,
+					"patching_rect": [30.0, 355.0, 120.0, 22.0],
+					"text": "p coproducer-ui",
+					"patcher": {
+						"fileversion": 1,
+						"appversion": {
+							"major": 8,
+							"minor": 5,
+							"revision": 6,
+							"architecture": "x64",
+							"modernui": 1
+						},
+						"classnamespace": "box",
+						"rect": [140.0, 120.0, 900.0, 620.0],
+						"bglocked": 1,
+						"openinpresentation": 1,
+						"default_fontsize": 12.0,
+						"default_fontface": 0,
+						"default_fontname": "Arial",
+						"gridonopen": 1,
+						"gridsize": [15.0, 15.0],
+						"gridsnaponopen": 1,
+						"objectsnaponopen": 1,
+						"statusbarvisible": 0,
+						"toolbarvisible": 0,
+						"lefttoolbarpinned": 0,
+						"toptoolbarpinned": 0,
+						"righttoolbarpinned": 0,
+						"bottomtoolbarpinned": 0,
+						"toolbars_unpinned_last_save": 0,
+						"tallnewobj": 0,
+						"boxanimatetime": 200,
+						"enablehscroll": 1,
+						"enablevscroll": 1,
+						"devicewidth": 0.0,
+						"description": "",
+						"digest": "",
+						"tags": "",
+						"style": "",
+						"subpatcher_template": "",
+						"assistshowspatchername": 0,
+						"boxes": [
+							{
+								"box": {
+									"comment": "",
+									"id": "sub-1",
+									"index": 1,
+									"maxclass": "inlet",
+									"numinlets": 0,
+									"numoutlets": 1,
+									"outlettype": [""],
+									"patching_rect": [20.0, 20.0, 30.0, 30.0]
+								}
+							},
+							{
+								"box": {
+									"id": "sub-2",
+									"maxclass": "newobj",
+									"numinlets": 1,
+									"numoutlets": 1,
+									"outlettype": ["bang"],
+									"patching_rect": [80.0, 20.0, 70.0, 22.0],
+									"text": "loadbang"
+								}
+							},
+							{
+								"box": {
+									"id": "sub-5",
+									"maxclass": "newobj",
+									"numinlets": 2,
+									"numoutlets": 1,
+									"outlettype": ["bang"],
+									"patching_rect": [80.0, 55.0, 80.0, 22.0],
+									"text": "del 2000"
+								}
+							},
+							{
+								"box": {
+									"id": "sub-3",
+									"maxclass": "message",
+									"numinlets": 2,
+									"numoutlets": 1,
+									"outlettype": [""],
+									"patching_rect": [80.0, 55.0, 200.0, 22.0],
+									"text": "url ../ui/dist/index.html"
+								}
+							},
+							{
+								"box": {
+									"id": "sub-4",
+									"maxclass": "newobj",
+									"numinlets": 1,
+									"numoutlets": 2,
+									"outlettype": ["", ""],
+									"patching_rect": [80.0, 95.0, 900.0, 620.0],
+									"presentation": 1,
+									"presentation_rect": [0.0, 0.0, 900.0, 620.0],
+									"text": "jweb"
+								}
+							}
+						],
+						"lines": [
+							{
+								"patchline": {
+									"source": ["sub-2", 0],
+									"destination": ["sub-5", 0]
+								}
+							},
+							{
+								"patchline": {
+									"source": ["sub-5", 0],
+									"destination": ["sub-3", 0]
+								}
+							},
+							{
+								"patchline": {
+									"source": ["sub-1", 0],
+									"destination": ["sub-3", 0]
+								}
+							},
+							{
+								"patchline": {
+									"source": ["sub-3", 0],
+									"destination": ["sub-4", 0]
+								}
+							}
+						]
+					}
+				}
+			},
+			{
+				"box": {
+					"id": "obj-14",
 					"maxclass": "comment",
 					"numinlets": 1,
 					"numoutlets": 0,
@@ -193,7 +341,7 @@
 			},
 			{
 				"box": {
-					"id": "obj-14",
+					"id": "obj-15",
 					"maxclass": "newobj",
 					"numinlets": 1,
 					"numoutlets": 1,
@@ -204,7 +352,7 @@
 			},
 			{
 				"box": {
-					"id": "obj-15",
+					"id": "obj-16",
 					"maxclass": "newobj",
 					"numinlets": 1,
 					"numoutlets": 0,
@@ -252,8 +400,20 @@
 			},
 			{
 				"patchline": {
-					"source": ["obj-14", 0],
-					"destination": ["obj-15", 0]
+					"source": ["obj-12", 0],
+					"destination": ["obj-13", 0]
+				}
+			},
+			{
+				"patchline": {
+					"source": ["obj-10", 0],
+					"destination": ["obj-13", 0]
+				}
+			},
+			{
+				"patchline": {
+					"source": ["obj-15", 0],
+					"destination": ["obj-16", 0]
 				}
 			}
 		],
