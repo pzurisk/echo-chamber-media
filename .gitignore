@@ -45,3 +45,9 @@ EchoMeal/Secrets.xcconfig
 EchoMeal/EchoMeal.xcodeproj/
 EchoMeal/DerivedData/
 EchoMeal/build/
+
+# Signal Chain Teacher macOS app
+# The project is generated from project.yml by `xcodegen generate`.
+SignalChainTeacher/SignalChainTeacher.xcodeproj/
+SignalChainTeacher/DerivedData/
+SignalChainTeacher/build/
