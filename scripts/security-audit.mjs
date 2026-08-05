@@ -59,9 +59,15 @@ for (const file of walk("src")) {
 }
 
 // 3. No tracked secrets files.
+// Template files (.env.example and friends) are meant to be tracked: they hold
+// placeholder values only and document what a real .env needs. coproducer's
+// setup step is literally "cp .env.example .env". A real .env, or any other
+// .env.<something>, is still a failure.
 const tracked = execSync("git ls-files", { encoding: "utf8" });
 for (const line of tracked.split("\n")) {
-  if (/(^|\/)\.env(\.|$)/.test(line)) fail(`secrets file tracked by git: ${line}`);
+  if (/(^|\/)\.env(\.|$)/.test(line) && !/\.(example|sample|template)$/.test(line)) {
+    fail(`secrets file tracked by git: ${line}`);
+  }
 }
 
 if (ok) {
