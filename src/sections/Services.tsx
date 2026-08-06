@@ -73,6 +73,16 @@ const services = [
       </svg>
     ),
   },
+  {
+    title: "AI Ads",
+    description: "AI-generated commercials, directed and finished like real production work.",
+    href: "/ai-ads",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-8 h-8">
+        <path d="m12 3-1.9 5.81a2 2 0 0 1-1.28 1.28L3 12l5.81 1.9a2 2 0 0 1 1.28 1.28L12 21l1.9-5.81a2 2 0 0 1 1.28-1.28L21 12l-5.81-1.9a2 2 0 0 1-1.28-1.28L12 3Z" />
+      </svg>
+    ),
+  },
 ];
 
 interface ServicePanelProps {
