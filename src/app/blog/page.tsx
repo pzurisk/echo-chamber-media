@@ -19,6 +19,14 @@ export const metadata: Metadata = {
 
 const posts = [
   {
+    slug: 'what-ai-ad-production-costs',
+    title: 'What AI Ad Production Actually Costs',
+    excerpt: 'A straight answer on 2026 AI ad production pricing, how it compares to a traditional commercial shoot, and what you actually get at each price point.',
+    date: 'August 7, 2026',
+    category: 'Pricing Guide',
+    readTime: '6 min read',
+  },
+  {
     slug: 'the-chair-tattoo-documentary',
     title: 'Behind The Chair',
     excerpt: 'How we made a short documentary portrait of a Las Vegas tattoo artist on a working shop floor. Finding the idea before the shoot, getting sound in a loud room, cutting from a transcript instead of the timeline, and why a doc outperforms an ad.',
