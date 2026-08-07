@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: 'AI Ad Production Las Vegas | Echo Chamber Media',
+  title: 'AI Ad Production Las Vegas',
   description: 'AI-generated commercials directed like film. See real spec work and get your ad made fast.',
   alternates: { canonical: 'https://echochambermedia.com/ai-ads' },
   keywords: 'AI ad production Las Vegas, AI generated commercials, AI video ads, AI advertising Las Vegas, AI commercial production',
