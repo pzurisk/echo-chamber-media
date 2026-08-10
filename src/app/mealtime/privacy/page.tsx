@@ -21,7 +21,7 @@ export default function MealTimePrivacyPage() {
               MealTime Privacy Policy
             </h1>
             <div className="h-px w-16 bg-brand-gold mb-6" />
-            <p className="font-body text-sm text-brand-gray">Effective date: July 23, 2026</p>
+            <p className="font-body text-sm text-brand-gray">Effective date: August 10, 2026</p>
           </div>
 
           <div className="space-y-6">
@@ -36,14 +36,14 @@ export default function MealTimePrivacyPage() {
               Voice
             </h2>
             <p className="font-body text-brand-off-white leading-relaxed">
-              Your speech is transcribed on your device by Apple&apos;s speech recognition. MealTime does not record or store audio.
+              Your speech is turned into text by Apple&apos;s built-in speech recognition. That happens on your iPhone when your device supports it, and on Apple&apos;s servers when it does not. That choice is made by iOS, not by MealTime. Apple&apos;s handling of it is covered by Apple&apos;s own privacy policy. MealTime itself never records, saves, or transmits your audio, and Echo Chamber Media never receives it.
             </p>
 
             <h2 className="font-heading text-2xl uppercase tracking-editorial text-brand-gold mt-12 mb-4">
               What leaves your phone
             </h2>
             <p className="font-body text-brand-off-white leading-relaxed">
-              The text transcript of what you said, plus your budget, taste notes, and saved meal history, is sent to Anthropic&apos;s Claude API to generate your plan. Anthropic processes it to return the plan. You can read Anthropic&apos;s privacy policy at{' '}
+              The text transcript of what you said, plus your budget, taste notes, and saved meal history, is sent to Anthropic&apos;s Claude API to generate your plan. It passes through a relay we operate, which exists only so the API key stays off your phone. The relay forwards the request and the reply and keeps no copy of either. Anthropic processes the request to return the plan. You can read Anthropic&apos;s privacy policy at{' '}
               <a
                 href="https://www.anthropic.com/legal/privacy"
                 target="_blank"
@@ -59,7 +59,7 @@ export default function MealTimePrivacyPage() {
               Where your data lives
             </h2>
             <p className="font-body text-brand-off-white leading-relaxed">
-              Meal plans, grocery lists, favorites, and ratings are stored in Apple iCloud (CloudKit), tied to your household code, and cached on your device. We (Echo Chamber Media) do not run our own servers and cannot see your data.
+              Meal plans, grocery lists, favorites, and ratings are stored in Apple iCloud (CloudKit), tied to your household code, and cached on your device. Echo Chamber Media runs no database of its own. The only thing we operate is the relay described above, which stores nothing, so your saved meal data is never held on our systems.
             </p>
 
             <h2 className="font-heading text-2xl uppercase tracking-editorial text-brand-gold mt-12 mb-4">
