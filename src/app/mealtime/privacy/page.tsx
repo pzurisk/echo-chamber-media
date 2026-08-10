@@ -80,7 +80,7 @@ export default function MealTimePrivacyPage() {
               Deleting your data
             </h2>
             <p className="font-body text-brand-off-white leading-relaxed">
-              Delete recipes in the app from the Recipe Box, or delete the app and your device cache goes with it. Starting a new household in Settings disconnects your phone from the old shared data. To have the old household data removed from iCloud entirely, email us at sales@echochambermedia.com with your household code and we will delete it.
+              Open Settings in the app and tap Delete all data. That erases your week, grocery list, favorites, recipe box, ratings, and history from iCloud and from your phone, and returns the app to its first-launch state. Because the data is shared by household code, deleting it removes it for the other phone in your household too. It cannot be undone. You can also delete individual recipes from the Recipe Box, and starting a new household in Settings disconnects your phone from the old shared data without erasing it. If you deleted the app before deleting your data, email us at sales@echochambermedia.com with your household code and we will remove it.
             </p>
 
             <h2 className="font-heading text-2xl uppercase tracking-editorial text-brand-gold mt-12 mb-4">
