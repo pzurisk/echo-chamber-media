@@ -177,8 +177,8 @@ export default function VideoWalkthroughPage() {
               <img
                 src="/images/play-playground-logo.png"
                 alt="Play Playground"
-                className="h-28 w-auto"
-                style={{ filter: 'drop-shadow(0 0 25px rgba(220,38,38,0.6)) saturate(1.5) contrast(1.15)' }}
+                className="h-32 w-auto"
+                style={{ filter: 'drop-shadow(0 0 6px rgba(239,68,68,0.9)) drop-shadow(0 0 30px rgba(220,38,38,0.55)) saturate(1.4) contrast(1.1)' }}
               />
             </div>
           </div>
