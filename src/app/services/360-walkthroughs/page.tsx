@@ -161,7 +161,7 @@ export default function VideoWalkthroughPage() {
             {/* Kuula Embed */}
             <div className="w-full border border-brand-gold/20">
               <iframe
-                src="https://kuula.co/share/collection/7Hrpm?logo=1&info=1&fs=1&vr=0&sd=1&thumbs=1"
+                src="https://kuula.co/share/collection/7M5lZ?logo=1&info=1&fs=1&vr=0&zoom=1&sd=1&thumbs=1"
                 title="Echo Chamber Media, 360 Walkthrough Portfolio"
                 width="100%"
                 height="640"
@@ -170,6 +170,14 @@ export default function VideoWalkthroughPage() {
                 allow="xr-spatial-tracking; gyroscope; accelerometer"
                 className="w-full"
                 style={{ minHeight: '400px' }}
+              />
+            </div>
+
+            <div className="flex justify-center mt-8">
+              <img
+                src="/images/play-playground-logo.png"
+                alt="Play Playground"
+                className="h-16 w-auto"
               />
             </div>
           </div>
