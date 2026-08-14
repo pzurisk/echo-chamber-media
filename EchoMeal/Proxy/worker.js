@@ -84,6 +84,17 @@ const MONTH_COUNTER_TTL_SECONDS = 3456000;
 // else is not. Bounding the length stops a caller from writing enormous keys.
 const TXN_ID_PATTERN = /^[A-Za-z0-9]{1,64}$/;
 
+// Read a cap out of the environment. Written the long way instead of
+// `parseInt(x, 10) || fallback` because that idiom treats 0 as missing: a cap
+// deliberately set to "0" to stop all spending would silently come back as
+// the default and keep spending. Zero is a legitimate value here and the
+// fastest lever there is for shutting the relay off in an emergency, so it
+// has to survive. Anything unparseable or negative still falls back.
+function capFrom(value, fallback) {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
+}
+
 // Compare two strings without leaking where they first differ.
 function tokensMatch(given, expected) {
   if (typeof given !== "string" || typeof expected !== "string") return false;
@@ -274,8 +285,7 @@ export default {
     // the contract with the app: 402 means "out of plans, here is the date
     // they come back," never "your subscription is bad" and never "show the
     // paywall." A lapsed subscription comes back as 401 at step 3 instead.
-    const monthlyCap =
-      Number.parseInt(env.MONTHLY_GENERATION_CAP, 10) || DEFAULT_MONTHLY_CAP;
+    const monthlyCap = capFrom(env.MONTHLY_GENERATION_CAP, DEFAULT_MONTHLY_CAP);
     const now = new Date();
     const monthKey = `sub-${txnId}-${monthStamp(now)}`;
     let monthUsed = null;
@@ -286,6 +296,15 @@ export default {
       } catch {
         monthUsed = null;
       }
+    }
+    // A cap of 0 is the emergency stop, not a spent allowance, so it gets its
+    // own sentence. The normal message would read "You have used all 0 meal
+    // plans included this month," which tells a paying customer nothing true.
+    if (monthlyCap === 0) {
+      return refuse(
+        402,
+        "MealTime plan generation is paused right now. This is not a problem with your subscription, and you have not been charged for anything you did not get. Try again later."
+      );
     }
     if (monthUsed !== null) {
       if (monthUsed >= monthlyCap) {
@@ -310,7 +329,7 @@ export default {
     // limit above and the monthly spend cap set at Anthropic are the other two
     // lines of defence, and failing closed would take the app down for a
     // Cloudflare storage blip.
-    const cap = Number.parseInt(env.DAILY_REQUEST_CAP, 10) || DEFAULT_DAILY_CAP;
+    const cap = capFrom(env.DAILY_REQUEST_CAP, DEFAULT_DAILY_CAP);
     const counterKey = `requests-${new Date().toISOString().slice(0, 10)}`;
     let used = null;
     if (env.SPEND_COUNTER) {
@@ -374,6 +393,24 @@ export default {
       } catch {
         // Nothing to do. The count stays one high for the month.
       }
+    }
+
+    // Anthropic's own auth and billing failures arrive as 401, 402, and 403,
+    // which are the exact codes this worker reserves for its subscription
+    // contract with the app. Verified against the live API: a request with no
+    // key comes back 401 "invalid x-api-key", identical in status to this
+    // worker's "no subscription" refusal, and the app cannot tell them apart.
+    //
+    // So they are remapped. A dead or unpaid Anthropic key is a problem at
+    // this end, and it must never reach a paying subscriber as "your
+    // subscription could not be confirmed," because the only action that
+    // message suggests is cancelling. 502 lands in the app's transient
+    // bucket instead, which is the truth: try again later.
+    if (upstream.status === 401 || upstream.status === 402 || upstream.status === 403) {
+      return refuse(
+        502,
+        "MealTime's planning service is not answering right now. This is not a problem with your subscription. Try again in a few minutes."
+      );
     }
 
     // Return Anthropic's status and body verbatim so the app can parse the
