@@ -1,0 +1,34 @@
+name = "mealtime-proxy"
+main = "worker.js"
+compatibility_date = "2026-01-01"
+
+# Global daily ceiling across every subscriber combined. This is a circuit
+# breaker against a runaway bill, not a per-user budget, so it sits far above
+# what normal use produces. The per-subscription cap below is what an individual
+# household actually feels. Raise this number and redeploy to loosen it.
+# Both are plain variables, not secrets, so they are safe to read in the dashboard.
+[vars]
+DAILY_REQUEST_CAP = "400"
+
+# One subscription's included meal plans per calendar month. This number is
+# quoted on the paywall, in the App Store description, and in the refusal message
+# the app shows at the cap. Changing it here means changing it in all three.
+MONTHLY_GENERATION_CAP = "20"
+
+# Counter storage. Holds two kinds of integer and nothing else: a count for the
+# day, and a count for one subscription in one month. The month keys include the
+# subscription's Apple transaction ID, which is a purchase identifier and is
+# declared as such in App Privacy. No name, no email, no IP address, no request
+# bodies, no meal plans.
+[[kv_namespaces]]
+binding = "SPEND_COUNTER"
+id = "a4dabf9897e841f88327a8ef1c9cc49f"
+
+# Per-caller burst limit. The worker hashes the caller's IP into a short
+# fingerprint and passes only that to this limiter, which keeps it in memory at
+# the edge. No IP, raw or hashed, is ever written to storage.
+# "period" only accepts 10 or 60. namespace_id is a per-worker label.
+[[ratelimits]]
+name = "BURST_LIMITER"
+namespace_id = "1001"
+simple = { limit = 6, period = 60 }
