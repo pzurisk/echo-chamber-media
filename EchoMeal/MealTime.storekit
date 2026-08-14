@@ -1,0 +1,60 @@
+{
+  "identifier" : "A1F3C2D4-5E6B-4A7C-8D9E-0F1A2B3C4D5E",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+
+  ],
+  "settings" : {
+    "_applicationInternalID" : "",
+    "_developerTeamID" : "437T523G88",
+    "_failTransactionsEnabled" : false,
+    "_lastSynchronizedDate" : 0,
+    "_locale" : "en_US",
+    "_storefront" : "USA",
+    "_storeKitErrors" : [
+
+    ]
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "20983471",
+      "localizations" : [
+
+      ],
+      "name" : "MealTime",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "4.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "20983472",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "20 meal plans a month, shared with the other phone in your household.",
+              "displayName" : "MealTime Monthly",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "com.echochambermedia.echomeal.monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "MealTime Monthly",
+          "subscriptionGroupID" : "20983471",
+          "type" : "RecurringSubscription"
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}

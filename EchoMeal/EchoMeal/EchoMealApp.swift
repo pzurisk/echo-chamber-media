@@ -21,6 +21,7 @@ struct EchoMealApp: App {
         WindowGroup {
             RootView()
                 .environmentObject(appState)
+                .environmentObject(appState.subscriptions)
                 .preferredColorScheme(theme.colorScheme)
                 .fullScreenCover(isPresented: $needsOnboarding) {
                     OnboardingView()
@@ -29,12 +30,21 @@ struct EchoMealApp: App {
                 .onAppear {
                     needsOnboarding = !appState.isOnboarded
                 }
+                .task {
+                    // Reads the entitlement and loads the price before
+                    // anyone taps the mic, so a subscriber never sees the
+                    // paywall flicker past on the way to their week.
+                    await appState.subscriptions.refresh()
+                }
         }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
                 appState.recoverIfStuck()
                 appState.retryDirtySaves()
                 Task { await appState.refreshFromCloud() }
+                // Catches a subscription cancelled or resubscribed in the
+                // App Store while the app sat in the background.
+                Task { await appState.subscriptions.refreshEntitlement() }
             }
         }
     }

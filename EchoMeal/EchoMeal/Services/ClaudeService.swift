@@ -19,6 +19,15 @@ enum ClaudeService {
         case badStatus(Int, String)
         case emptyReply
         case parseFailed
+        /// HTTP 402 from the relay: the subscription is fine, this month's
+        /// included plans are used up. The relay sends back a readable
+        /// sentence naming the date they come back, so it is shown as-is.
+        case outOfPlans(String)
+        /// HTTP 401 from the relay: it would not accept the subscription
+        /// this request carried. AppState re-checks the entitlement before
+        /// deciding whether this means "subscribe" or "something is off",
+        /// so this case carries no user-facing text of its own.
+        case subscriptionRefused
 
         /// Plain sentences a non-programmer understands. The raw status code
         /// and body stay in the associated values for retry matching and
@@ -27,6 +36,12 @@ enum ClaudeService {
             switch self {
             case .missingKey:
                 return "The app is not connected to the planning service. This build is missing its proxy setting."
+            case .outOfPlans(let message):
+                // The relay wrote this sentence for the user. Passing it
+                // through is what puts the real reset date in the alert.
+                return message
+            case .subscriptionRefused:
+                return "MealTime could not confirm your subscription. Open Settings and tap Restore Purchases."
             case .badStatus(let code, _):
                 switch code {
                 case 401, 403:
@@ -130,7 +145,11 @@ week and recipes each have exactly \(count) entries, one per day, \(span), in or
     /// lockedRecipes are pinned dinners the household wants repeated exactly.
     /// They go into the user context only; the system prompt varies only by
     /// the requested dinner count.
-    static func planWeek(transcript: String, budget: Double, dinners: Int, tasteNotes: String = "", lockedRecipes: [Recipe] = []) async throws -> MealPlan {
+    /// subscriptionID is the StoreKit originalTransactionId of the active
+    /// subscription. The relay counts this month's plans against it and
+    /// refuses any request without one, so callers must resolve it from
+    /// SubscriptionStore before calling rather than passing a placeholder.
+    static func planWeek(transcript: String, budget: Double, dinners: Int, subscriptionID: String, tasteNotes: String = "", lockedRecipes: [Recipe] = []) async throws -> MealPlan {
         var context = "Budget target: \(Int(budget)). Dinners: \(dinners). "
         if !tasteNotes.isEmpty {
             context += "Taste notes about this household: \(tasteNotes) "
@@ -147,16 +166,16 @@ week and recipes each have exactly \(count) entries, one per day, \(span), in or
         context += "Cravings: \(transcript) "
         context += "Coverage rule: every single ingredient used by any recipe in the plan must appear on the grocery list, either as its own item or as a clearly matching combined item. The household shops from this list alone, so nothing may be missing."
         do {
-            return try await requestPlan(userText: context, dinners: dinners)
+            return try await requestPlan(userText: context, dinners: dinners, subscriptionID: subscriptionID)
         } catch ClaudeError.parseFailed {
             let reminder = context + "\n\nReminder: return only valid JSON matching the schema. No prose, no markdown, no backticks. The \"recipes\" array is required and must contain one full recipe object for every day in \"week\" (same count, matching \"day\" values), each with its ingredients and numbered steps. Do not return an empty or partial recipes array."
-            return try await requestPlan(userText: reminder, dinners: dinners)
+            return try await requestPlan(userText: reminder, dinners: dinners, subscriptionID: subscriptionID)
         } catch let error as URLError where Self.transientURLErrorCodes.contains(error.code) {
             try await Task.sleep(nanoseconds: 2_000_000_000)
-            return try await requestPlan(userText: context, dinners: dinners)
+            return try await requestPlan(userText: context, dinners: dinners, subscriptionID: subscriptionID)
         } catch ClaudeError.badStatus(let code, _) where (500...599).contains(code) {
             try await Task.sleep(nanoseconds: 2_000_000_000)
-            return try await requestPlan(userText: context, dinners: dinners)
+            return try await requestPlan(userText: context, dinners: dinners, subscriptionID: subscriptionID)
         }
     }
 
@@ -181,7 +200,7 @@ week and recipes each have exactly \(count) entries, one per day, \(span), in or
         return value
     }
 
-    private static func requestPlan(userText: String, dinners: Int) async throws -> MealPlan {
+    private static func requestPlan(userText: String, dinners: Int, subscriptionID: String) async throws -> MealPlan {
         var request: URLRequest
         if let proxyString = configValue("CLAUDE_PROXY_URL"),
            let proxyURL = URL(string: proxyString) {
@@ -191,6 +210,10 @@ week and recipes each have exactly \(count) entries, one per day, \(span), in or
             if let token = configValue("CLAUDE_PROXY_TOKEN") {
                 request.setValue(token, forHTTPHeaderField: "x-app-token")
             }
+            // Who to bill this generation to. The relay refuses outright
+            // without it, which is the whole point: the app token ships in
+            // every copy of the app and proves nothing about who is asking.
+            request.setValue(subscriptionID, forHTTPHeaderField: "x-txn-id")
         } else {
             // No fallback on purpose. Calling api.anthropic.com from the device
             // would need an API key inside the app bundle, which is readable by
@@ -238,7 +261,19 @@ week and recipes each have exactly \(count) entries, one per day, \(span), in or
         }
         guard http.statusCode == 200 else {
             let snippet = String(data: data, encoding: .utf8)?.prefix(300) ?? ""
-            throw ClaudeError.badStatus(http.statusCode, String(snippet))
+            // The relay's two subscription answers get their own cases so
+            // they never land in the generic "the service could not be
+            // reached" bucket, and so neither can be swept into the 5xx
+            // retry ladder below. Both are final: retrying spends nothing
+            // and fixes nothing.
+            switch http.statusCode {
+            case 402:
+                throw ClaudeError.outOfPlans(String(snippet))
+            case 401:
+                throw ClaudeError.subscriptionRefused
+            default:
+                throw ClaudeError.badStatus(http.statusCode, String(snippet))
+            }
         }
 
         // Pull the first text block out of the reply. Claude Sonnet 5 can

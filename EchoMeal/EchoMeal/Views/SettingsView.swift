@@ -4,6 +4,7 @@ import SwiftUI
 /// household code.
 struct SettingsView: View {
     @EnvironmentObject private var appState: AppState
+    @EnvironmentObject private var subscriptions: SubscriptionStore
     @Environment(\.dismiss) private var dismiss
 
     @AppStorage(HouseholdConfig.Keys.budgetTarget) private var budgetTarget = 100.0
@@ -18,10 +19,14 @@ struct SettingsView: View {
     @State private var showDeleteConfirm = false
     @State private var isDeleting = false
     @State private var deleteError: String?
+    @State private var showPaywall = false
+    @State private var restoreMessage: String?
 
     var body: some View {
         NavigationStack {
             Form {
+                subscriptionSection
+
                 Section("Appearance") {
                     ForEach(AppTheme.allCases) { option in
                         Button {
@@ -172,6 +177,10 @@ struct SettingsView: View {
                     .disabled(isDeleting)
                 }
             }
+            .sheet(isPresented: $showPaywall) {
+                PaywallView()
+                    .environmentObject(subscriptions)
+            }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -194,6 +203,72 @@ struct SettingsView: View {
                 }
             } message: {
                 Text("This permanently erases your week, grocery list, favorites, recipe box, ratings, and history from iCloud and from this phone. It also deletes them for the other phone in household \(appState.householdCode). This cannot be undone.")
+            }
+        }
+    }
+
+    /// Subscription status, the way to buy, the way to cancel, and Restore
+    /// Purchases. Apple requires a restore control to be reachable in the
+    /// app, and requires a link out to manage or cancel the subscription.
+    /// Both live here.
+    ///
+    /// The subscription belongs to the Apple Account, not the household, so
+    /// this section deliberately says nothing about the other phone: two
+    /// people sharing a household code each need their own subscription to
+    /// generate, and both can read whatever either one generates.
+    private var subscriptionSection: some View {
+        Section("Subscription") {
+            HStack {
+                Text("Status")
+                Spacer()
+                switch subscriptions.status {
+                case .subscribed:
+                    Label("Active", systemImage: "checkmark.circle.fill")
+                        .foregroundStyle(Color.echoGreen)
+                case .notSubscribed:
+                    Text("Not subscribed")
+                        .foregroundStyle(Color.echoTextSecondary)
+                case .unknown:
+                    ProgressView()
+                }
+            }
+
+            if subscriptions.status == .subscribed {
+                Text("\(SubscriptionStore.monthlyPlanAllowance) meal plans a month, \(subscriptions.displayPrice) billed monthly to your Apple Account.")
+                    .font(.caption)
+                    .foregroundStyle(Color.echoTextSecondary)
+                Link("Manage or cancel", destination: SubscriptionStore.manageSubscriptionsURL)
+                    .tint(.echoAccentText)
+            } else {
+                Text("A subscription covers building new plans. Your saved week, recipes, and grocery list stay readable either way.")
+                    .font(.caption)
+                    .foregroundStyle(Color.echoTextSecondary)
+                Button("Subscribe") { showPaywall = true }
+            }
+
+            Button {
+                Task {
+                    let restored = await subscriptions.restore()
+                    restoreMessage = restored
+                        ? "Your subscription is active again."
+                        : (subscriptions.errorMessage ?? "Nothing was restored.")
+                }
+            } label: {
+                if subscriptions.isWorking {
+                    HStack {
+                        ProgressView()
+                        Text("Restoring")
+                    }
+                } else {
+                    Text("Restore purchases")
+                }
+            }
+            .disabled(subscriptions.isWorking)
+
+            if let restoreMessage {
+                Text(restoreMessage)
+                    .font(.caption)
+                    .foregroundStyle(subscriptions.status == .subscribed ? Color.echoGreen : Color.echoWarning)
             }
         }
     }

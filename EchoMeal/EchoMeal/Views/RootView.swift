@@ -32,6 +32,18 @@ struct RootView: View {
         .tint(.echoAccentText)
         // Generation errors surface here, above whichever tab is open, so a
         // failure is never missed just because the Speak tab is not showing.
+        // The paywall lives here rather than on the Speak tab because a plan
+        // can be asked for from the Week tab too (Swap One Night). AppState
+        // raises the flag from the one place all planning goes through, so
+        // whichever tab is open, the ask lands.
+        .sheet(isPresented: $appState.showPaywall, onDismiss: {
+            appState.discardPendingGeneration()
+        }) {
+            PaywallView {
+                appState.resumePendingGeneration()
+            }
+            .environmentObject(appState.subscriptions)
+        }
         .alert(
             "Something went wrong",
             isPresented: Binding(

@@ -52,6 +52,22 @@ final class AppState: ObservableObject {
     /// content goes to a third-party AI, so planning is gated on this.
     @Published var aiNoticeAccepted = UserDefaults.standard.bool(forKey: HouseholdConfig.Keys.aiNoticeAccepted)
 
+    /// Raised when a plan was asked for and this phone has no subscription.
+    /// RootView presents the paywall on it, so every entry point into
+    /// planning gets the paywall without knowing anything about StoreKit.
+    @Published var showPaywall = false
+
+    /// The subscription. AppState owns it so there is exactly one instance,
+    /// and EchoMealApp puts this same object into the environment for the
+    /// paywall and Settings to read.
+    let subscriptions = SubscriptionStore()
+
+    /// The generation the paywall interrupted, replayed if the user
+    /// subscribes. Someone who spoke a week, hit the paywall, and paid
+    /// should get the week they asked for, not an empty screen and a second
+    /// trip to the mic.
+    private var pendingGeneration: (() -> Void)?
+
     /// Cap on the rolling dinner history used for taste learning.
     private static let historyLimit = 60
 
@@ -386,6 +402,15 @@ final class AppState: ObservableObject {
             flashStatus("Hold on, still building your last plan.")
             return
         }
+        // Fast path for the known-unsubscribed case, checked before the
+        // phase moves, so the planning banner never flashes on its way to a
+        // paywall. The authoritative check is the await inside the task; this
+        // one only spares the UI a flicker it would otherwise show every
+        // single time a non-subscriber taps the mic.
+        if subscriptions.status == .notSubscribed {
+            presentPaywall(resuming: userText, lockedRecipes: lockedRecipes, preserveChecks: preserveChecks, dinners: dinners)
+            return
+        }
         phase = .planning
         let budget = budgetTarget
         let notes = tasteNotes
@@ -393,11 +418,22 @@ final class AppState: ObservableObject {
         let staples = pantryStaples
         planTask = Task {
             do {
+                // The relay bills this month's allowance against the
+                // subscription, so nothing goes out without one. Re-read
+                // rather than trusting the cached status: a subscription
+                // that lapsed or was cancelled since launch has to be caught
+                // here, not by a refusal from the server.
+                guard let subscriptionID = await self.subscriptions.activeTransactionID() else {
+                    self.phase = .idle
+                    self.presentPaywall(resuming: userText, lockedRecipes: locked, preserveChecks: preserveChecks, dinners: dinners)
+                    return
+                }
                 let rawPlan = try await Self.withPlanningDeadline {
                     try await ClaudeService.planWeek(
                         transcript: userText,
                         budget: budget,
                         dinners: dinners,
+                        subscriptionID: subscriptionID,
                         tasteNotes: notes,
                         lockedRecipes: locked
                     )
@@ -458,6 +494,22 @@ final class AppState: ObservableObject {
                 self.backgroundSave("recipeBox") { try await self.store.saveRecipeBox(box, kept: kept) }
             } catch is CancellationError {
                 // cancelPlanning already reset the phase. Nothing to show.
+            } catch ClaudeService.ClaudeError.subscriptionRefused {
+                guard !Task.isCancelled else { return }
+                // The relay would not accept the subscription this request
+                // carried. Ask StoreKit who is right before saying anything:
+                // if the entitlement really is gone (cancelled, lapsed,
+                // refunded, or bought on another Apple Account), the honest
+                // answer is the paywall. If StoreKit still says subscribed,
+                // this is the relay's problem, not the customer's, and
+                // telling a paying subscriber to buy again would be the
+                // worst possible response.
+                if await self.subscriptions.activeTransactionID() == nil {
+                    self.phase = .idle
+                    self.presentPaywall(resuming: userText, lockedRecipes: locked, preserveChecks: preserveChecks, dinners: dinners)
+                } else {
+                    self.phase = .error("MealTime could not confirm your subscription with the planning service. Check your connection and try again. If it keeps happening, tap Restore Purchases in Settings.")
+                }
             } catch {
                 // A cancel can also surface as URLError.cancelled from the
                 // network layer. Either way the user asked for it, so stay
@@ -466,6 +518,42 @@ final class AppState: ObservableObject {
                 self.phase = .error(error.localizedDescription)
             }
         }
+    }
+
+    // MARK: - Subscription gate
+
+    /// Remembers the generation the paywall is interrupting, then raises the
+    /// flag RootView watches. Every planning entry point comes through
+    /// runPlanGeneration, so this is the only place the paywall is triggered
+    /// and no future feature can accidentally skip it.
+    private func presentPaywall(resuming userText: String, lockedRecipes: [Recipe], preserveChecks: Bool, dinners: Int) {
+        pendingGeneration = { [weak self] in
+            self?.runPlanGeneration(
+                userText: userText,
+                lockedRecipes: lockedRecipes,
+                preserveChecks: preserveChecks,
+                dinners: dinners
+            )
+        }
+        showPaywall = true
+    }
+
+    /// Runs the interrupted generation after a successful purchase, so
+    /// speaking a week, paying, and getting that week is one continuous
+    /// motion instead of two trips to the mic.
+    func resumePendingGeneration() {
+        let work = pendingGeneration
+        pendingGeneration = nil
+        work?()
+    }
+
+    /// Drops the interrupted generation when the paywall closes without a
+    /// purchase. Never silent: the same rule the AI notice follows, because
+    /// a tap that quietly does nothing reads as a broken app.
+    func discardPendingGeneration() {
+        guard pendingGeneration != nil else { return }
+        pendingGeneration = nil
+        flashStatus("Your week was not planned. Tap the button when you are ready.")
     }
 
     /// Stops the in-flight generation and returns the app to idle. Safe to
