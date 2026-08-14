@@ -7,8 +7,11 @@ import Foundation
 ///   Cloudflare Worker relay (see Proxy/README.md). The Anthropic key lives
 ///   server side and no key ships on the device. An optional CLAUDE_PROXY_TOKEN
 ///   is sent as the x-app-token header so only the app can use the relay.
-/// - Direct mode: if no proxy is configured, the app calls api.anthropic.com
-///   with the embedded ANTHROPIC_API_KEY from Info.plist, as before.
+/// - No proxy, no plan. There used to be a direct mode that called
+///   api.anthropic.com with an ANTHROPIC_API_KEY embedded in Info.plist. That
+///   path was removed on purpose: anyone can unzip a public .ipa and read the
+///   key out of it. A missing or malformed CLAUDE_PROXY_URL is now a hard
+///   failure rather than a silent fallback that reships the key.
 enum ClaudeService {
 
     enum ClaudeError: LocalizedError {
@@ -23,7 +26,7 @@ enum ClaudeService {
         var errorDescription: String? {
             switch self {
             case .missingKey:
-                return "The app is not connected to the planning service. This build is missing its key or proxy."
+                return "The app is not connected to the planning service. This build is missing its proxy setting."
             case .badStatus(let code, _):
                 switch code {
                 case 401, 403:
@@ -70,6 +73,23 @@ Rules:
 - Cook for 2 people, leftovers fine.
 - Respect the weekly budget target passed in the transcript context. Estimate realistic US grocery prices. Mark staples the household likely already owns as pantry items and subtract their cost. Report the estimated total and whether it is under or over target.
 - Consolidate duplicate ingredients across recipes into one grocery entry with the quantities summed.
+- Every dinner is a complete plate: a protein, a carb or starch side (rice, pasta, potatoes, tortillas, bread, or grains), and a vegetable. The sides are part of the recipe, with their ingredients in the ingredient list, their prep in the steps, and their items on the grocery list. Never plan a protein-only dinner.
+- Every grocery item carries a "recipes" array listing the exact title of each recipe in this plan that uses it. An item shared by several dinners lists all of them.
+
+Variety, non-negotiable:
+- No two dinners this week share a cuisine.
+- At most two dinners share a primary protein, and only when the household asked for that protein. Otherwise every dinner uses a different one.
+- Vary the cooking method across the week. Do not plan three skillet dinners. Mix searing, roasting, braising, grilling, and stir-frying.
+- At least two dinners must use a cuisine or a primary technique that does not appear anywhere in the recent-dinner history you are given.
+
+Craft. This is what separates a real dinner from filler:
+- Build flavor with technique. Sear proteins hard for a crust, build fond in the pan, deglaze it, and finish the sauce in that same pan. Do not boil or steam what should be browned.
+- Season in layers as you cook, not once at the end.
+- Every plate needs fat and acid balanced against each other. Name the acid explicitly in the ingredients: citrus, vinegar, yogurt, or something pickled.
+- Texture contrast is required in every dinner. Something crisp against something soft.
+- Respect the ingredient. A simple preparation of something good beats a complicated preparation of something mediocre.
+- Regional honesty. If a dish is Vietnamese, use the real aromatics. Never sand a cuisine down into a generic weeknight version of itself.
+- Every step states why it matters in one short clause, so the cook learns instead of just obeying. Write "Sear undisturbed 4 minutes so a crust can form" rather than "sear the chicken."
 
 Return JSON only. No prose, no markdown, no backticks. Match this schema exactly:
 
@@ -88,7 +108,7 @@ Return JSON only. No prose, no markdown, no backticks. Match this schema exactly
     "pantryCredit": 0,
     "notes": "",
     "sections": [
-      { "name": "Proteins", "items": [ { "name": "", "qty": "", "estPrice": 0.0, "pantry": false } ] }
+      { "name": "Proteins", "items": [ { "name": "", "qty": "", "estPrice": 0.0, "pantry": false, "recipes": [""] } ] }
     ]
   }
 }
@@ -172,12 +192,12 @@ week and recipes each have exactly \(count) entries, one per day, \(span), in or
                 request.setValue(token, forHTTPHeaderField: "x-app-token")
             }
         } else {
-            // Direct mode. Requires the embedded API key, exactly as before.
-            guard let key = configValue("ANTHROPIC_API_KEY") else {
-                throw ClaudeError.missingKey
-            }
-            request = URLRequest(url: URL(string: "https://api.anthropic.com/v1/messages")!)
-            request.setValue(key, forHTTPHeaderField: "x-api-key")
+            // No fallback on purpose. Calling api.anthropic.com from the device
+            // would need an API key inside the app bundle, which is readable by
+            // anyone who unzips a shipped .ipa. If the proxy URL is missing or
+            // unparseable, fail loudly here so a bad xcconfig shows up as a
+            // broken build instead of a leaked key.
+            throw ClaudeError.missingKey
         }
         request.httpMethod = "POST"
         // Planning a full week can take a while, but past 90 seconds it is

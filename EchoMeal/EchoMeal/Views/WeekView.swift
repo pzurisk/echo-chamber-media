@@ -185,7 +185,7 @@ struct WeekView: View {
                 .foregroundStyle(Color.echoTextSecondary)
             Text("No plan yet")
                 .font(.title3.weight(.semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(Color.echoText)
             Text("Go to Speak and say what sounds good.")
                 .font(.subheadline)
                 .foregroundStyle(Color.echoTextSecondary)
@@ -228,7 +228,7 @@ struct DinnerCard: View {
                         Text("\(rating)")
                     }
                     .font(.caption.weight(.semibold))
-                    .foregroundStyle(.yellow)
+                    .foregroundStyle(Color.echoWarning)
                 }
                 if isKept {
                     Image(systemName: "pin.fill")
@@ -244,7 +244,7 @@ struct DinnerCard: View {
 
             Text(entry.title)
                 .font(.title3.weight(.semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(Color.echoText)
                 .multilineTextAlignment(.leading)
 
             HStack(spacing: 14) {
@@ -258,7 +258,7 @@ struct DinnerCard: View {
             if missingRecipe {
                 Label("Recipe details didn't load. Regenerate this week on the Speak tab.", systemImage: "exclamationmark.triangle.fill")
                     .font(.caption)
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(Color.echoWarning)
                     .padding(.top, 2)
             }
         }
@@ -308,7 +308,7 @@ private struct SwapNightSheet: View {
                         // practice; belt and suspenders.
                         Text("First plan needs the one-time notice on the Speak tab.")
                             .font(.footnote)
-                            .foregroundStyle(.orange)
+                            .foregroundStyle(Color.echoWarning)
                             .multilineTextAlignment(.center)
                     } else {
                         if appState.phase != .planning {
@@ -355,7 +355,6 @@ private struct SwapNightSheet: View {
                 }
             }
         }
-        .preferredColorScheme(.dark)
     }
 
     /// Tap to talk, tap again to stop, live transcript underneath. Ending
@@ -372,7 +371,7 @@ private struct SwapNightSheet: View {
                         .shadow(color: Color.echoRed.opacity(0.35), radius: 14, y: 4)
                     Image(systemName: recorder.isRecording ? "stop.fill" : "mic.fill")
                         .font(.system(size: 28, weight: .bold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Color.echoOnAccent)
                 }
             }
             .buttonStyle(.plain)
@@ -389,7 +388,7 @@ private struct SwapNightSheet: View {
             } else if let error = recorder.errorMessage {
                 Text(error)
                     .font(.footnote)
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(Color.echoWarning)
                     .multilineTextAlignment(.center)
             } else {
                 Text("Tap to say what you want instead.")
@@ -404,7 +403,7 @@ private struct SwapNightSheet: View {
         HStack(spacing: 10) {
             TextField("Something that is not fish", text: $typedText)
                 .font(.body)
-                .foregroundStyle(.white)
+                .foregroundStyle(Color.echoText)
                 .padding(12)
                 .echoCardStyle()
             Button("Swap") {
@@ -440,7 +439,7 @@ private struct RatingNudgeCard: View {
             HStack(alignment: .top) {
                 Text("How was the \(recipe.title)?")
                     .font(.footnote.weight(.semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Color.echoText)
                     .multilineTextAlignment(.leading)
                 Spacer()
                 Button(action: onDismiss) {

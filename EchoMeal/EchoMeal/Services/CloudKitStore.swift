@@ -304,6 +304,56 @@ final class CloudKitStore {
         }
     }
 
+    // MARK: - Deletion
+
+    /// Deletes every record this household owns, then the subscriptions this
+    /// app registered for it. App Store guideline 5.1.1(v) requires an
+    /// in-app way to delete the data an app collects, and nothing here ever
+    /// removed a record from the public database before this.
+    ///
+    /// Non-atomic on purpose. A household that never saved a pantry or a
+    /// ratings record should still get every other record deleted, and the
+    /// public database does not support atomic operations anyway. A record
+    /// that is already gone comes back as .unknownItem, which is exactly the
+    /// state the caller asked for, so it counts as success. Anything else is
+    /// thrown, so the caller can leave the phone's data alone instead of
+    /// telling the user it is gone while it is still in iCloud.
+    func deleteAllHouseholdData() async throws {
+        let code = household
+        guard !code.isEmpty else { return }
+        let ids = [
+            planRecordID, groceryRecordID, favoritesRecordID,
+            historyRecordID, ratingsRecordID, recipeBoxRecordID,
+            pantryRecordID
+        ]
+        let (_, deleteResults) = try await database.modifyRecords(
+            saving: [],
+            deleting: ids,
+            atomically: false
+        )
+        for (_, result) in deleteResults {
+            guard case .failure(let error) = result else { continue }
+            if let ckError = error as? CKError, ckError.code == .unknownItem { continue }
+            throw error
+        }
+        await deleteSubscriptions(for: code)
+    }
+
+    /// Removes the query subscriptions this app created for one household,
+    /// matched by the same "sub-<type>-<code>" scheme ensureSubscriptions
+    /// writes, so nothing else in the container is touched. Best effort on
+    /// purpose: once the records are gone a leftover subscription has
+    /// nothing left to fire on, and it should not fail a deletion the user
+    /// has already been told succeeded.
+    private func deleteSubscriptions(for code: String) async {
+        guard let existing = try? await database.allSubscriptions() else { return }
+        for subscription in existing
+        where subscription.subscriptionID.hasPrefix("sub-")
+            && subscription.subscriptionID.hasSuffix("-\(code)") {
+            _ = try? await database.deleteSubscription(withID: subscription.subscriptionID)
+        }
+    }
+
     // MARK: - Helpers
 
     /// Freshness date for a fetched record: the explicit "updatedAt" field,

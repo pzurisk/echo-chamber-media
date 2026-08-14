@@ -150,6 +150,47 @@ final class AppState: ObservableObject {
         createHousehold()
     }
 
+    /// Deletes everything: the household's CloudKit records first, then this
+    /// phone. App Store guideline 5.1.1(v) requires an in-app way to delete
+    /// the data the app collected, and leaveHouseholdAndStartNew only ever
+    /// cleared the phone, which orphaned every record in the public
+    /// database permanently.
+    ///
+    /// The cloud delete runs first and throws on failure, leaving local data
+    /// untouched. The other order would show the user an empty app while
+    /// their data was still sitting in iCloud, which is a worse lie than an
+    /// error message.
+    ///
+    /// These records belong to the household, not to one phone, so this
+    /// removes them for the partner too. The Settings alert says that in
+    /// plain words before it runs. leaveHouseholdAndStartNew stays the
+    /// softer option, and the two are deliberately separate.
+    func deleteEverything() async throws {
+        try await store.deleteAllHouseholdData()
+
+        objectWillChange.send()
+        // A generation still in flight must not write the deleted household
+        // back in behind the wipe, and a plan mid-build has nowhere to land.
+        planTask?.cancel()
+        planTask = nil
+        refreshGeneration += 1
+        phase = .idle
+        statusMessage = nil
+        clearLocalData()
+
+        // Back to a first-launch phone. The cached* keys are already gone
+        // from clearLocalData, which also keeps migrateIfNeeded from
+        // adopting the legacy household on the next launch.
+        let defaults = UserDefaults.standard
+        defaults.removeObject(forKey: HouseholdConfig.Keys.householdCode)
+        defaults.removeObject(forKey: HouseholdConfig.Keys.aiNoticeAccepted)
+        defaults.removeObject(forKey: HouseholdConfig.Keys.budgetTarget)
+        defaults.removeObject(forKey: HouseholdConfig.Keys.dinnersPerWeek)
+        aiNoticeAccepted = false
+        selectedTab = .speak
+        isOnboarded = false
+    }
+
     /// Stores the code, wipes every in-memory collection and the offline
     /// cache (they belong to the old household), then subscribes and pulls
     /// whatever the new household already has in CloudKit.
@@ -212,21 +253,21 @@ final class AppState: ObservableObject {
         var parts: [String] = []
         if !favorites.isEmpty {
             let titles = favorites.suffix(8).map(\.title).joined(separator: ", ")
-            parts.append("Recipes they saved as favorites (they loved these, lean into similar flavors): \(titles).")
+            parts.append("Recipes they saved as favorites. Do not copy these or rearrange them into new titles. Read them for the underlying principles the household responds to, then give them something new that satisfies the same instinct: \(titles).")
         }
         let topCuisines = favoriteCuisines
         if !topCuisines.isEmpty {
-            parts.append("Cuisines they come back to: \(topCuisines.joined(separator: ", ")).")
+            parts.append("Cuisines they have already had a lot of, give them at most one of these this week: \(topCuisines.joined(separator: ", ")).")
         }
-        let recent = pastDinners.suffix(15).map(\.title)
+        let recent = pastDinners.suffix(40).map(\.title)
         if !recent.isEmpty {
-            parts.append("Dinners from recent weeks, do not repeat these exactly: \(recent.joined(separator: ", ")).")
+            parts.append("Dinners from recent weeks. Do not repeat these, and do not repeat close variations of them. Same primary protein plus same cuisine counts as a repeat even when the title is different, and so does combining two of them into one dish: \(recent.joined(separator: ", ")).")
         }
         // Rating keys are stored lowercased; capitalize them back into
         // something that reads like a dish title.
         let loved = ratings.filter { $0.value >= 4 }.keys.sorted().prefix(12).map(Self.displayTitle)
         if !loved.isEmpty {
-            parts.append("Meals they cooked and rated 4 or 5 stars, lean toward more like these: \(loved.joined(separator: ", ")).")
+            parts.append("Meals they cooked and rated 4 or 5 stars. Read these for what worked, the technique, the flavor structure, the level of richness, then give them something new built on the same principles rather than these dishes again: \(loved.joined(separator: ", ")).")
         }
         let disliked = ratings.filter { $0.value <= 2 }.keys.sorted().prefix(12).map(Self.displayTitle)
         if !disliked.isEmpty {
@@ -663,6 +704,64 @@ final class AppState: ObservableObject {
         markEdited("favorites")
         let snapshot = favorites
         backgroundSave("favorites") { try await self.store.saveFavorites(snapshot) }
+    }
+
+    // MARK: - Recipe editing
+
+    /// Applies a hand-edited recipe everywhere a copy lives: the current
+    /// plan (with the week card and grocery list brought back in sync),
+    /// the Recipe Box archive, the kept pins, and favorites. The title
+    /// and day never change through this path, so ratings, pins,
+    /// favorites, and history keep matching by title. Grocery check-offs
+    /// survive the edit; ingredients the edit adds land on the list
+    /// unchecked through the same reconciliation safety net a generation
+    /// uses. Items the edit no longer needs stay on the list untouched
+    /// rather than vanishing mid-shopping-trip.
+    func updateRecipe(_ edited: Recipe) {
+        if var updatedPlan = plan,
+           let index = updatedPlan.recipes.firstIndex(where: {
+               $0.title.caseInsensitiveCompare(edited.title) == .orderedSame
+           }) {
+            updatedPlan.recipes[index] = edited
+            // Keep the Week tab card's numbers in step with the recipe.
+            if let weekIndex = updatedPlan.week.firstIndex(where: { $0.day == edited.day }) {
+                updatedPlan.week[weekIndex].cookTimeMin = edited.cookTimeMin
+                updatedPlan.week[weekIndex].servings = edited.servings
+            }
+            let reconciled = updatedPlan.reconciledWithRecipes(pantryStaples: pantryStaples)
+            plan = reconciled
+            // Check-offs carry over for every item still on the list;
+            // brand-new items start unchecked.
+            checkedItemIDs = checkedItemIDs.intersection(reconciled.allItemIDs)
+            markEdited("plan")
+            markEdited("checked")
+            let planSnapshot = reconciled
+            let checkedSnapshot = checkedItemIDs
+            backgroundSave("plan") { try await self.store.savePlan(planSnapshot) }
+            backgroundSave("checked") { try await self.store.saveChecked(checkedSnapshot) }
+        }
+
+        // The archive always gets the newest version, and an edited pin
+        // rides into the next generation exactly as edited.
+        archiveIntoRecipeBox([edited])
+        if let keptIndex = keptRecipes.firstIndex(where: {
+            $0.title.caseInsensitiveCompare(edited.title) == .orderedSame
+        }) {
+            keptRecipes[keptIndex] = edited
+        }
+        markEdited("recipeBox")
+        let box = recipeBox
+        let kept = keptRecipes
+        backgroundSave("recipeBox") { try await self.store.saveRecipeBox(box, kept: kept) }
+
+        if let favIndex = favorites.firstIndex(where: {
+            $0.title.caseInsensitiveCompare(edited.title) == .orderedSame
+        }) {
+            favorites[favIndex] = edited
+            markEdited("favorites")
+            let favs = favorites
+            backgroundSave("favorites") { try await self.store.saveFavorites(favs) }
+        }
     }
 
     // MARK: - Recipe box and keep pins

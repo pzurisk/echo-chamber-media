@@ -7,6 +7,11 @@ struct EchoMealApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var appState = AppState()
     @Environment(\.scenePhase) private var scenePhase
+    /// The household's palette choice from Settings. Defaults to Hearth, so
+    /// an install that predates this setting looks exactly as it did before.
+    /// This is the only place the app sets a color scheme; every other view
+    /// inherits it, including sheets and full screen covers.
+    @AppStorage(HouseholdConfig.Keys.themeChoice) private var theme: AppTheme = .hearth
     /// Drives the first-launch onboarding cover. Set once at launch from
     /// AppState.isOnboarded; OnboardingView dismisses the cover itself when
     /// setup is done (after showing the new code, or after a join).
@@ -16,7 +21,7 @@ struct EchoMealApp: App {
         WindowGroup {
             RootView()
                 .environmentObject(appState)
-                .preferredColorScheme(.dark)
+                .preferredColorScheme(theme.colorScheme)
                 .fullScreenCover(isPresented: $needsOnboarding) {
                     OnboardingView()
                         .environmentObject(appState)

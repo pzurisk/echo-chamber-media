@@ -86,7 +86,7 @@ struct RecipeBoxView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Text(recipe.title)
                         .font(.title3.weight(.semibold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Color.echoText)
                         .multilineTextAlignment(.leading)
                     HStack(spacing: 14) {
                         Label("\(recipe.cookTimeMin) min", systemImage: "clock")
@@ -99,7 +99,7 @@ struct RecipeBoxView: View {
                 if appState.isKept(recipe) {
                     Image(systemName: "pin.fill")
                         .font(.subheadline)
-                        .foregroundStyle(Color.echoRed)
+                        .foregroundStyle(Color.echoAccentText)
                 }
             }
             .padding(16)
@@ -128,7 +128,7 @@ struct RecipeBoxView: View {
                     systemImage: appState.isKept(recipe) ? "pin.slash" : "pin.fill"
                 )
             }
-            .tint(.echoRed)
+            .tint(.echoAccent)
         }
     }
 
@@ -139,7 +139,7 @@ struct RecipeBoxView: View {
                 .foregroundStyle(Color.echoTextSecondary)
             Text("No recipes yet")
                 .font(.title3.weight(.semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(Color.echoText)
             Text("Every recipe you generate lands here automatically and stays until you delete it.")
                 .font(.subheadline)
                 .foregroundStyle(Color.echoTextSecondary)

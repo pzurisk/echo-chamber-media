@@ -15,7 +15,7 @@ struct FavoritesView: View {
                         .foregroundStyle(Color.echoTextSecondary)
                     Text("No favorites yet")
                         .font(.title3.weight(.semibold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Color.echoText)
                     Text("Tap the heart on any recipe to save it here.")
                         .font(.subheadline)
                         .foregroundStyle(Color.echoTextSecondary)
@@ -60,7 +60,7 @@ struct FavoritesView: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text(recipe.title)
                     .font(.title3.weight(.semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Color.echoText)
                     .multilineTextAlignment(.leading)
                 HStack(spacing: 14) {
                     Label("\(recipe.cookTimeMin) min", systemImage: "clock")
@@ -83,7 +83,7 @@ struct FavoritesView: View {
             } label: {
                 Label("Remove", systemImage: "heart.slash")
             }
-            .tint(.echoRed)
+            .tint(.echoAccent)
         }
     }
 }

@@ -38,7 +38,6 @@ struct OnboardingView: View {
             }
             .padding(.horizontal, 28)
         }
-        .preferredColorScheme(.dark)
     }
 
     // MARK: - Choose
@@ -48,7 +47,7 @@ struct OnboardingView: View {
             VStack(spacing: 12) {
                 Text("MealTime")
                     .font(.system(size: 44, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Color.echoText)
                 Text("Plan the week by talking. Share one list with your favorite person.")
                     .font(.headline)
                     .foregroundStyle(Color.echoTextSecondary)
@@ -66,7 +65,7 @@ struct OnboardingView: View {
                         .padding(.vertical, 16)
                 }
                 .buttonStyle(.borderedProminent)
-                .tint(.echoRed)
+                .tint(Color.echoAccent)
 
                 Button {
                     step = .join
@@ -77,7 +76,7 @@ struct OnboardingView: View {
                         .padding(.vertical, 16)
                 }
                 .buttonStyle(.bordered)
-                .tint(.white)
+                .tint(Color.echoText)
             }
 
             Text("You can find or change your household code later in Settings.")
@@ -97,7 +96,7 @@ struct OnboardingView: View {
 
             Text(code)
                 .font(.system(size: 38, weight: .bold, design: .monospaced))
-                .foregroundStyle(.white)
+                .foregroundStyle(Color.echoText)
                 .minimumScaleFactor(0.6)
                 .lineLimit(1)
                 .padding(.vertical, 20)
@@ -117,7 +116,7 @@ struct OnboardingView: View {
                     .padding(.vertical, 14)
             }
             .buttonStyle(.bordered)
-            .tint(.white)
+            .tint(Color.echoText)
 
             Button {
                 dismiss()
@@ -128,7 +127,7 @@ struct OnboardingView: View {
                     .padding(.vertical, 16)
             }
             .buttonStyle(.borderedProminent)
-            .tint(.echoRed)
+            .tint(Color.echoAccent)
         }
     }
 
@@ -138,7 +137,7 @@ struct OnboardingView: View {
         VStack(spacing: 24) {
             Text("Enter your household code")
                 .font(.title3.weight(.semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(Color.echoText)
 
             TextField("MEAL-ABC123", text: $joinCode)
                 .font(.title3.monospaced())
@@ -154,7 +153,7 @@ struct OnboardingView: View {
             if let joinError {
                 Text(joinError)
                     .font(.subheadline)
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(Color.echoWarning)
                     .multilineTextAlignment(.center)
             }
 
@@ -165,7 +164,7 @@ struct OnboardingView: View {
                     .padding(.vertical, 16)
             }
             .buttonStyle(.borderedProminent)
-            .tint(.echoRed)
+            .tint(Color.echoAccent)
 
             Button("Back") {
                 joinError = nil

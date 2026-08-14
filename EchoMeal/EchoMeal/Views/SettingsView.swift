@@ -8,15 +8,46 @@ struct SettingsView: View {
 
     @AppStorage(HouseholdConfig.Keys.budgetTarget) private var budgetTarget = 100.0
     @AppStorage(HouseholdConfig.Keys.dinnersPerWeek) private var dinnersPerWeek = 5
+    /// Per-phone, not per-household. The two phones can disagree, on purpose.
+    @AppStorage(HouseholdConfig.Keys.themeChoice) private var theme: AppTheme = .hearth
 
     @State private var showNewHouseholdConfirm = false
     @State private var joinCode = ""
     @State private var joinError: String?
     @State private var newStaple = ""
+    @State private var showDeleteConfirm = false
+    @State private var isDeleting = false
+    @State private var deleteError: String?
 
     var body: some View {
         NavigationStack {
             Form {
+                Section("Appearance") {
+                    ForEach(AppTheme.allCases) { option in
+                        Button {
+                            theme = option
+                        } label: {
+                            HStack(alignment: .top) {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(option.label)
+                                        .foregroundStyle(Color.echoText)
+                                    Text(option.detail)
+                                        .font(.caption)
+                                        .foregroundStyle(Color.echoTextSecondary)
+                                }
+                                Spacer()
+                                if theme == option {
+                                    Image(systemName: "checkmark")
+                                        .foregroundStyle(Color.echoAccentText)
+                                }
+                            }
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityAddTraits(theme == option ? [.isButton, .isSelected] : .isButton)
+                    }
+                }
+
                 Section("Weekly budget") {
                     HStack {
                         Text("Target")
@@ -27,7 +58,7 @@ struct SettingsView: View {
                     Slider(value: $budgetTarget, in: 40...300, step: 5) {
                         Text("Budget target")
                     }
-                    .tint(.echoRed)
+                    .tint(.echoAccent)
                 }
 
                 Section("Dinners per week") {
@@ -69,7 +100,7 @@ struct SettingsView: View {
                         ShareLink(item: appState.householdCode) {
                             Image(systemName: "square.and.arrow.up")
                         }
-                        .tint(.echoRed)
+                        .tint(.echoAccentText)
                     }
                     Text("Both phones use this code, so you both see the same week, list, and favorites. Share it only with your household; anyone who has it can see and edit your plan.")
                         .font(.caption)
@@ -89,7 +120,7 @@ struct SettingsView: View {
                     if let joinError {
                         Text(joinError)
                             .font(.caption)
-                            .foregroundStyle(.orange)
+                            .foregroundStyle(Color.echoWarning)
                     }
                     Button("Join") { attemptJoin() }
                         .disabled(joinCode.trimmingCharacters(in: .whitespaces).isEmpty)
@@ -107,14 +138,38 @@ struct SettingsView: View {
                                 .foregroundStyle(Color.echoGreen)
                         } else {
                             Label("Signed out", systemImage: "icloud.slash")
-                                .foregroundStyle(.orange)
+                                .foregroundStyle(Color.echoWarning)
                         }
                     }
                     if !appState.iCloudAvailable {
                         Text("Sign into iCloud in the Settings app to sync with the other phone.")
                             .font(.caption)
-                            .foregroundStyle(.orange)
+                            .foregroundStyle(Color.echoWarning)
                     }
+                }
+
+                Section("Delete all data") {
+                    Text("Erases this household's week, grocery list, favorites, recipe box, ratings, and history from iCloud and from this phone. Because the data is shared, it goes for the other phone in your household too.")
+                        .font(.caption)
+                        .foregroundStyle(Color.echoTextSecondary)
+                    if let deleteError {
+                        Text(deleteError)
+                            .font(.caption)
+                            .foregroundStyle(Color.echoWarning)
+                    }
+                    Button(role: .destructive) {
+                        showDeleteConfirm = true
+                    } label: {
+                        if isDeleting {
+                            HStack {
+                                ProgressView()
+                                Text("Deleting")
+                            }
+                        } else {
+                            Text("Delete all my data")
+                        }
+                    }
+                    .disabled(isDeleting)
                 }
             }
             .navigationTitle("Settings")
@@ -132,8 +187,35 @@ struct SettingsView: View {
             } message: {
                 Text("This disconnects this phone from the current shared data and makes a fresh code. Your partner keeps the old data. Continue?")
             }
+            .alert("Delete all your data?", isPresented: $showDeleteConfirm) {
+                Button("Cancel", role: .cancel) {}
+                Button("Delete everything", role: .destructive) {
+                    deleteEverything()
+                }
+            } message: {
+                Text("This permanently erases your week, grocery list, favorites, recipe box, ratings, and history from iCloud and from this phone. It also deletes them for the other phone in household \(appState.householdCode). This cannot be undone.")
+            }
         }
-        .preferredColorScheme(.dark)
+    }
+
+    /// Deletes the household's cloud records and then this phone. The button
+    /// stays disabled while it runs, and a failure shows inline rather than
+    /// leaving the user to guess, because the data is still there when this
+    /// throws. On success the app drops back to onboarding, so this sheet
+    /// dismisses to get out of the way of it.
+    private func deleteEverything() {
+        isDeleting = true
+        deleteError = nil
+        Task {
+            do {
+                try await appState.deleteEverything()
+                isDeleting = false
+                dismiss()
+            } catch {
+                isDeleting = false
+                deleteError = "Could not delete your data. Nothing was removed. Check your internet connection and iCloud sign-in, then try again."
+            }
+        }
     }
 
     /// Shared by the staple field's submit and the Add button. AppState

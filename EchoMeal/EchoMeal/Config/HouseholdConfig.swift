@@ -62,6 +62,7 @@ enum HouseholdConfig {
         static let aiNoticeAccepted = "aiNoticeAccepted"
         static let budgetTarget = "budgetTarget"
         static let dinnersPerWeek = "dinnersPerWeek"
+        static let themeChoice = "themeChoice"
         static let cachedPlan = "cachedPlanJSON"
         static let cachedChecked = "cachedCheckedIDs"
         static let cachedFavorites = "cachedFavoritesJSON"

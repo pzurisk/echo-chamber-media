@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>ANTHROPIC_API_KEY</key>
+	<string>$(ANTHROPIC_API_KEY)</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
@@ -19,7 +21,11 @@
 	<key>CFBundleShortVersionString</key>
 	<string>1.2</string>
 	<key>CFBundleVersion</key>
-	<string>3</string>
+	<string>8</string>
+	<key>CLAUDE_PROXY_TOKEN</key>
+	<string>$(CLAUDE_PROXY_TOKEN)</string>
+	<key>CLAUDE_PROXY_URL</key>
+	<string>$(CLAUDE_PROXY_URL)</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>NSMicrophoneUsageDescription</key>
@@ -39,11 +45,5 @@
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
 	</array>
-	<key>ANTHROPIC_API_KEY</key>
-	<string>$(ANTHROPIC_API_KEY)</string>
-	<key>CLAUDE_PROXY_URL</key>
-	<string>$(CLAUDE_PROXY_URL)</string>
-	<key>CLAUDE_PROXY_TOKEN</key>
-	<string>$(CLAUDE_PROXY_TOKEN)</string>
 </dict>
 </plist>

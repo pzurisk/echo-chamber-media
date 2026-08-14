@@ -34,7 +34,7 @@ struct CookModeView: View {
 
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
+            Color.echoBackground.ignoresSafeArea()
 
             // Tap zones under the content. Step text is hit-test disabled,
             // so on a step page a tap anywhere on the right two thirds
@@ -89,9 +89,9 @@ struct CookModeView: View {
                 } label: {
                     Image(systemName: "xmark")
                         .font(.headline)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Color.echoText)
                         .padding(10)
-                        .background(Circle().fill(Color.white.opacity(0.12)))
+                        .background(Circle().fill(Color.echoFill))
                         .contentShape(Circle())
                 }
                 .accessibilityLabel("Close cook mode")
@@ -101,9 +101,9 @@ struct CookModeView: View {
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     Capsule()
-                        .fill(Color.white.opacity(0.12))
+                        .fill(Color.echoFill)
                     Capsule()
-                        .fill(Color.echoRed)
+                        .fill(Color.echoAccent)
                         .frame(width: max(geo.size.width * progress, page > 0 ? 6 : 0))
                 }
             }
@@ -133,7 +133,7 @@ struct CookModeView: View {
         VStack(alignment: .leading, spacing: 14) {
             Text("Grab your ingredients")
                 .font(.title.weight(.bold))
-                .foregroundStyle(.white)
+                .foregroundStyle(Color.echoText)
                 .padding(.top, 18)
 
             ScrollView {
@@ -167,7 +167,7 @@ struct CookModeView: View {
                     .foregroundStyle(checked ? Color.echoGreen : Color.echoTextSecondary)
                 Text(ingredient.item)
                     .font(.title3.weight(.medium))
-                    .foregroundStyle(checked ? Color.echoTextSecondary : .white)
+                    .foregroundStyle(checked ? Color.echoTextSecondary : Color.echoText)
                     .strikethrough(checked, color: Color.echoTextSecondary)
                     .multilineTextAlignment(.leading)
                 Spacer()
@@ -189,10 +189,10 @@ struct CookModeView: View {
         VStack(spacing: 22) {
             Text("Step \(page) of \(stepCount)")
                 .font(.title2.weight(.bold))
-                .foregroundStyle(Color.echoRed)
+                .foregroundStyle(Color.echoAccentText)
             Text(recipe.steps[page - 1])
                 .font(.system(size: 38, weight: .bold))
-                .foregroundStyle(.white)
+                .foregroundStyle(Color.echoText)
                 .multilineTextAlignment(.center)
                 .minimumScaleFactor(0.4)
                 .fixedSize(horizontal: false, vertical: true)
@@ -210,7 +210,7 @@ struct CookModeView: View {
                 .foregroundStyle(Color.echoGreen)
             Text("Done. How was it?")
                 .font(.largeTitle.weight(.bold))
-                .foregroundStyle(.white)
+                .foregroundStyle(Color.echoText)
                 .multilineTextAlignment(.center)
             StarRating(rating: appState.rating(for: recipe)) { stars in
                 appState.rate(recipe, stars: stars)
@@ -223,7 +223,7 @@ struct CookModeView: View {
                 dismiss()
             }
             .buttonStyle(.borderedProminent)
-            .tint(.echoRed)
+            .tint(.echoAccent)
             .padding(.top, 8)
         }
         .padding(.horizontal, 28)
@@ -240,9 +240,9 @@ struct CookModeView: View {
             } label: {
                 Image(systemName: "chevron.left")
                     .font(.title2.weight(.semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Color.echoText)
                     .padding(14)
-                    .background(Circle().fill(Color.white.opacity(0.12)))
+                    .background(Circle().fill(Color.echoFill))
                     .contentShape(Circle())
             }
             .opacity(page > 0 ? 1 : 0)
@@ -256,9 +256,9 @@ struct CookModeView: View {
             } label: {
                 Image(systemName: "chevron.right")
                     .font(.title2.weight(.semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Color.echoText)
                     .padding(14)
-                    .background(Circle().fill(Color.white.opacity(0.12)))
+                    .background(Circle().fill(Color.echoFill))
                     .contentShape(Circle())
             }
             .opacity(page < lastPage ? 1 : 0)

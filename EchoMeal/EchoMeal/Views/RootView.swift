@@ -27,7 +27,9 @@ struct RootView: View {
             }
         }
         .animation(.easeInOut(duration: 0.2), value: appState.phase == .planning)
-        .tint(.echoRed)
+        // Selected tab icons and labels sit on the bar, not on a fill, so
+        // they take the readable-on-background terracotta.
+        .tint(.echoAccentText)
         // Generation errors surface here, above whichever tab is open, so a
         // failure is never missed just because the Speak tab is not showing.
         .alert(
@@ -52,10 +54,10 @@ private struct PlanningBanner: View {
         HStack(spacing: 10) {
             ProgressView()
                 .controlSize(.small)
-                .tint(.echoRed)
+                .tint(.echoAccentText)
             Text("Planning your week...")
                 .font(.footnote.weight(.semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(Color.echoText)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 8)
@@ -76,7 +78,7 @@ struct ICloudBanner: View {
             Text("Sign into iCloud in Settings so your plan syncs to the other phone.")
                 .font(.footnote)
         }
-        .foregroundStyle(.orange)
+        .foregroundStyle(Color.echoWarning)
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
         .echoCardStyle()

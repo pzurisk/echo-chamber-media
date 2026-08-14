@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Tab 1. One large red circular button, centered, on a dark background.
+/// Tab 1. One large terracotta circular button, centered, on the app background.
 /// Tap once to listen, tap again to stop. There is no auto-stop. While
 /// Claude plans, shows "Planning your week." with a Cancel button. A typed
 /// alternative sits under the Surprise button for loud rooms.
@@ -56,7 +56,7 @@ struct SpeakView: View {
                     if let status = appState.statusMessage {
                         Text(status)
                             .font(.caption)
-                            .foregroundStyle(.orange)
+                            .foregroundStyle(Color.echoWarning)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 32)
                     }
@@ -166,7 +166,7 @@ struct SpeakView: View {
             ZStack {
                 // Subtle pulse ring while listening.
                 Circle()
-                    .fill(Color.echoRed.opacity(0.25))
+                    .fill(Color.echoAccent.opacity(0.25))
                     .frame(width: 230, height: 230)
                     .scaleEffect(recorder.isRecording && pulse ? 1.18 : 1.0)
                     .opacity(recorder.isRecording ? 1 : 0)
@@ -180,17 +180,19 @@ struct SpeakView: View {
                 Circle()
                     .fill(
                         LinearGradient(
-                            colors: [Color.echoRed, Color.echoRed.opacity(0.78)],
+                            colors: [Color.echoAccent, Color.echoAccent.opacity(0.78)],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
                     )
                     .frame(width: 210, height: 210)
-                    .shadow(color: Color.echoRed.opacity(0.45), radius: 30, y: 8)
+                    .shadow(color: Color.echoAccent.opacity(0.45), radius: 30, y: 8)
 
+                // The glyph sits on the terracotta fill, so it takes the
+                // on-accent role rather than the normal text color.
                 Image(systemName: recorder.isRecording ? "stop.fill" : "mic.fill")
                     .font(.system(size: 62, weight: .bold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Color.echoOnAccent)
             }
         }
         .buttonStyle(.plain)
@@ -205,7 +207,7 @@ struct SpeakView: View {
             if recorder.isRecording {
                 Text("Listening. Take your time. Tap again when you're done.")
                     .font(.headline)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Color.echoText)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 32)
                 if !recorder.transcript.isEmpty {
@@ -219,13 +221,13 @@ struct SpeakView: View {
             } else if let error = recorder.errorMessage {
                 Text(error)
                     .font(.subheadline)
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(Color.echoWarning)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 32)
             } else {
                 Text("Tell me what sounds good this week.")
                     .font(.headline)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Color.echoText)
                 Text("Tap once to talk, tap again when you're done.")
                     .font(.subheadline)
                     .foregroundStyle(Color.echoTextSecondary)
@@ -240,7 +242,7 @@ struct SpeakView: View {
                         ? "Keeping 1 pinned dinner in your next week."
                         : "Keeping \(count) pinned dinners in your next week.")
                         .font(.footnote.weight(.semibold))
-                        .foregroundStyle(Color.echoRed)
+                        .foregroundStyle(Color.echoAccentText)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 32)
                 }
@@ -274,7 +276,7 @@ struct SpeakView: View {
                     .padding(.vertical, 10)
             }
             .buttonStyle(.bordered)
-            .tint(.echoRed)
+            .tint(.echoAccentText)
 
             Button {
                 show(.typeIn)
@@ -305,12 +307,17 @@ struct SpeakView: View {
                     VStack(alignment: .leading, spacing: 18) {
                         Text("Before your first plan")
                             .font(.title2.weight(.bold))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(Color.echoText)
                             .padding(.top, 26)
 
-                        Text("MealTime sends the words you speak (as text), along with your budget, taste notes, and meal history, to Anthropic's Claude AI to build your dinner plan and grocery list. No audio ever leaves your phone, and nothing is used for ads or tracking.")
+                        Text("MealTime sends the words you speak (as text), along with your budget, taste notes, and meal history, to Anthropic's Claude AI to build your dinner plan and grocery list. Nothing you give MealTime is used for ads or tracking.")
                             .font(.subheadline)
-                            .foregroundStyle(.white)
+                            .foregroundStyle(Color.echoText)
+                            .fixedSize(horizontal: false, vertical: true)
+
+                        Text("Your speech is turned into text by Apple's built-in speech recognition. That happens on your iPhone when it can, and on Apple's servers when it cannot. MealTime itself never records, saves, or sends your audio anywhere.")
+                            .font(.subheadline)
+                            .foregroundStyle(Color.echoText)
                             .fixedSize(horizontal: false, vertical: true)
 
                         Link("Read the full privacy policy",
@@ -367,7 +374,7 @@ struct SpeakView: View {
                         )
                         .lineLimit(3...8)
                         .font(.body)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Color.echoText)
                         .padding(14)
                         .echoCardStyle()
                         .focused($focused)
@@ -399,7 +406,6 @@ struct SpeakView: View {
                 }
                 .onAppear { focused = true }
             }
-            .preferredColorScheme(.dark)
         }
     }
 
@@ -410,7 +416,7 @@ struct SpeakView: View {
                 .tint(.echoRed)
             Text("Planning your week.")
                 .font(.title3.weight(.semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(Color.echoText)
             Text("Building \(appState.dinnersPerWeek) dinners and one grocery list.")
                 .font(.subheadline)
                 .foregroundStyle(Color.echoTextSecondary)

@@ -59,6 +59,11 @@ struct GroceryItem: Codable, Hashable {
     var qty: String
     var estPrice: Double
     var pantry: Bool
+    /// Titles of the recipes in this plan that use the item. Optional so
+    /// plans saved before this field existed (including the week already
+    /// on both phones) still decode; nil or empty falls back to local
+    /// ingredient matching at display time.
+    var recipes: [String]?
 }
 
 // MARK: - Taste history
@@ -122,6 +127,34 @@ extension MealPlan {
         recipes.first { $0.day == day }
     }
 
+    /// Recipe titles to show under a grocery item, in plan order. Prefers
+    /// the titles the model tagged on the item (filtered to titles that
+    /// actually exist in this plan, so a hallucinated tag never shows).
+    /// When there are no usable tags, falls back to matching the item
+    /// name against every recipe's ingredients with the same normalized
+    /// containment matching reconciliation uses, so plans generated
+    /// before tagging existed get labels too. General items that match
+    /// nothing return empty and show no tag line.
+    func recipeTitles(for item: GroceryItem) -> [String] {
+        let knownTitles = Set(recipes.map { $0.title.lowercased() })
+        if let tagged = item.recipes {
+            let valid = tagged.filter { knownTitles.contains($0.lowercased()) }
+            if !valid.isEmpty { return valid }
+        }
+        let name = Self.normalizedForMatching(item.name)
+        guard !name.isEmpty else { return [] }
+        var titles: [String] = []
+        for recipe in recipes {
+            let uses = recipe.ingredients.contains { ingredient in
+                let ing = Self.normalizedForMatching(ingredient.item)
+                guard !ing.isEmpty else { return false }
+                return ing.contains(name) || name.contains(ing)
+            }
+            if uses { titles.append(recipe.title) }
+        }
+        return titles
+    }
+
     /// Section that collects recipe ingredients missing from the list.
     static let reconciledSectionName = "From recipes"
 
@@ -167,11 +200,21 @@ extension MealPlan {
         }
 
         var missing: [GroceryItem] = []
-        var missingNames = Set<String>()
+        var missingIndexByName: [String: Int] = [:]
         for recipe in recipes {
             for ingredient in recipe.ingredients {
                 let name = Self.normalizedForMatching(ingredient.item)
-                guard !name.isEmpty, !missingNames.contains(name) else { continue }
+                guard !name.isEmpty else { continue }
+                if let index = missingIndexByName[name] {
+                    // Another recipe uses the same missing ingredient, so
+                    // its title joins the item's recipe tags.
+                    var tags = missing[index].recipes ?? []
+                    if !tags.contains(recipe.title) {
+                        tags.append(recipe.title)
+                        missing[index].recipes = tags
+                    }
+                    continue
+                }
                 let isStaple = staples.contains { staple in
                     staple.contains(name) || name.contains(staple)
                 }
@@ -180,12 +223,13 @@ extension MealPlan {
                     grocery.contains(name) || name.contains(grocery)
                 }
                 guard !covered else { continue }
-                missingNames.insert(name)
+                missingIndexByName[name] = missing.count
                 missing.append(GroceryItem(
                     name: ingredient.item,
                     qty: ingredient.qty,
                     estPrice: 0,
-                    pantry: false
+                    pantry: false,
+                    recipes: [recipe.title]
                 ))
             }
         }
