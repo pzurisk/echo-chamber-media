@@ -11,32 +11,42 @@
 // below assumes the token is public and limits what a holder of it can spend.
 //
 // Secrets this worker expects (set with "wrangler secret put", see README.md):
-//   ANTHROPIC_API_KEY  required. Your Anthropic API key.
-//   APP_TOKEN          optional. A long random string. If set, the app must
-//                      send the same string in an "x-app-token" header.
+//   ANTHROPIC_API_KEY   required. Your Anthropic API key.
+//   APP_TOKEN           optional. A long random string. If set, the app must
+//                       send the same string in an "x-app-token" header.
+//   APPLE_PRIVATE_KEY   required. The contents of the .p8 In-App Purchase key
+//                       downloaded from App Store Connect, PEM and all.
+//   APPLE_KEY_ID        required. The Key ID shown next to that key.
+//   APPLE_ISSUER_ID     required. The issuer ID from the same page.
+//
+// Without those three Apple values the relay refuses every request. That is
+// deliberate. A relay that cannot check a subscription is a paywall anyone can
+// walk through, so it stops instead of guessing.
 //
 // Plain variables and bindings live in wrangler.toml:
 //   DAILY_REQUEST_CAP        circuit breaker for the whole relay, per day.
 //   MONTHLY_GENERATION_CAP   how many plans one subscription gets per month.
-//   SPEND_COUNTER            KV namespace holding those counts. Nothing else.
+//   ALLOW_SANDBOX_SUBSCRIPTIONS  "0" turns off TestFlight and sandbox
+//                            subscriptions. Anything else leaves them on.
+//   SPEND_COUNTER            KV namespace holding the counts and the cached
+//                            subscription verdicts. Nothing else.
 //   BURST_LIMITER            per-caller rate limit, in memory at the edge.
 //
 // Headers the app sends:
-//   x-app-token  the shared secret above.
-//   x-txn-id     the subscriber's StoreKit originalTransactionId. This is the
-//                quota key. It is client-supplied, so it can be forged by
-//                anyone who inspects the traffic. Forging one buys 20 plans a
-//                month and nothing else; the daily ceiling below is the real
-//                protection. The unforgeable fix is to send the signed JWS
-//                transaction and verify it here against Apple's certificates
-//                offline. That is planned for 1.4 and is a deliberate,
-//                time-boxed tradeoff, not an oversight.
+//   x-app-token  the shared secret above. It ships inside the app, so it only
+//                proves the request came from a copy of MealTime.
+//   x-txn-id     the subscriber's StoreKit originalTransactionId. It is still
+//                client-supplied, but it is no longer taken on faith: every
+//                request checks it against Apple's App Store Server API before
+//                anything is spent. A made-up ID is one Apple has never heard
+//                of, so it buys nothing.
 //
 // No request or response bodies are logged anywhere in this file. Keep it
-// that way: bodies contain the household's meal plans. KV holds two kinds of
-// integer and nothing else: a count for the day, and a count for one
-// subscription in one month. No name, no email, no IP, no meal plan. That is
-// what the published privacy policy promises, so keep it true.
+// that way: bodies contain the household's meal plans. KV holds three kinds of
+// value and nothing else: a count for the day, a count for one subscription in
+// one month, and a short-lived yes or no on whether a transaction ID is a live
+// subscription. No name, no email, no IP, no meal plan. That is what the
+// published privacy policy promises, so keep it true.
 
 // Reject bodies over 64 KB. A real meal plan request measures 10 to 15 KB, so
 // this leaves four times the headroom the app needs. The old limit was 1 MB,
@@ -84,6 +94,30 @@ const MONTH_COUNTER_TTL_SECONDS = 3456000;
 // else is not. Bounding the length stops a caller from writing enormous keys.
 const TXN_ID_PATTERN = /^[A-Za-z0-9]{1,64}$/;
 
+// Apple's App Store Server API. The relay asks it whether a transaction ID is
+// a real, currently paid subscription to this app. Sandbox lives on a separate
+// host and holds TestFlight purchases, which Apple's own guidance says to look
+// for only after production returns 404.
+const APPLE_PRODUCTION_HOST = "https://api.storekit.itunes.apple.com";
+const APPLE_SANDBOX_HOST = "https://api.storekit-sandbox.itunes.apple.com";
+const APPLE_BUNDLE_ID = "com.echochambermedia.echomeal";
+const SUBSCRIPTION_PRODUCT_ID = "com.echochambermedia.echomeal.monthly";
+
+// Apple's subscription status codes. 1 is active and 4 is the billing grace
+// period, where the customer still has access while a renewal is retried.
+// 2 (expired), 3 (billing retry, access already lost) and 5 (revoked) are not
+// entitlements, so they are absent on purpose.
+const ENTITLED_STATUSES = new Set([1, 4]);
+
+// How long a verdict is trusted before Apple is asked again. A yes is cached
+// for half a day because a subscription does not lapse mid-afternoon without
+// warning, and the monthly allowance bounds what a stale yes can spend anyway.
+// A no is cached briefly: long enough to blunt a flood of invented IDs, short
+// enough that someone who resubscribes is not locked out of what they just
+// paid for. KV will not accept a TTL under 60 seconds.
+const VERDICT_YES_TTL_SECONDS = 43200;
+const VERDICT_NO_TTL_SECONDS = 300;
+
 // Read a cap out of the environment. Written the long way instead of
 // `parseInt(x, 10) || fallback` because that idiom treats 0 as missing: a cap
 // deliberately set to "0" to stop all spending would silently come back as
@@ -116,6 +150,222 @@ function fingerprint(value) {
   }
   return (hash >>> 0).toString(16);
 }
+
+// --- Apple subscription verification -------------------------------------
+//
+// Everything from here to the next divider exists to answer one question: is
+// the transaction ID in this request a live subscription to this app? The app
+// cannot be trusted to answer it, because the app is on the customer's phone
+// and the header is theirs to edit. Apple can.
+
+function base64UrlFromBytes(bytes) {
+  let binary = "";
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function base64UrlFromText(text) {
+  return base64UrlFromBytes(new TextEncoder().encode(text));
+}
+
+function bytesFromBase64(value) {
+  const binary = atob(value);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
+
+// JWS segments are base64url and unpadded. atob wants base64 with padding.
+function base64FromBase64Url(value) {
+  const swapped = value.replace(/-/g, "+").replace(/_/g, "/");
+  return swapped + "=".repeat((4 - (swapped.length % 4)) % 4);
+}
+
+// The .p8 file Apple hands over is a PKCS#8 P-256 private key wrapped in PEM.
+// The whitespace strip handles both a real multi-line paste and a value that
+// arrived with its newlines escaped, which is easy to do by accident when
+// setting a secret from a shell.
+async function importSigningKey(pem) {
+  const der = pem
+    .replace("-----BEGIN PRIVATE KEY-----", "")
+    .replace("-----END PRIVATE KEY-----", "")
+    .replace(/\\n/g, "")
+    .replace(/\s+/g, "");
+  return crypto.subtle.importKey(
+    "pkcs8",
+    bytesFromBase64(der),
+    { name: "ECDSA", namedCurve: "P-256" },
+    false,
+    ["sign"]
+  );
+}
+
+// One signed token per isolate, reused until it is nearly expired. Apple
+// allows up to an hour; half of that keeps clock skew from ever mattering.
+let cachedAppleToken = null;
+
+async function appleAuthToken(env) {
+  const now = Math.floor(Date.now() / 1000);
+  if (cachedAppleToken && cachedAppleToken.expiresAt - 120 > now) {
+    return cachedAppleToken.token;
+  }
+
+  const expiresAt = now + 1800;
+  const header = { alg: "ES256", kid: env.APPLE_KEY_ID, typ: "JWT" };
+  const claims = {
+    iss: env.APPLE_ISSUER_ID,
+    iat: now,
+    exp: expiresAt,
+    aud: "appstoreconnect-v1",
+    bid: APPLE_BUNDLE_ID,
+  };
+
+  const signingInput =
+    `${base64UrlFromText(JSON.stringify(header))}.${base64UrlFromText(JSON.stringify(claims))}`;
+  const key = await importSigningKey(env.APPLE_PRIVATE_KEY);
+  // Web Crypto returns ECDSA signatures as raw r||s, which is exactly the
+  // form ES256 JWS wants. No DER unwrapping needed.
+  const signature = await crypto.subtle.sign(
+    { name: "ECDSA", hash: "SHA-256" },
+    key,
+    new TextEncoder().encode(signingInput)
+  );
+
+  const token = `${signingInput}.${base64UrlFromBytes(new Uint8Array(signature))}`;
+  cachedAppleToken = { token, expiresAt };
+  return token;
+}
+
+// Reads the product ID out of Apple's signed transaction blob. The signature
+// is deliberately not checked: this JSON arrived inside an authenticated TLS
+// response from Apple's own server, so the channel is what is being trusted,
+// not the JWS. Verifying the certificate chain here would guard against
+// nothing the transport does not already cover.
+function productIdOf(entry) {
+  const jws = entry && entry.signedTransactionInfo;
+  if (typeof jws !== "string") return null;
+  const parts = jws.split(".");
+  if (parts.length !== 3) return null;
+  try {
+    const payload = new TextDecoder().decode(
+      bytesFromBase64(base64FromBase64Url(parts[1]))
+    );
+    const decoded = JSON.parse(payload);
+    return typeof decoded.productId === "string" ? decoded.productId : null;
+  } catch {
+    return null;
+  }
+}
+
+function sandboxAllowed(env) {
+  return env.ALLOW_SANDBOX_SUBSCRIPTIONS !== "0";
+}
+
+function askApple(host, txnId, token) {
+  return fetch(`${host}/inApps/v1/subscriptions/${encodeURIComponent(txnId)}`, {
+    method: "GET",
+    headers: {
+      authorization: `Bearer ${token}`,
+      accept: "application/json",
+    },
+  });
+}
+
+// Returns "active", "inactive", or "unknown". "unknown" means Apple could not
+// be reached or did not answer usefully, and the caller treats it as a
+// temporary fault rather than a verdict about the customer.
+async function askAppleAboutSubscription(txnId, env) {
+  let token;
+  try {
+    token = await appleAuthToken(env);
+  } catch {
+    // A malformed key or key ID. Nothing the customer did.
+    return "unknown";
+  }
+
+  let response;
+  try {
+    response = await askApple(APPLE_PRODUCTION_HOST, txnId, token);
+    // Apple answers 404 for a transaction it has no record of in this
+    // environment, which is also what a TestFlight purchase looks like from
+    // production. Sandbox is checked second, never first.
+    if (response.status === 404 && sandboxAllowed(env)) {
+      response = await askApple(APPLE_SANDBOX_HOST, txnId, token);
+    }
+  } catch {
+    return "unknown";
+  }
+
+  // Apple has never heard of this ID. That is the invented-header case, and
+  // it is a real answer, not a fault.
+  if (response.status === 404) return "inactive";
+  if (!response.ok) return "unknown";
+
+  let body;
+  try {
+    body = await response.json();
+  } catch {
+    return "unknown";
+  }
+
+  // A transaction for some other app is not an entitlement here.
+  if (body.bundleId !== APPLE_BUNDLE_ID) return "inactive";
+  if (!Array.isArray(body.data)) return "unknown";
+
+  for (const group of body.data) {
+    const transactions = Array.isArray(group && group.lastTransactions)
+      ? group.lastTransactions
+      : [];
+    for (const entry of transactions) {
+      if (!entry || entry.originalTransactionId !== txnId) continue;
+      if (!ENTITLED_STATUSES.has(entry.status)) continue;
+      if (productIdOf(entry) !== SUBSCRIPTION_PRODUCT_ID) continue;
+      return "active";
+    }
+  }
+
+  return "inactive";
+}
+
+// The cached front door to the check above. A cache hit costs one KV read; a
+// miss costs one round trip to Apple, which is under a second against a
+// request that takes twenty.
+async function subscriptionVerdict(txnId, env) {
+  const cacheKey = `verify-${txnId}`;
+
+  if (env.SPEND_COUNTER) {
+    try {
+      const cached = await env.SPEND_COUNTER.get(cacheKey);
+      if (cached === "yes") return "active";
+      if (cached === "no") return "inactive";
+    } catch {
+      // KV is having a moment. Ask Apple directly.
+    }
+  }
+
+  const verdict = await askAppleAboutSubscription(txnId, env);
+
+  // "unknown" is never cached. Caching a fault would turn a blip at Apple into
+  // five minutes of locked-out subscribers.
+  if (verdict !== "unknown" && env.SPEND_COUNTER) {
+    try {
+      await env.SPEND_COUNTER.put(cacheKey, verdict === "active" ? "yes" : "no", {
+        expirationTtl:
+          verdict === "active" ? VERDICT_YES_TTL_SECONDS : VERDICT_NO_TTL_SECONDS,
+      });
+    } catch {
+      // Not worth refusing a verified subscriber over.
+    }
+  }
+
+  return verdict;
+}
+
+// --- end Apple subscription verification ----------------------------------
 
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
@@ -276,7 +526,44 @@ export default {
       return refuse(400, payload);
     }
 
-    // 8. Per-subscription monthly quota. This is the allowance the subscriber
+    // 8. Ask Apple whether that transaction ID is a live subscription. This is
+    // the step that makes the paywall real: everything above only proves the
+    // request came from a copy of the app, and APP_TOKEN ships inside every
+    // .ipa, so on its own it proves nothing about who is paying.
+    //
+    // It runs after the body has been parsed and validated so a malformed
+    // request never costs a call to Apple, and before either quota so an
+    // unverified caller never gets a counter written for them.
+    if (!env.APPLE_PRIVATE_KEY || !env.APPLE_KEY_ID || !env.APPLE_ISSUER_ID) {
+      // Deploying without the Apple credentials stops the relay rather than
+      // letting an unchecked paywall through. Failing open here would mean
+      // anyone who read the app token out of the bundle could spend the
+      // Anthropic budget, which is the whole problem this step exists to fix.
+      return refuse(
+        502,
+        "MealTime's planning service is not set up correctly right now. This is not a problem with your subscription. Try again later."
+      );
+    }
+
+    const verdict = await subscriptionVerdict(txnId, env);
+    if (verdict === "unknown") {
+      // Apple could not be reached, or answered with something unusable. That
+      // is a fault at this end, so it must not reach the customer as "your
+      // subscription is bad": the only action that message suggests is
+      // cancelling. 502 lands in the app's transient bucket instead.
+      return refuse(
+        502,
+        "MealTime could not reach the App Store to check your subscription. This is not a problem with your subscription. Try again in a few minutes."
+      );
+    }
+    if (verdict === "inactive") {
+      return refuse(
+        401,
+        "MealTime could not confirm your subscription. Open Settings and tap Restore Purchases."
+      );
+    }
+
+    // 9. Per-subscription monthly quota. This is the allowance the subscriber
     // actually pays for, and it is checked before the global ceiling below on
     // purpose: a global trip is an outage for everybody, while this one is a
     // clean, explainable refusal for a single household.
@@ -324,7 +611,7 @@ export default {
       }
     }
 
-    // 9. Daily ceiling. One integer per calendar day in KV, no other data.
+    // 10. Daily ceiling. One integer per calendar day in KV, no other data.
     // If KV itself is unavailable the request is allowed through: the burst
     // limit above and the monthly spend cap set at Anthropic are the other two
     // lines of defence, and failing closed would take the app down for a
@@ -357,7 +644,7 @@ export default {
       }
     }
 
-    // 10. Forward. The version header is pinned here rather than taken from the
+    // 11. Forward. The version header is pinned here rather than taken from the
     // caller, and the body is the rebuilt payload, not whatever arrived.
     const upstream = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",

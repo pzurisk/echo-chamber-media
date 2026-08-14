@@ -15,8 +15,19 @@ DAILY_REQUEST_CAP = "400"
 # the app shows at the cap. Changing it here means changing it in all three.
 MONTHLY_GENERATION_CAP = "20"
 
-# Counter storage. Holds two kinds of integer and nothing else: a count for the
-# day, and a count for one subscription in one month. The month keys include the
+# Whether TestFlight and sandbox subscriptions count as real ones. Leave this
+# on while testing a build through TestFlight, because TestFlight purchases live
+# in Apple's sandbox and production lookups return 404 for them. Set it to "0"
+# to accept only real paid subscriptions.
+#
+# Leaving it on is a small, bounded risk rather than a hole: a sandbox
+# transaction for this app requires either a TestFlight invite or a sandbox
+# tester account, and both of those only exist if Billy created them.
+ALLOW_SANDBOX_SUBSCRIPTIONS = "1"
+
+# Counter storage. Holds three kinds of value and nothing else: a count for the
+# day, a count for one subscription in one month, and a short-lived yes or no on
+# whether a transaction ID is a live subscription. Those keys include the
 # subscription's Apple transaction ID, which is a purchase identifier and is
 # declared as such in App Privacy. No name, no email, no IP address, no request
 # bodies, no meal plans.

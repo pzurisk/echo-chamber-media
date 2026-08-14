@@ -1,0 +1,4 @@
+# Local wrangler state: the miniflare KV, cache, and rate limit SQLite files
+# written by "wrangler dev --local". It is test data from this machine and has
+# no business in the repo.
+.wrangler/
