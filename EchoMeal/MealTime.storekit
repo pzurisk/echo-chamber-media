@@ -39,7 +39,7 @@
           "introductoryOffer" : null,
           "localizations" : [
             {
-              "description" : "20 meal plans a month, shared with the other phone in your household.",
+              "description" : "20 new meal plans a month, built by voice for your week.",
               "displayName" : "MealTime Monthly",
               "locale" : "en_US"
             }

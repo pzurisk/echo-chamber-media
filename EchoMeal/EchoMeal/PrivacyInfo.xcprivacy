@@ -39,6 +39,28 @@
 				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
 			</array>
 		</dict>
+		<dict>
+			<!-- The subscription's Apple originalTransactionId. The app sends
+			     it to the planning relay with every request, and the relay
+			     checks it with Apple and counts the month's plans against it.
+			     That makes it purchase history leaving the device, so it is
+			     declared here even though it is only ever a number: no name,
+			     no email, no account, and nothing that identifies a person.
+			     It is not linked to an identity because the app has no
+			     identity to link it to, and it is never used for tracking or
+			     advertising. Keep this in step with the App Privacy answers
+			     in App Store Connect. -->
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypePurchaseHistory</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
 	</array>
 
 	<key>NSPrivacyAccessedAPITypes</key>
