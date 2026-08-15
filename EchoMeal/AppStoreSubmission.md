@@ -1,42 +1,162 @@
 # MealTime by Echo Chamber, App Store Submission Pack
 
-Written 2026-07-23 for submission on 2026-07-24. Everything below was checked against Apple's current published docs. Each factual claim has its source URL in parentheses. Follow it top to bottom.
+Rewritten 2026-08-15 for version 1.3 (build 9), the release that adds a paid subscription. The free version of this document, written 2026-07-23 for 1.1, is in git history if you need it.
 
-One heads up before the checklist. Unlisted approval is a separate request that can take from a few business days to a couple of weeks, and Apple does not publish a guaranteed turnaround (https://developer.apple.com/support/unlisted-app-distribution/, plus developer reports at https://developer.apple.com/forums/thread/702893). The plan below handles that by using manual release, so the app never appears in public search while you wait.
+**What changed and why it matters.** MealTime used to be free with no purchases. Version 1.3 puts plan generation behind a $4.99 a month auto-renewable subscription with no free trial. That single change touches almost every part of a submission: the App Privacy answers, the description, the review notes, the age rating page, and it adds a whole category of things Apple can reject you for (guideline 3.1). It also adds a hard prerequisite that has nothing to do with code, the Paid Applications Agreement, which involves banking and tax forms and is the slowest thing on this list.
 
----
-
-## 1. The plan for tomorrow
-
-Do these in order. Total hands-on time is about 1 to 2 hours.
-
-1. **Publish the two web pages first.** Apple checks that the support URL and privacy policy URL actually load. Put a simple support page at https://echochambermedia.com/mealtime/support and a privacy policy at https://echochambermedia.com/mealtime/privacy before you submit. The privacy policy must say what data the app handles, that spoken input is transcribed on the phone, that the transcript and meal preferences are sent to Anthropic to generate plans, that meal data is stored in iCloud (CloudKit) under a household code, how long data is kept, and how to contact you to delete it (https://developer.apple.com/app-store/review/guidelines/ section 5.1.1).
-2. **Confirm the uploaded build actually works for a stranger.** The reviewer launches with no household and no setup. Install the TestFlight build on a phone that has never used the app, tap "Start our household", speak a few dinner ideas, and confirm a plan generates. If the Claude connection in the build is dead (a rate limited API key, or a proxy that is not deployed, see Proxy/README.md, App Store builds should use the proxy), the app will look broken and get rejected under 2.1 (https://developer.apple.com/app-store/review/guidelines/ section 2.1).
-3. **Open App Store Connect, go to the MealTime by Echo Chamber app record, version 1.1.** Fill in all metadata from Section 2 below (name, subtitle, promotional text, description, keywords, support URL, privacy policy URL, categories).
-4. **Upload screenshots** from Section 5.
-5. **Fill in App Privacy** using Section 3. This is under the App Privacy tab, separate from the version page.
-6. **Fill in the Age Rating questionnaire** using Section 4. Apple replaced the old tiers in 2025, so expect more questions than older guides show (https://developer.apple.com/news/?id=ks775ehf).
-7. **Set pricing and availability to free and publicly available.** Do not pick private Apple Business Manager distribution. Unlisted apps must be set up as publicly available first; the unlisted request is what hides them (https://developer.apple.com/support/unlisted-app-distribution/).
-8. **Export compliance is already handled.** The build declares ITSAppUsesNonExemptEncryption false in its Info.plist, so App Store Connect will not ask encryption questions at submission (https://developer.apple.com/help/app-store-connect/manage-app-information/overview-of-export-compliance). Details in the note at the end of this file.
-9. **Paste the review notes** from Section 6 into the "Notes" field in the App Review Information box. Leave the demo account fields blank; the app has no login, so no demo account is required. Apple only requires demo credentials for apps with login features (https://developer.apple.com/app-store/review/guidelines/ section 2.1).
-10. **Set release to "Manually release this version".** This matters. If review approves the app before your unlisted request is approved, automatic release would put it in public search. Manual release keeps it approved but not live until you press Release.
-11. **Press Submit for Review.**
-12. **Immediately after submitting, file the unlisted app request** using Section 7. Apple requires the app to be either already on the App Store or submitted to App Review before you file the request, so right after submission is the correct moment (https://developer.apple.com/support/unlisted-app-distribution/).
-13. **Wait.** Expect review to take 1 to 5 days for a first submission (see the timeline note below). Expect the unlisted decision separately, typically within about a week but sometimes longer.
-14. **When both are approved, press Release.** Apple generates the unlisted link, or your normal App Store link simply works as the direct link. Share it with your partner and you are done.
-
-**Timeline reality check.** Apple's official claim is that 90 percent of submissions are reviewed in under 24 hours (https://developer.apple.com/app-store/review/). That figure mostly reflects updates from established apps. In 2026 the queue has grown, and brand new apps commonly wait 2 to 5 days, with some outliers longer (developer reports, for example https://developer.apple.com/forums/thread/816818). So: submitting tomorrow is right, but plan on having the link in hand within one to two weeks, not tomorrow night.
+Everything below was checked against Apple's current published docs. Each factual claim has its source URL in parentheses.
 
 ---
 
-## 2. Copy-paste metadata
+## 0. Prerequisites, in order, before anything else
+
+These block everything downstream. Do them first.
+
+1. **Sign the Paid Applications Agreement.** App Store Connect → Business → Agreements, Tax, and Banking. You need a bank account and completed tax forms (https://developer.apple.com/help/app-store-connect/manage-agreements/sign-and-update-agreements). Until this agreement is active you cannot sell a subscription, and in-app purchases will not work in testing either.
+
+   You can prove when it goes live without touching the dashboard. Run:
+
+   ```bash
+   cd EchoMeal/Proxy
+   node test/check-apple-credentials.mjs \
+     --key ~/.appstoreconnect/private_keys/SubscriptionKey_RM7RCHMH3N.p8 \
+     --key-id RM7RCHMH3N \
+     --issuer-id <the issuer ID from the In-App Purchase key page>
+   ```
+
+   As of 2026-08-15 that prints `production REJECTED` and `sandbox OK`, which is Apple's behaviour before an app has a live in-app purchase. When production flips to OK, the agreement and the product are both in place.
+
+2. **Create the subscription.** Section 3 below has every field.
+
+3. **Decide what happens to version 1.2.** Build 8 is already in App Store Connect as version 1.2. If 1.2 has not been released, do not create a 1.3 record; edit the existing 1.2 record and upload build 9 to it instead, and treat every "1.3" below as "1.2". If 1.2 is released, create 1.3 as a new version. Check this before you start typing metadata, because moving it afterwards means re-entering everything.
+
+---
+
+## 1. The order of operations
+
+**Read this section before doing anything.** The app and the relay have to change together, and doing it in the wrong order breaks MealTime on your phone and your partner's.
+
+The relay now refuses any request it cannot tie to a verified subscription. Build 8, which is what is installed today, sends no subscription at all. So:
+
+1. Paid Applications Agreement active (Section 0).
+2. Subscription created in App Store Connect (Section 3).
+3. **Upload build 9 to TestFlight.** Do not deploy the worker yet.
+4. **Install build 9 on both phones through TestFlight.** Buy the subscription on each. TestFlight purchases run in Apple's sandbox, so they cost nothing and do not need a real card.
+5. **Only now deploy the worker:** `cd EchoMeal/Proxy && npx wrangler deploy`.
+6. Generate a plan on both phones and confirm it works.
+7. Submit for review (Section 2).
+8. After the version is approved and released, set `ALLOW_SANDBOX_SUBSCRIPTIONS = "0"` in `wrangler.toml` and redeploy, so only real paid subscriptions are accepted.
+
+Between steps 3 and 5, build 9 runs against the old relay. That is fine: the app sends a subscription header the old relay ignores.
+
+If you deploy the worker before step 4, both phones lose the ability to generate anything until they are updated. Nothing is lost permanently, but it looks broken.
+
+---
+
+## 2. Submission checklist
+
+Do these in order once Section 0 is done. Hands-on time about 2 hours.
+
+1. **Confirm the two web pages still load.** https://echochambermedia.com/mealtime/support and https://echochambermedia.com/mealtime/privacy. Apple checks both (https://developer.apple.com/app-store/review/guidelines/ section 5.1.1).
+
+   **The privacy policy needs updating for this release.** It must now also say that the app sends the App Store subscription's transaction identifier to the planning service, that the service keeps it to count how many plans the subscription has used, and that it is a purchase identifier not tied to a name, email, or account. If the policy does not match the App Privacy answers in Section 4, that is a rejection under 5.1.1 and an easy one for a reviewer to spot.
+
+2. **Confirm the build works for a stranger, including the purchase.** The reviewer starts with no household, no setup, and no subscription. On a phone that has never run MealTime: install, tap "Start our household", tap the mic, speak a few dinner ideas, hit the paywall, complete the sandbox purchase, and confirm a plan generates. Then force quit, reopen, and confirm it still says Active in Settings. If any of that fails the app reads as broken under 2.1 (https://developer.apple.com/app-store/review/guidelines/ section 2.1).
+
+3. **Also test Restore Purchases.** Settings → Subscription → Restore purchases. Apple requires a working restore mechanism and reviewers do check it (guideline 3.1.1).
+
+4. **Fill in the version metadata** from Section 5 (name, subtitle, promotional text, description, keywords, URLs, categories).
+
+5. **Set the License Agreement.** App Store Connect → App Information → License Agreement. Use Apple's standard EULA unless you have a reason not to. The app already links to it from the paywall (https://www.apple.com/legal/internet-services/itunes/dev/stdeula/).
+
+6. **Upload screenshots** from Section 7. You need one more than last time: the paywall.
+
+7. **Fill in App Privacy** using Section 4. This is under the App Privacy tab, separate from the version page, and it has a new entry this release.
+
+8. **Fill in the Age Rating questionnaire** using Section 6. Unchanged from 1.1, still 4+.
+
+9. **Pricing: the app itself stays FREE.** Do not put $4.99 on the app. The app is free and the subscription is an in-app purchase. Getting this wrong charges people twice and is a confusing mess to unwind.
+
+10. **Attach the subscription to this version.** On the version page, in the In-App Purchases section, add the MealTime Monthly subscription. A subscription's first review has to ride along with an app version; it will not be reviewed on its own.
+
+11. **Export compliance is already handled.** `ITSAppUsesNonExemptEncryption` is false in Info.plist (https://developer.apple.com/help/app-store-connect/manage-app-information/overview-of-export-compliance). Note at the end of this file.
+
+12. **Paste the review notes** from Section 8. Leave demo account fields blank; there is still no login.
+
+13. **Set release to "Manually release this version"** if the unlisted status is still pending. If unlisted is already granted, automatic release is fine.
+
+14. **Submit for Review.**
+
+**Timeline.** Apple claims 90 percent of submissions are reviewed in under 24 hours (https://developer.apple.com/app-store/review/). A version that introduces a first subscription draws more scrutiny than a routine update, so plan on a few days. The Paid Applications Agreement, if you have not started it, is the real long pole: banking and tax verification can take several business days on its own.
+
+---
+
+## 3. Creating the subscription in App Store Connect
+
+App Store Connect → your app → Subscriptions → create a subscription group.
+
+**Subscription group**
+- Reference name: `MealTime`
+- Group display name (customer-facing, shown on the manage-subscriptions screen): `MealTime`
+
+**The subscription**
+- Reference name: `MealTime Monthly`
+- Product ID: `com.echochambermedia.echomeal.monthly`
+- Duration: 1 month
+- Price: $4.99 USD, with Apple's automatic equivalents in other regions
+- Free trial or introductory offer: **none**. This is deliberate. A trial hands out 20 plans of API spend per signup to anyone who cancels before day one, and at these margins that is not survivable.
+- Family Sharing: **off**
+
+**Product ID must match exactly.** It is hardcoded in `SubscriptionStore.swift` and in the worker's verification. A typo means the app finds no product, the paywall shows a disabled buy button, and nothing works.
+
+**Localization (English, US)**
+- Display name: `MealTime Monthly`
+- Description: `20 new meal plans a month, built by voice for your week.`
+
+That description used to say the plans were "shared with the other phone in your household." They are not. The subscription belongs to the Apple Account, so two people sharing a household code each need their own to generate plans, though both can read whatever either one generates. Do not reintroduce the sharing claim; it is a refund request and a 2.3.1 misleading-metadata problem waiting to happen.
+
+**Review information for the subscription**
+- Screenshot: the paywall screen (screenshot 2 from Section 7). Apple requires a screenshot of the purchase UI for every in-app purchase.
+- Review notes: `Tap the microphone on the Speak tab and say any dinner ideas out loud, then tap to generate. The paywall appears at that point. The subscription unlocks generating new plans; previously saved plans, recipes, and the grocery list stay readable without one.`
+
+**Tax category:** the default for apps and digital services is correct. This is not a physical goods or reading-material product.
+
+---
+
+## 4. App Privacy answers
+
+Background: Apple defines "collect" as transmitting data off the device in a way that lets you or your third-party partners access it for longer than needed to service the request in real time, and you must declare what your third-party partners receive as if it were your own (https://developer.apple.com/app-store/app-privacy-details/).
+
+How that maps to MealTime:
+
+- **Voice audio** is handed to Apple's speech framework and never touched by MealTime beyond that. The app does not set `requiresOnDeviceRecognition`, on purpose, because forcing it returns empty results on phones that have not downloaded Apple's offline model (see the comment in `Services/SpeechRecorder.swift`). So iOS transcribes on the phone when it can and on Apple's servers when it cannot, and which one happens is Apple's call, not the app's. MealTime never records the audio to disk, never stores it, and never sends it anywhere itself. Apple here is the platform provider, not a third-party partner of ours, so under Apple's definition the app does not collect audio. **Do not declare Audio Data.** If a reviewer asks, say it exactly that way, and do not claim audio never leaves the phone, because that is not true on every device.
+- **The transcript, budget, taste notes, and meal history** go to Anthropic's API and into CloudKit under the household code. Off-device and retained, so collected. Free-form user input maps to Other User Content.
+- **NEW this release: the subscription's transaction identifier.** The app sends it to the relay with every request. The relay checks it with Apple and keeps it in storage to count the month's plans against it. That is purchase history leaving the device, so it has to be declared. It is a number and nothing else: no name, no email, no account.
+- **Not linked to identity** holds because there are no accounts, no names, no emails, no device identifiers sent, and the household code is a random shared code rather than a person (https://developer.apple.com/app-store/app-privacy-details/).
+- **Not used for tracking** because nothing is combined with third-party data for advertising and nothing goes to data brokers.
+
+The exact clicks:
+
+1. "Do you or your third-party partners collect data from this app?" → **Yes.**
+2. Data types: check **User Content → Other User Content** and **Purchases → Purchase History**. Leave everything else unchecked (no Contact Info, no Location, no Identifiers, no Usage Data, no Diagnostics, no Audio Data).
+3. For **both** types, usage: **App Functionality** only.
+4. For **both**, "linked to the user's identity?" → **No.**
+5. For **both**, "used for tracking?" → **No.**
+
+The resulting label reads "Data Not Linked to You: Purchases, Other User Content."
+
+**Keep this in step with `EchoMeal/PrivacyInfo.xcprivacy`,** which declares the same two types in the binary. If the manifest and these answers disagree, that is exactly the kind of inconsistency review catches on a paid app.
+
+---
+
+## 5. Copy-paste metadata
 
 **App name:** MealTime by Echo Chamber
 
-**Subtitle** (27 characters, limit is 30):
+**Subtitle** (27 characters, limit 30):
 Speak dinner. Get the week.
 
-**Promotional text** (can be changed anytime without review):
+**Promotional text** (changeable anytime without review):
 Say what sounds good this week. MealTime turns it into a week of dinners and one grocery list, shared between your two phones.
 
 **Description:**
@@ -54,13 +174,24 @@ What it does:
 - Every generated recipe saved automatically in the Recipe Box, favorites one tap away
 - Syncs between two phones with a private household code
 
-What it does not do: no accounts, no ads, no tracking, no subscriptions. Free.
+MealTime Monthly, $4.99 per month:
+- 20 new meal plans a month
+- Billed monthly to your Apple Account until you cancel
+- Cancel anytime in Settings, at least 24 hours before the next renewal
+- No free trial
+
+Building new plans needs the subscription, because every plan costs real money to generate. Your saved week, recipes, and grocery list stay readable whether you subscribe or not. The subscription is tied to your Apple Account, so two people sharing a household code each need their own to generate plans, and both can read whatever either one makes.
+
+No ads. No tracking. No accounts.
 
 Made by a two-person household in Las Vegas that got tired of the "what do you want for dinner" standoff.
 
 Note: generating a weekly plan sends your spoken request (as text, never audio) and your saved taste notes to Anthropic's Claude API. See the privacy policy for details.
 
-**Keywords** (91 characters, limit is 100):
+Terms of Use: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+Privacy Policy: https://echochambermedia.com/mealtime/privacy
+
+**Keywords** (91 characters, limit 100):
 meal planner,dinner,weekly meals,grocery list,household,recipes,voice,cooking,shopping list
 
 **Support URL:** https://echochambermedia.com/mealtime/support
@@ -69,111 +200,115 @@ meal planner,dinner,weekly meals,grocery list,household,recipes,voice,cooking,sh
 **Secondary category:** Lifestyle
 **Copyright:** 2026 Echo Chamber Media
 
----
-
-## 3. App Privacy answers
-
-Background on the rules. Apple defines "collect" as transmitting data off the device in a way that lets you or your third-party partners access it for longer than needed to service the request in real time, and you must declare data your third-party partners receive as if it were your own (https://developer.apple.com/app-store/app-privacy-details/).
-
-How that maps to MealTime, honestly:
-
-- **Voice audio** is handed to Apple's speech framework and never touched by MealTime beyond that. The app does not set `requiresOnDeviceRecognition`, on purpose, because forcing it returns empty results on phones that have not downloaded Apple's offline model (see the comment in `Services/SpeechRecorder.swift`). So iOS transcribes on the phone when it can and on Apple's servers when it cannot, and which one happens is Apple's call, not the app's. MealTime never records the audio to disk, never stores it, and never sends it anywhere itself, and it has no access to anything Apple receives. Apple here is the platform provider, not a third-party partner of ours, so under Apple's definition the app does not collect audio. Do not declare Audio Data. Say it this way if a reviewer asks, and do not claim audio never leaves the phone, because that is not true on every device.
-- **The transcript, budget, taste notes, and meal history** are sent to Anthropic's API and stored in CloudKit under the household code. That is off-device and retained, so it IS collected. It is free-form user input, which Apple maps to "Other User Content" (https://developer.apple.com/app-store/app-privacy-details/).
-- **Not linked to identity** is defensible because there are no accounts, no names, no emails, no device IDs sent, and the household code is a random shared code, not a person. Apple's test is whether direct identifiers are absent and you make no attempt to re-link data to a user, which holds here (https://developer.apple.com/app-store/app-privacy-details/).
-- **Not used for tracking** because nothing is combined with third-party data for ads and nothing goes to data brokers (https://developer.apple.com/app-store/app-privacy-details/).
-
-The exact clicks in the App Privacy section:
-
-1. "Do you or your third-party partners collect data from this app?" → **Yes, we collect data from this app.** (Anthropic and CloudKit both receive user content.)
-2. Data types: check **User Content → Other User Content** only. Leave everything else unchecked (no Contact Info, no Location, no Identifiers, no Usage Data, no Diagnostics, no Audio Data).
-3. For Other User Content, usage: check **App Functionality** only.
-4. "Is this data linked to the user's identity?" → **No.**
-5. "Do you or your third-party partners use this data for tracking purposes?" → **No.**
-
-Optional belt-and-suspenders choice: if you want to be maximally conservative you may also declare **Identifiers → User ID** (for the household code) with the same answers (App Functionality, not linked, no tracking). It is defensible either way; the code identifies a shared household record, not a person. Declaring only Other User Content is the accurate minimal answer.
-
-The resulting label will read "Data Not Linked to You: Other User Content", which is truthful and looks fine for a household app.
+**Why the subscription block is in the description.** For auto-renewable subscriptions Apple wants the title, the length, the price, and functional links to the terms of use and privacy policy visible to the customer (guideline 3.1.2, https://developer.apple.com/app-store/review/guidelines/). The app already shows all of it on the paywall before anyone can buy, which is the binding requirement. Putting it in the description too costs nothing and removes an easy reason for a rejection.
 
 ---
 
-## 4. Age rating answers
+## 6. Age rating answers
 
-Apple replaced the old 12+ and 17+ tiers in 2025. The tiers are now 4+, 9+, 13+, 16+, and 18+, and the questionnaire gained mandatory questions about in-app controls, capabilities, medical and wellness content, and violent themes (https://developer.apple.com/news/?id=ks775ehf and https://developer.apple.com/help/app-store-connect/reference/app-information/age-ratings-values-and-definitions).
+Apple replaced the old 12+ and 17+ tiers in 2025. The tiers are 4+, 9+, 13+, 16+, and 18+, and the questionnaire gained mandatory questions about in-app controls, capabilities, medical and wellness content, and violent themes (https://developer.apple.com/news/?id=ks775ehf and https://developer.apple.com/help/app-store-connect/reference/app-information/age-ratings-values-and-definitions).
 
-Answers for MealTime:
-
-- Every content descriptor (violence, sexual content, profanity, horror, gambling, alcohol/tobacco/drugs references, medical or treatment information, etc.): **None**.
+- Every content descriptor (violence, sexual content, profanity, horror, gambling, alcohol/tobacco/drugs, medical or treatment information): **None**.
 - Unrestricted web access: **No**.
 - Gambling or contests: **No**.
-- User-generated content or messaging between users: **No.** (Two phones sharing one private meal plan by a pre-shared code is not a public UGC or messaging feature.)
+- User-generated content or messaging between users: **No.** Two phones sharing one private meal plan via a pre-shared code is not public UGC or messaging.
 - Parental controls or in-app content controls: **No / Not applicable**.
-- In July 2026 Apple also added social media capability questions, defined as the ability to redistribute, amplify, or interact with user-generated content through a social feed or similar discovery. Answer **No**; MealTime has no feed and no discovery. These answers become mandatory for all submissions in September 2026, so answer them now (https://developer.apple.com/news/?id=tlur8uvi).
+- Social media capability questions added July 2026: **No.** No feed, no discovery. Mandatory for all submissions from September 2026, so answer them now (https://developer.apple.com/news/?id=tlur8uvi).
 
-Expected result: **4+**.
+Expected result: **4+**. Adding a subscription does not change the age rating.
 
 ---
 
-## 5. Screenshots
+## 7. Screenshots
 
-The app is iPhone-only, so **iPad screenshots are not required** (https://developer.apple.com/help/app-store-connect/reference/screenshot-specifications/). One warning: this is only true if the Xcode project targets iPhone only. If the build's device family includes iPad, App Store Connect will demand a 13 inch iPad set too. If it asks for iPad shots, that is why.
+The app is iPhone-only, so **iPad screenshots are not required** (https://developer.apple.com/help/app-store-connect/reference/screenshot-specifications/). That holds only because the project targets iPhone only (`TARGETED_DEVICE_FAMILY: "1"`, set at target level in `project.yml`). If App Store Connect starts demanding a 13 inch iPad set, that setting got reverted.
 
-What Apple requires (https://developer.apple.com/help/app-store-connect/reference/screenshot-specifications/):
-
-- **One set for the 6.9 inch iPhone display, portrait 1320 x 2868 pixels.** If you cannot produce 6.9 inch shots, a 6.5 inch set (1284 x 2778) is accepted instead.
-- Minimum 1 screenshot, maximum 10. Smaller iPhone sizes auto-scale from this set.
+Requirements:
+- **One set for the 6.9 inch iPhone display, portrait, 1320 x 2868 pixels.** A 6.5 inch set (1284 x 2778) is accepted instead if you cannot produce 6.9.
+- Minimum 1, maximum 10. Smaller iPhone sizes auto-scale.
 - JPEG or PNG, no transparency.
 
-Take exactly 4, in this order:
+Take exactly 5, in this order:
 
-1. **Speak tab**, mid-listening if possible, showing spoken dinner ideas.
-2. **Week tab**, a full generated week of dinners.
-3. **A recipe detail** screen, something that looks appetizing.
-4. **List tab**, the grocery list with a few items checked off.
+1. **Speak tab**, mid-listening, showing spoken dinner ideas.
+2. **The paywall.** New and required: this same image is the subscription's review screenshot in Section 3.
+3. **Week tab**, a full generated week of dinners.
+4. **A recipe detail** screen, something that looks appetizing.
+5. **List tab**, the grocery list with a few items checked off.
 
-Easiest way to take them:
-
-- Best: an iPhone 16 Pro Max or 17 Pro Max (any 6.9 inch iPhone). Take normal screenshots (side button + volume up). They come out at exactly 1320 x 2868.
-- No 6.9 inch phone? Open the project in Xcode, run the app in the **iPhone 16 Pro Max simulator**, and press Cmd+S in the simulator for each screen. Simulator screenshots are the right size and Apple accepts them.
-- Optional polish: screenshot around 9:41 AM with full battery and Wi-Fi for the classic clean status bar. Not required, plain honest screenshots are fine for an unlisted app.
-
----
-
-## 6. Review notes (paste into App Review Information → Notes)
-
-> MealTime is a private household meal planner intended for UNLISTED distribution (a request will be filed via the unlisted app form right after this submission). No account or login exists anywhere in the app, so no demo credentials are needed. To review: on first launch tap "Start our household" (this creates a new household instantly, nothing to enter). Go to the Speak tab, allow the microphone permission, and say a few dinner ideas out loud, for example "something with chicken, one pasta night, keep it around a hundred dollars." Speech is transcribed by Apple's speech framework, on the phone when the device supports it and on Apple's servers when it does not. MealTime never records, stores, or transmits the audio itself. Tap to generate: the app sends the text transcript and preferences to Anthropic's Claude API to build the week, which can take up to a minute on a slow connection. The Week, Recipe, and List tabs then populate. Household sync between two phones uses the CloudKit public database keyed by a random private household code, with silent push for updates; a second device is not needed to review any functionality. The app is free with no ads, no tracking, no analytics SDKs, and no in-app purchases.
+How:
+- Best: any 6.9 inch iPhone (16 Pro Max, 17 Pro Max). Side button plus volume up gives exactly 1320 x 2868.
+- Otherwise: run in the **iPhone 17 Pro Max simulator** and press Cmd+S per screen. Right size, and Apple accepts them.
+- To reach the paywall in the simulator you need the StoreKit configuration, which the scheme already attaches to the Run action (`MealTime.storekit`). Run from Xcode, not by launching the app some other way, or no products load and the buy button stays disabled.
 
 ---
 
-## 7. Unlisted distribution request
+## 8. Review notes (paste into App Review Information → Notes)
+
+> MealTime is a private household meal planner intended for UNLISTED distribution. No account or login exists anywhere in the app, so no demo credentials are needed.
+>
+> IMPORTANT FOR REVIEW: generating a new meal plan requires an auto-renewable subscription (MealTime Monthly, $4.99/month, no free trial). In the sandbox environment this purchase is free and requires no payment method. If the purchase does not complete, plan generation will correctly refuse and the app will appear to do nothing, so please complete the purchase first.
+>
+> To review: on first launch tap "Start our household" (this creates a new household instantly, nothing to enter). Go to the Speak tab, allow the microphone permission, and say a few dinner ideas out loud, for example "something with chicken, one pasta night, keep it around a hundred dollars." Tap to generate. The paywall appears, showing the price, the billing period, the auto-renewal terms, how to cancel, and links to the Terms of Use and privacy policy. Complete the sandbox purchase and generation resumes automatically with the request you already spoke. Building the week calls Anthropic's Claude API and can take up to a minute on a slow connection. The Week, Recipe, and List tabs then populate.
+>
+> Restore Purchases is in Settings under Subscription, alongside the current status and a link to manage or cancel the subscription in the App Store.
+>
+> Speech is transcribed by Apple's speech framework, on the phone when the device supports it and on Apple's servers when it does not. MealTime never records, stores, or transmits the audio itself; only the resulting text is sent.
+>
+> The subscription is tied to the Apple Account rather than the household, so it is not shared between the two phones. Saved plans, recipes, and the grocery list remain readable without a subscription; only generating new plans requires one.
+>
+> Household sync between two phones uses the CloudKit public database keyed by a random private household code, with silent push for updates. A second device is not needed to review any functionality.
+>
+> There are no ads, no analytics SDKs, and no third-party tracking.
+
+---
+
+## 9. Unlisted distribution
 
 **Form:** https://developer.apple.com/contact/request/unlisted-app/
 
-**When:** immediately after you press Submit for Review. Apple requires the app to be either already on the App Store or "ready for final distribution" and submitted to App Review; requests for apps still in beta or not yet submitted are declined (https://developer.apple.com/support/unlisted-app-distribution/). Also mention the unlisted intent in your review notes (already included in Section 6), which the same page recommends.
+If unlisted was already granted for an earlier version, you do not need to reapply. Unlisted status attaches to the app, not the version. Skip to the note below.
 
-**Turnaround:** Apple does not publish one. Developer reports range from a few business days to a week, with occasional multi-week outliers, and Apple support cannot track progress mid-request (https://developer.apple.com/forums/thread/702893). That is why the plan uses manual release.
+If it is still pending or was never filed: file it immediately after pressing Submit for Review. Apple requires the app to be already on the App Store or submitted to App Review; requests for apps still in beta are declined (https://developer.apple.com/support/unlisted-app-distribution/). Apple does not publish a turnaround; developer reports range from a few business days to a week, with occasional multi-week outliers (https://developer.apple.com/forums/thread/702893). That is why the plan uses manual release.
 
-**What unlisted means once granted:** the app is fully on the App Store but only reachable by direct link. It never appears in search, charts, categories, or recommendations. The link is generated on approval (or your existing App Store link keeps working) and works in all App Store regions (https://developer.apple.com/support/unlisted-app-distribution/).
+**Unlisted and paid coexist fine.** An unlisted app can sell in-app purchases normally. It just never appears in search, charts, categories, or recommendations (https://developer.apple.com/support/unlisted-app-distribution/).
 
-**Honest risk note:** Apple's examples of unlisted use cases are limited audiences like employees, partners, research studies, and event attendees (https://developer.apple.com/support/unlisted-app-distribution/). A two-person family app is a limited audience but not one of the listed examples, so there is a real chance Apple asks questions or declines. If declined, nothing is lost: you can keep the version unreleased and stay on TestFlight, or release it publicly anyway (with no marketing, a niche household app is effectively invisible in search).
+**Paste-ready justification:**
 
-**Paste-ready justification for the form:**
+> MealTime is a household meal planning app built by Echo Chamber Media for the developer's own family. It lets one household (the developer and his partner, on two phones) speak dinner ideas and receive a shared weekly dinner plan and grocery list. It is intentionally not designed, marketed, or supported for a general audience: there are no accounts, no ads, and no plans for public promotion of any kind. Access is coordinated by a private household code shared in person. The app includes an auto-renewable subscription solely to cover the per-plan cost of the AI service that generates the plans; it is not a commercial product aimed at the public. We are requesting unlisted distribution so the app can be installed by this specific, limited audience through a direct link only, without appearing in App Store search, charts, or recommendations. The app is complete, fully functional for reviewers, and has been submitted to App Review.
 
-> MealTime is a household meal planning app built by Echo Chamber Media for the developer's own family. It lets exactly one household (the developer and his partner, on two phones) speak dinner ideas and receive a shared weekly dinner plan and grocery list. It is intentionally not designed, marketed, or supported for a general audience: there are no accounts, no ads, no purchases, and no plans for public promotion of any kind. Access is coordinated by a private household code shared in person. We are requesting unlisted distribution so the app can be installed by this specific, limited audience through a direct link only, without appearing in App Store search, charts, or recommendations. The app is complete, fully functional for reviewers without any credentials, and has been submitted to App Review.
+**Honest risk note:** Apple's examples of unlisted use cases are employees, partners, research studies, and event attendees. A two-person family app is a limited audience but not one of the listed examples, so Apple may ask questions or decline. If declined, nothing is lost: keep the version unreleased and stay on TestFlight, or release publicly (with no marketing, a niche household app is effectively invisible).
 
 ---
 
-## 8. What Apple might push back on
+## 10. What Apple might push back on
 
-1. **5.1.2(i): sharing personal data with third-party AI.** In November 2025 Apple updated the guidelines to require that apps clearly disclose when personal data is shared with third parties "including with third-party AI" and obtain explicit permission before doing so (https://developer.apple.com/app-store/review/guidelines/ section 5.1.2(i), announced at https://developer.apple.com/news/?id=ey6d8onl). This is already handled in the app: a one-time notice sheet appears before the first plan generation (covering the transcript, budget, taste notes, and meal history going to Anthropic's Claude, with a link to the privacy policy), and planning only proceeds after the user accepts. The acceptance is remembered on the device. Together with the disclosure in the description and the privacy policy, this satisfies 5.1.2(i). If a rejection cites it anyway, point the reviewer to the notice sheet on the Speak tab (it shows on any fresh install before the first generation).
+**New for this release, in rough order of likelihood:**
 
-2. **2.1 completeness: the plan generation fails for the reviewer.** The reviewer starts with an empty household on a fresh device. If the bundled Anthropic API key is missing, expired, or rate limited, generation fails and the app gets rejected as broken (https://developer.apple.com/app-store/review/guidelines/ section 2.1). Fix: verify on a clean device before submitting (step 2 of the plan), make sure the Claude connection in the shipped build works (the deployed proxy from Proxy/README.md for App Store builds, and whatever key it holds has credit), and make sure a network error shows a friendly retry message rather than a dead spinner.
+1. **3.1.1 and 3.1.2, subscription mechanics.** The four things reviewers check: the app discloses title, length, and price before purchase; there is a working Restore Purchases; there is a link out to manage or cancel; and the terms of use link works. All four exist (the paywall covers disclosure and both links, Settings → Subscription covers restore and manage). Test all four on a clean install before submitting, because a rejection here is avoidable and costs a full review cycle.
 
-3. **The unlisted request itself is declined or slow.** Unlisted approval is a separate human decision with no published turnaround, and small personal apps are not among Apple's listed examples (https://developer.apple.com/support/unlisted-app-distribution/). Fix: manual release protects you either way; if declined, reply explaining the limited audience again, or simply release publicly with zero marketing, or stay on TestFlight (builds last 90 days and can be renewed with each new build).
+2. **2.1, the reviewer cannot get past the paywall.** This is the big one. The app now does nothing visible until a purchase completes, so any hitch in the sandbox purchase makes it look broken. Mitigations: the review notes in Section 8 say plainly that the purchase is required and free in sandbox; the subscription must be attached to this version (Section 2, step 10); and the product ID must match exactly. Also make sure the relay is deployed and the Anthropic key has credit, or generation fails right after a successful purchase, which is a worse look than failing before it.
 
-Minor things that will not block you but are worth knowing: the mic and speech purpose strings are already in the build and clearly describe their use, which is what 5.1.1 requires, and the Speak tab should keep a clear visual indication while listening, which guideline 2.5.14 requires for any app that records (https://developer.apple.com/app-store/review/guidelines/).
+3. **3.1.2(a), the description's subscription disclosure.** Handled in Section 5. Reviewers sometimes want the terms restated in the description even though the binary is what the guideline binds. It costs nothing to have it there.
+
+4. **2.3.1, accurate metadata.** The old description said "no subscriptions. Free." Make sure the version you paste is the one in Section 5, not the old one still sitting in App Store Connect. Shipping a description that contradicts the paywall is a straightforward rejection.
+
+5. **5.1.1, privacy policy mismatch.** The App Privacy answers now include Purchase History (Section 4) and the binary's `PrivacyInfo.xcprivacy` declares it. The published privacy policy has to say so too. Section 2, step 1.
+
+**Carried over from 1.1, still relevant:**
+
+6. **5.1.2(i), sharing personal data with third-party AI.** Apple requires apps to clearly disclose when personal data is shared with third parties "including with third-party AI" and to obtain explicit permission first (https://developer.apple.com/app-store/review/guidelines/ section 5.1.2(i), announced at https://developer.apple.com/news/?id=ey6d8onl). Handled: a one-time notice sheet appears before the first plan generation, covering the transcript, budget, taste notes, and meal history going to Anthropic's Claude, with a link to the privacy policy, and planning proceeds only after acceptance. If a rejection cites it, point the reviewer to that sheet on the Speak tab.
+
+7. **The unlisted request** is a separate human decision with no published turnaround. Section 9.
+
+Minor and non-blocking: the mic and speech purpose strings are in the build and describe their use, which is what 5.1.1 requires, and the Speak tab shows a clear visual indication while listening, which 2.5.14 requires of any app that records.
 
 ---
 
 ## Note on export compliance (already done, for your records)
 
-The app uses only standard HTTPS (Apple's built-in TLS via URLSession) to reach Anthropic and CloudKit, and no custom cryptography. The build sets ITSAppUsesNonExemptEncryption to false in Info.plist, which pre-answers the encryption questions so App Store Connect will not prompt you at submission (https://developer.apple.com/help/app-store-connect/manage-app-information/overview-of-export-compliance and https://developer.apple.com/documentation/security/complying-with-encryption-export-regulations). The annual self-classification report to the US Bureau of Industry and Security applies to apps that ship their own non-exempt cryptography; an app that only calls the encryption built into iOS is exempt and has no report to file (https://developer.apple.com/documentation/security/complying-with-encryption-export-regulations). France's extra declaration rules target security products (secure storage, secure communications, antivirus) and do not apply to a meal planner (https://developer.apple.com/help/app-store-connect/manage-app-information/overview-of-export-compliance).
+The app uses only standard HTTPS (Apple's built-in TLS via URLSession) to reach the relay and CloudKit, and no custom cryptography. `ITSAppUsesNonExemptEncryption` is false in Info.plist, which pre-answers the encryption questions so App Store Connect will not prompt at submission (https://developer.apple.com/help/app-store-connect/manage-app-information/overview-of-export-compliance and https://developer.apple.com/documentation/security/complying-with-encryption-export-regulations).
+
+Adding a subscription does not change this. StoreKit is Apple's framework and the relay call is ordinary TLS.
+
+The annual self-classification report to the US Bureau of Industry and Security applies to apps that ship their own non-exempt cryptography; an app that only calls the encryption built into iOS is exempt and has no report to file. France's extra declaration rules target security products (secure storage, secure communications, antivirus) and do not apply to a meal planner (https://developer.apple.com/help/app-store-connect/manage-app-information/overview-of-export-compliance).
