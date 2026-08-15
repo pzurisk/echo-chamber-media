@@ -209,6 +209,37 @@ await check("production 404 falls through to sandbox when allowed", async () => 
   expect(appleCalls[1].href.includes("sandbox"), true, "sandbox asked second");
 });
 
+await check("production 401 falls through to sandbox (app has no live IAP yet)", async () => {
+  // Apple's real behaviour before the Paid Applications Agreement and an
+  // approved product exist: production rejects the JWT, sandbox accepts it.
+  appleHandler = (href) =>
+    href.includes("sandbox")
+      ? appleOk("2000001050000000")
+      : new Response("", { status: 401 });
+  const response = await worker.fetch(makeRequest("2000001050000000"), baseEnv());
+  expect(response.status, 200, "status");
+  expect(appleCalls.length, 2, "apple calls");
+  expect(appleCalls[1].href.includes("sandbox"), true, "sandbox asked second");
+});
+
+await check("production 401 plus sandbox 404 refuses the caller", async () => {
+  appleHandler = (href) =>
+    href.includes("sandbox") ? appleNotFound() : new Response("", { status: 401 });
+  const response = await worker.fetch(makeRequest("2000001060000000"), baseEnv());
+  expect(response.status, 401, "status");
+  expect(anthropicCalls, 0, "anthropic calls");
+});
+
+await check("a bad key, 401 in both environments, gives 502 and is not cached", async () => {
+  appleHandler = () => new Response("", { status: 401 });
+  const env = baseEnv();
+  const response = await worker.fetch(makeRequest("2000001070000000"), env);
+  expect(response.status, 502, "status");
+  expect(appleCalls.length, 2, "apple calls");
+  expect(env.SPEND_COUNTER.store.has("verify-2000001070000000"), false, "cached a fault");
+  expect((await response.text()).includes("not a problem with your subscription"), true, "message");
+});
+
 await check("sandbox is not consulted when ALLOW_SANDBOX_SUBSCRIPTIONS is 0", async () => {
   appleHandler = (href) =>
     href.includes("sandbox") ? appleOk("2000001100000000") : appleNotFound();
@@ -238,12 +269,6 @@ await check("Apple returning 500 gives 502, not 401, and is not cached", async (
   expect(response.status, 502, "status");
   expect(env.SPEND_COUNTER.store.has("verify-2000001300000000"), false, "cached a fault");
   expect((await response.text()).includes("not a problem with your subscription"), true, "message");
-});
-
-await check("Apple rejecting the JWT (401) gives 502, not 401", async () => {
-  appleHandler = () => new Response("", { status: 401 });
-  const response = await worker.fetch(makeRequest("2000001400000000"), baseEnv());
-  expect(response.status, 502, "status");
 });
 
 await check("a network failure reaching Apple gives 502", async () => {

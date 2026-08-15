@@ -109,6 +109,7 @@ console.log(`\nSigned a JWT for bundle ${BUNDLE_ID}.`);
 console.log(`Key ID ${keyId}, issuer ${issuerId.slice(0, 8)}...\n`);
 
 let anyAuthenticated = false;
+const results = { production: false, sandbox: false };
 
 for (const [label, host] of HOSTS) {
   const url = `${host}/inApps/v1/subscriptions/${PROBE_TRANSACTION_ID}`;
@@ -125,11 +126,13 @@ for (const [label, host] of HOSTS) {
   const body = await response.text();
   if (response.status === 404) {
     anyAuthenticated = true;
+    results[label] = true;
     console.log(`  ${label.padEnd(11)} OK. Authenticated, and the probe ID is unknown as expected.`);
   } else if (response.status === 401) {
     console.log(`  ${label.padEnd(11)} REJECTED. Apple would not accept these credentials.`);
   } else if (response.status === 200) {
     anyAuthenticated = true;
+    results[label] = true;
     console.log(`  ${label.padEnd(11)} OK. Authenticated (and somehow knows the probe ID).`);
   } else {
     console.log(`  ${label.padEnd(11)} unexpected ${response.status}: ${body.slice(0, 200)}`);
@@ -137,7 +140,18 @@ for (const [label, host] of HOSTS) {
 }
 
 if (anyAuthenticated) {
-  console.log("\nThese credentials work. Safe to set as worker secrets.\n");
+  console.log("\nThese credentials work. Safe to set as worker secrets.");
+  if (!results.production && results.sandbox) {
+    console.log(
+      "\nProduction rejecting the same token that sandbox accepted is normal\n" +
+        "before the app has a live in-app purchase. It needs the Paid\n" +
+        "Applications Agreement signed and the subscription approved. Nothing\n" +
+        "is wrong with the key. Re-run this once both are done and production\n" +
+        "should turn OK; until then the worker settles everything on sandbox,\n" +
+        "which is what TestFlight purchases use anyway."
+    );
+  }
+  console.log("");
   process.exit(0);
 }
 

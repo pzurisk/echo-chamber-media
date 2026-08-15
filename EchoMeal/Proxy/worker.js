@@ -290,10 +290,26 @@ async function askAppleAboutSubscription(txnId, env) {
   let response;
   try {
     response = await askApple(APPLE_PRODUCTION_HOST, txnId, token);
-    // Apple answers 404 for a transaction it has no record of in this
-    // environment, which is also what a TestFlight purchase looks like from
-    // production. Sandbox is checked second, never first.
-    if (response.status === 404 && sandboxAllowed(env)) {
+
+    // Sandbox is checked second, never first, and only for the two answers
+    // that mean "production cannot settle this."
+    //
+    // 404 is the documented one: production has no record of the transaction,
+    // which is exactly what a TestFlight purchase looks like from there.
+    //
+    // 401 is the one that cost an outage to find. Until an app has a live
+    // in-app purchase in production, which needs the Paid Applications
+    // Agreement signed and the product approved, production rejects the JWT
+    // outright even though the same token authenticates fine against sandbox.
+    // Verified against Apple's live API with a real In-App Purchase key.
+    // Treating that as a hard failure would have broken every TestFlight
+    // build in exactly the window where the app is being tested.
+    //
+    // A genuinely bad key 401s in both environments, so it still ends up as
+    // "unknown" and a 502. Nothing is let through by widening this.
+    const productionCannotSettle =
+      response.status === 404 || response.status === 401;
+    if (productionCannotSettle && sandboxAllowed(env)) {
       response = await askApple(APPLE_SANDBOX_HOST, txnId, token);
     }
   } catch {
