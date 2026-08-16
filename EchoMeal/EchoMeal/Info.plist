@@ -37,8 +37,13 @@
 	<string>$(CLAUDE_PROXY_TOKEN)</string>
 	<key>CLAUDE_PROXY_URL</key>
 	<string>$(CLAUDE_PROXY_URL)</string>
+	<!-- True since 1.2: HouseholdCrypto seals every CloudKit payload with
+	     AES-256-GCM for confidentiality, which is not one of the exempt
+	     uses (HTTPS, authentication, DRM). Answering false would be a false
+	     statement on a US export declaration. See README section 7 for the
+	     self-classification paperwork this requires. -->
 	<key>ITSAppUsesNonExemptEncryption</key>
-	<false/>
+	<true/>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>MealTime listens so you can speak your dinner ideas.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>

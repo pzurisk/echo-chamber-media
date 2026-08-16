@@ -69,8 +69,9 @@ EchoMeal/
     Info.plist                 Usage descriptions, background modes, API key slot
     EchoMeal.entitlements      CloudKit + push entitlements
     Theme.swift                Colors and card styling
-    Config/HouseholdConfig.swift   Household code storage, generation, migration + container ID
+    Config/HouseholdConfig.swift   Household code Keychain storage, generation, legacy purge + container ID
     Models/MealPlanModels.swift    Codable types matching Claude's JSON schema
+    Services/HouseholdCrypto.swift Code generation, HKDF derivation, AES-GCM sealing, join links
     Services/SpeechRecorder.swift  Mic + SFSpeechRecognizer, tap to start and stop
     Services/ClaudeService.swift   Anthropic Messages API call + JSON parsing
     Services/CloudKitStore.swift   Public-database records + subscriptions
@@ -220,9 +221,9 @@ CloudKit creates the type first), and the schema must then be
 
 The app registers the subscriptions itself on every launch
 (`CloudKitStore.ensureSubscriptions`), so there is nothing to create by
-hand. Subscription IDs include the household code, and stale subscriptions
-left over from an old code are deleted automatically when a phone starts
-or joins a different household.
+hand. Subscription IDs include the derived lookup ID, not the household
+code, and stale subscriptions left over from an old code are deleted
+automatically when a phone starts or joins a different household.
 
 Both phones must be signed into iCloud (any two Apple IDs, they do not need
 to share one). The app shows a banner if iCloud is off.
@@ -248,9 +249,10 @@ to share one). The app shows a banner if iCloud is off.
 3. Organizer window opens. **Distribute App** > **TestFlight & App Store**
    (App Store Connect) > Upload. Automatic signing. Wait for processing
    (10 to 30 minutes, Apple emails you).
-4. App Store Connect > Echo Meal > TestFlight tab. The build appears. Answer
-   the export compliance question (the Info.plist already declares no
-   non-exempt encryption, so it may not even ask).
+4. App Store Connect > Echo Meal > TestFlight tab. The build appears.
+   Info.plist declares `ITSAppUsesNonExemptEncryption` as **true**, so the
+   build needs export compliance documentation on file before it can go to
+   external testers or review. See section 7.
 5. **Internal Testing** > create a group (Household). Add Billy's and
    Melissa's Apple IDs as testers (Users and Access > add them with the
    Customer Support or Developer role first if they are not in the team, or
@@ -267,6 +269,30 @@ Note on push signing: the entitlements file sets aps-environment to
 development for device builds. When you archive and upload through the
 organizer, Xcode automatically re-signs the build with the production APS
 environment, so nothing needs changing by hand there.
+
+## 7. Export compliance
+
+`Info.plist` sets `ITSAppUsesNonExemptEncryption` to **true**. That changed
+in 1.2, when `HouseholdCrypto` started sealing CloudKit payloads with
+AES-256-GCM.
+
+The old `false` meant the app used no encryption beyond the exempt uses:
+HTTPS, authentication, DRM, and a couple of narrow categories. Encrypting
+user content for confidentiality is not on that list, so `false` became a
+false statement on a US export declaration rather than a formality.
+
+True has a cost, and it is paperwork rather than money. Because the app uses
+published standard algorithms (AES-GCM, HKDF-SHA256, SHA-256) and is not a
+security product, it self-classifies as mass market under License Exception
+ENC, ECCN **5D992.c**. That requires a one-time registration with the Bureau
+of Industry and Security for an Encryption Registration Number, a
+self-classification report emailed to BIS and the NSA, and the same report
+again every year by 1 February for as long as the app ships. App Store
+Connect will not clear a build for external testing or review until the
+documentation is on file.
+
+Never answer this question by picking whichever value makes the upload go
+through. If the crypto changes, the answer gets revisited.
 
 ## A more secure key setup (built in now)
 
