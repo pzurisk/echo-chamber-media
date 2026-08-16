@@ -149,10 +149,14 @@ The app uses the **public database** with a small set of records keyed by
 a per-household code. There is no fixed code anymore. On first launch the
 app shows onboarding: one phone taps "Start our household" and gets a
 fresh code in the format `MEAL-XXXXXX`, and the other phone joins by
-typing that code. Installs from before per-household codes (the ones that
-already synced under `ZURISK-KITCHEN`) adopt that legacy code
-automatically on update, so existing phones keep their data and keep
-syncing with each other. The code is visible and changeable in Settings.
+typing that code. The code is visible and changeable in Settings.
+
+There is no legacy migration. An earlier build adopted a fixed household
+code that was hardcoded in this repo, which is public, so anyone reading
+the source could pull that household's records out of the public
+database. That migration is gone and the affected records were deleted.
+An install with no code goes through onboarding. Never hardcode a
+household code here.
 
 The code works like a house key. Anyone who has it can see and edit the
 meal plan, the grocery list, and the saved recipes, so share it only with

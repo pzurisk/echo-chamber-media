@@ -103,9 +103,12 @@ final class AppState: ObservableObject {
     private var dirtyKinds: Set<String> = []
 
     init() {
-        // Adopt the legacy fixed code on phones that synced before
-        // per-household codes existed, before anything reads the code.
-        HouseholdConfig.migrateIfNeeded()
+        // No legacy household migration here, on purpose. Installs from
+        // before per-household codes existed used to adopt a fixed code
+        // hardcoded in this repo, which is public, so anyone could read
+        // that household's records straight out of the public database.
+        // A code-less install goes through onboarding instead. Do not
+        // reintroduce a migration that hardcodes a household code.
 
         UserDefaults.standard.register(defaults: [
             HouseholdConfig.Keys.budgetTarget: 100.0,
@@ -195,8 +198,8 @@ final class AppState: ObservableObject {
         clearLocalData()
 
         // Back to a first-launch phone. The cached* keys are already gone
-        // from clearLocalData, which also keeps migrateIfNeeded from
-        // adopting the legacy household on the next launch.
+        // from clearLocalData, so the next launch finds no code and no
+        // cache and goes through onboarding.
         let defaults = UserDefaults.standard
         defaults.removeObject(forKey: HouseholdConfig.Keys.householdCode)
         defaults.removeObject(forKey: HouseholdConfig.Keys.aiNoticeAccepted)

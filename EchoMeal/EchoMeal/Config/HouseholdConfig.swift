@@ -39,23 +39,6 @@ enum HouseholdConfig {
             .joined()
     }
 
-    /// One-time legacy migration. Installs from before per-household codes
-    /// synced under the fixed code "ZURISK-KITCHEN". If this install has no
-    /// code yet but does have cached data from that era, adopt the legacy
-    /// code so those phones keep their plan, favorites, and history and
-    /// keep syncing with each other. A truly fresh install has no cache,
-    /// stays code-less, and goes through onboarding instead.
-    static func migrateIfNeeded() {
-        let defaults = UserDefaults.standard
-        guard code.isEmpty else { return }
-        let hasLegacyData = defaults.object(forKey: Keys.cachedPlan) != nil
-            || defaults.object(forKey: Keys.cachedFavorites) != nil
-            || defaults.object(forKey: Keys.cachedHistory) != nil
-        if hasLegacyData {
-            code = "ZURISK-KITCHEN"
-        }
-    }
-
     /// UserDefaults keys.
     enum Keys {
         static let householdCode = "householdCode"
