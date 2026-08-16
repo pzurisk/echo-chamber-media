@@ -19,11 +19,11 @@
   },
   "subscriptionGroups" : [
     {
-      "id" : "20983471",
+      "id" : "22310219",
       "localizations" : [
 
       ],
-      "name" : "MealTime",
+      "name" : "MealTime Pro",
       "subscriptions" : [
         {
           "adHocOffers" : [
@@ -35,19 +35,19 @@
           "displayPrice" : "4.99",
           "familyShareable" : false,
           "groupNumber" : 1,
-          "internalID" : "20983472",
+          "internalID" : "6801609469",
           "introductoryOffer" : null,
           "localizations" : [
             {
               "description" : "20 new meal plans a month, built by voice for your week.",
-              "displayName" : "MealTime Monthly",
+              "displayName" : "MealTime Pro Monthly",
               "locale" : "en_US"
             }
           ],
-          "productID" : "com.echochambermedia.echomeal.monthly",
+          "productID" : "com.echochamber.mealtime.pro.monthly",
           "recurringSubscriptionPeriod" : "P1M",
-          "referenceName" : "MealTime Monthly",
-          "subscriptionGroupID" : "20983471",
+          "referenceName" : "MealTime Pro Monthly",
+          "subscriptionGroupID" : "22310219",
           "type" : "RecurringSubscription"
         }
       ]

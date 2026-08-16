@@ -75,7 +75,13 @@ struct PaywallView: View {
             row("calendar", "\(SubscriptionStore.monthlyPlanAllowance) meal plans a month, which is a fresh week every week with room to change your mind")
             row("mic.fill", "Speak your cravings and get a full week of dinners with recipes")
             row("checklist", "One combined grocery list, sorted for the store")
-            row("iphone.gen3", "Shared with the other phone in your household at no extra cost")
+            // Careful with this line. The subscription belongs to one Apple
+            // Account, so the second phone in a household can read everything
+            // and cannot generate without its own. An earlier version promised
+            // sharing "at no extra cost", which was not true and is exactly
+            // the kind of purchase-screen claim that draws a 2.3.1 rejection
+            // and refund requests. Say what is actually shared.
+            row("iphone.gen3", "Everything you make shows up on the other phone in your household, which reads it all for free")
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -97,6 +103,14 @@ struct PaywallView: View {
 
     private var priceAndBuy: some View {
         VStack(spacing: 10) {
+            // Guideline 3.1.2 wants the subscription's title, its length, and
+            // its price all visible before anyone can buy. Title comes from
+            // StoreKit when the product loads, so it matches App Store Connect
+            // without a second string to keep in sync.
+            Text(subscriptions.displayName)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(Color.echoTextSecondary)
+
             Text("\(subscriptions.displayPrice) per month")
                 .font(.title3.weight(.semibold))
                 .foregroundStyle(Color.echoText)

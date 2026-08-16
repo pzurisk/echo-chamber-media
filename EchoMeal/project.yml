@@ -37,6 +37,8 @@ schemes:
       storeKitConfiguration: MealTime.storekit
     test:
       config: Debug
+      targets:
+        - EchoMealTests
     profile:
       config: Release
     analyze:
@@ -72,3 +74,28 @@ targets:
           CODE_SIGN_ENTITLEMENTS: EchoMeal/EchoMeal.entitlements
         Release:
           CODE_SIGN_ENTITLEMENTS: EchoMeal/EchoMeal.Release.entitlements
+
+  # Runs the real purchase flow against Apple's StoreKit Test harness, which
+  # is local: no App Store Connect, no network, no sandbox tester. It needs
+  # MealTime.storekit as a bundle resource, and note that it lands in the
+  # *test* bundle, which never ships. The app target still has no copy of it.
+  EchoMealTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: EchoMealTests
+        excludes:
+          - "**/.DS_Store"
+      - path: MealTime.storekit
+        buildPhase: resources
+    dependencies:
+      - target: EchoMeal
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.echochambermedia.echomeal.tests
+        # The app target supplies its own Info.plist; a test bundle does not
+        # have one in this repo, so let Xcode synthesise it.
+        GENERATE_INFOPLIST_FILE: true
+        # Test bundles are never distributed, so signing them with the team's
+        # distribution setup is friction for nothing.
+        CODE_SIGN_STYLE: Automatic

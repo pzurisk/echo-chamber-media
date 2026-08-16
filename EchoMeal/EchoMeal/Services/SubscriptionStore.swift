@@ -14,20 +14,29 @@ import StoreKit
 /// per-renewal `id` instead would silently hand the subscriber a fresh
 /// allowance every month a renewal posted, which is not what they bought.
 ///
-/// Verification is StoreKit's own. `Transaction.currentEntitlements` yields
-/// `VerificationResult` values that Apple has already checked against its
-/// signing keys, so an unverified result is dropped rather than trusted. That
-/// protects this device. It does not protect the relay, which sees only a
-/// plain string in a header and cannot tell a real ID from an invented one;
-/// that gap is documented in worker.js and closes when the relay verifies the
-/// signed JWS itself.
+/// Verification happens twice, on purpose. On this device
+/// `Transaction.currentEntitlements` yields `VerificationResult` values that
+/// Apple has already checked against its signing keys, so an unverified
+/// result is dropped rather than trusted. On the relay the same ID is checked
+/// again against Apple's App Store Server API before a single token is spent,
+/// because the header is just a string and the app token that accompanies it
+/// ships inside every copy of the .ipa. Neither check is redundant: the first
+/// keeps this phone honest about what it shows, the second keeps a repackaged
+/// build from spending Billy's money.
 @MainActor
 final class SubscriptionStore: ObservableObject {
 
     /// Must match the product ID created in App Store Connect exactly. A
     /// typo here does not fail the build, it just makes `product` nil and
     /// the paywall unbuyable, so check this first if the paywall looks empty.
-    static let productID = "com.echochambermedia.echomeal.monthly"
+    ///
+    /// This is the real ID from App Store Connect, in subscription group
+    /// "MealTime Pro" (22310219). App Store Connect product IDs are permanent
+    /// and cannot be reused after deletion, so the code matches the store, not
+    /// the other way around. The same string appears in `MealTime.storekit`
+    /// and in `Proxy/worker.js`; all three move together or the paywall and
+    /// the relay disagree about what was bought.
+    static let productID = "com.echochamber.mealtime.pro.monthly"
 
     /// Plans included per calendar month. The relay enforces this number
     /// (MONTHLY_GENERATION_CAP in wrangler.toml) and the paywall promises it.
@@ -228,5 +237,13 @@ final class SubscriptionStore: ObservableObject {
     /// right in every currency and storefront.
     var displayPrice: String {
         product?.displayPrice ?? "$4.99"
+    }
+
+    /// The subscription's name, from StoreKit rather than a literal, so the
+    /// paywall cannot drift out of step with App Store Connect. The fallback
+    /// only shows in the moment before the product loads, and the buy button
+    /// is disabled until then anyway.
+    var displayName: String {
+        product?.displayName ?? "MealTime Pro Monthly"
     }
 }

@@ -101,7 +101,16 @@ const TXN_ID_PATTERN = /^[A-Za-z0-9]{1,64}$/;
 const APPLE_PRODUCTION_HOST = "https://api.storekit.itunes.apple.com";
 const APPLE_SANDBOX_HOST = "https://api.storekit-sandbox.itunes.apple.com";
 const APPLE_BUNDLE_ID = "com.echochambermedia.echomeal";
-const SUBSCRIPTION_PRODUCT_ID = "com.echochambermedia.echomeal.monthly";
+
+// Which products count as a MealTime subscription. Apple returns every
+// transaction in the subscription group, so a customer who once bought a
+// different tier still has entries here, and only these IDs are honoured.
+// An annual tier exists in App Store Connect but is not shipped and is not
+// listed here on purpose: an unlisted product cannot be bought, and if it is
+// ever launched its allowance has to be decided before it is added.
+const SUBSCRIPTION_PRODUCT_IDS = new Set([
+  "com.echochamber.mealtime.pro.monthly",
+]);
 
 // Apple's subscription status codes. 1 is active and 4 is the billing grace
 // period, where the customer still has access while a renewal is retried.
@@ -339,7 +348,7 @@ async function askAppleAboutSubscription(txnId, env) {
     for (const entry of transactions) {
       if (!entry || entry.originalTransactionId !== txnId) continue;
       if (!ENTITLED_STATUSES.has(entry.status)) continue;
-      if (productIdOf(entry) !== SUBSCRIPTION_PRODUCT_ID) continue;
+      if (!SUBSCRIPTION_PRODUCT_IDS.has(productIdOf(entry))) continue;
       return "active";
     }
   }

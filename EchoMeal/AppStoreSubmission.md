@@ -1,8 +1,8 @@
 # MealTime by Echo Chamber, App Store Submission Pack
 
-Rewritten 2026-08-15 for version 1.3 (build 9), the release that adds a paid subscription. The free version of this document, written 2026-07-23 for 1.1, is in git history if you need it.
+Rewritten 2026-08-15 for version 1.2 (build 9), the release that adds a paid subscription. Updated 2026-08-16 against the live App Store Connect record. The free version of this document, written 2026-07-23 for 1.1, is in git history if you need it.
 
-**What changed and why it matters.** MealTime used to be free with no purchases. Version 1.3 puts plan generation behind a $4.99 a month auto-renewable subscription with no free trial. That single change touches almost every part of a submission: the App Privacy answers, the description, the review notes, the age rating page, and it adds a whole category of things Apple can reject you for (guideline 3.1). It also adds a hard prerequisite that has nothing to do with code, the Paid Applications Agreement, which involves banking and tax forms and is the slowest thing on this list.
+**What changed and why it matters.** MealTime used to be free with no purchases. Version 1.2 puts plan generation behind a $4.99 a month auto-renewable subscription with no free trial. That single change touches almost every part of a submission: the App Privacy answers, the description, the review notes, the age rating page, and it adds a whole category of things Apple can reject you for (guideline 3.1). It also adds a hard prerequisite that has nothing to do with code, the Paid Applications Agreement, which involves banking and tax forms and is the slowest thing on this list.
 
 Everything below was checked against Apple's current published docs. Each factual claim has its source URL in parentheses.
 
@@ -24,11 +24,13 @@ These block everything downstream. Do them first.
      --issuer-id <the issuer ID from the In-App Purchase key page>
    ```
 
-   As of 2026-08-15 that prints `production REJECTED` and `sandbox OK`, which is Apple's behaviour before an app has a live in-app purchase. When production flips to OK, the agreement and the product are both in place.
+   As of 2026-08-16 that prints `production REJECTED` and `sandbox OK`, which is Apple's behaviour before an app has a live in-app purchase. When production flips to OK, the agreement and the product are both in place.
 
-2. **Create the subscription.** Section 3 below has every field.
+   The Issuer ID is account-level. The same value works for App Store Connect API keys and In-App Purchase keys, so there is only one to keep track of.
 
-3. **Decide what happens to version 1.2.** Build 8 is already in App Store Connect as version 1.2. If 1.2 has not been released, do not create a 1.3 record; edit the existing 1.2 record and upload build 9 to it instead, and treat every "1.3" below as "1.2". If 1.2 is released, create 1.3 as a new version. Check this before you start typing metadata, because moving it afterwards means re-entering everything.
+2. **Finish the subscription's metadata.** It already exists in App Store Connect and is incomplete. Section 3 says exactly which fields to change and which product to leave alone.
+
+3. **Use the existing 1.2 record. Do not create a new version.** Confirmed via the App Store Connect API on 2026-08-16: the app (Apple ID 6793247494) has exactly one version record, 1.2, in state `PREPARE_FOR_SUBMISSION`. It has never been released. So MealTime has no public users to migrate and nothing to break: upload build 9 into the existing 1.2 record. The app's `CFBundleShortVersionString` is 1.2 and `CFBundleVersion` is 9 to match.
 
 ---
 
@@ -39,7 +41,7 @@ These block everything downstream. Do them first.
 The relay now refuses any request it cannot tie to a verified subscription. Build 8, which is what is installed today, sends no subscription at all. So:
 
 1. Paid Applications Agreement active (Section 0).
-2. Subscription created in App Store Connect (Section 3).
+2. Subscription metadata completed in App Store Connect and attached to version 1.2 (Section 3).
 3. **Upload build 9 to TestFlight.** Do not deploy the worker yet.
 4. **Install build 9 on both phones through TestFlight.** Buy the subscription on each. TestFlight purchases run in Apple's sandbox, so they cost nothing and do not need a real card.
 5. **Only now deploy the worker:** `cd EchoMeal/Proxy && npx wrangler deploy`.
@@ -65,6 +67,18 @@ Do these in order once Section 0 is done. Hands-on time about 2 hours.
 
 3. **Also test Restore Purchases.** Settings → Subscription → Restore purchases. Apple requires a working restore mechanism and reviewers do check it (guideline 3.1.1).
 
+   **What is already checked for you, and what is not.** Two test suites run without a device:
+
+   ```bash
+   cd EchoMeal/Proxy && node test/verify-test.mjs          # 23 tests, the relay
+   cd EchoMeal && xcodebuild test -project EchoMeal.xcodeproj -scheme EchoMeal \
+     -destination 'id=<a booted simulator>'                 # 3 tests, the paywall
+   ```
+
+   The app-side tests catch the failure that costs a whole review cycle: a product ID that does not resolve, which produces a permanently disabled buy button with no error message anywhere. They also assert the paywall has a name, a price, and a one-month period (guideline 3.1.2) and that no introductory offer has appeared.
+
+   They cannot drive an actual purchase. `Product.purchase()` needs a live window scene and hangs in a unit test, and every state-changing `SKTestSession` call fails with `notEntitled` on this Mac's simulator. The header comment in `EchoMealTests/SubscriptionStoreTests.swift` records what was tried so nobody repeats it. **Steps 2 and 3 above are therefore genuinely manual and genuinely necessary.** Do not skip them because the tests are green.
+
 4. **Fill in the version metadata** from Section 5 (name, subtitle, promotional text, description, keywords, URLs, categories).
 
 5. **Set the License Agreement.** App Store Connect → App Information → License Agreement. Use Apple's standard EULA unless you have a reason not to. The app already links to it from the paywall (https://www.apple.com/legal/internet-services/itunes/dev/stdeula/).
@@ -77,7 +91,7 @@ Do these in order once Section 0 is done. Hands-on time about 2 hours.
 
 9. **Pricing: the app itself stays FREE.** Do not put $4.99 on the app. The app is free and the subscription is an in-app purchase. Getting this wrong charges people twice and is a confusing mess to unwind.
 
-10. **Attach the subscription to this version.** On the version page, in the In-App Purchases section, add the MealTime Monthly subscription. A subscription's first review has to ride along with an app version; it will not be reviewed on its own.
+10. **Attach the subscription to this version.** On the version page, in the In-App Purchases section, add the MealTime Pro Monthly subscription. A subscription's first review has to ride along with an app version; it will not be reviewed on its own.
 
 11. **Export compliance is already handled.** `ITSAppUsesNonExemptEncryption` is false in Info.plist (https://developer.apple.com/help/app-store-connect/manage-app-information/overview-of-export-compliance). Note at the end of this file.
 
@@ -91,35 +105,41 @@ Do these in order once Section 0 is done. Hands-on time about 2 hours.
 
 ---
 
-## 3. Creating the subscription in App Store Connect
+## 3. Finishing the subscription in App Store Connect
 
-App Store Connect → your app → Subscriptions → create a subscription group.
+**The subscription already exists. Do not create a new one.** Group **MealTime Pro** (`22310219`) holds two products, both sitting in `MISSING_METADATA`:
 
-**Subscription group**
-- Reference name: `MealTime`
-- Group display name (customer-facing, shown on the manage-subscriptions screen): `MealTime`
+| Product ID | Reference name | Duration | US price | Ship it? |
+|---|---|---|---|---|
+| `com.echochamber.mealtime.pro.monthly` | MealTime Pro Monthly | 1 month | $4.99 | **Yes** |
+| `com.echochamber.mealtime.pro.annual` | MealTime Pro Annual | 1 year | $39.99 | **No, leave it** |
 
-**The subscription**
-- Reference name: `MealTime Monthly`
-- Product ID: `com.echochambermedia.echomeal.monthly`
-- Duration: 1 month
-- Price: $4.99 USD, with Apple's automatic equivalents in other regions
+**Product IDs in App Store Connect are permanent and cannot be reused after deletion**, so the code was changed to match these, not the other way around. `SubscriptionStore.productID`, `MealTime.storekit`, and `SUBSCRIPTION_PRODUCT_IDS` in `Proxy/worker.js` all now read `com.echochamber.mealtime.pro.monthly`. If any one of them drifts, the app finds no product and the paywall shows a permanently disabled buy button.
+
+**Why annual is not shipping.** An annual subscriber pays $39.99 for the same 240 plans a monthly subscriber pays $59.88 for. After Apple's 15 percent and roughly $18 a year of API spend, annual leaves about $16 of margin against monthly's $33. It roughly halves the return per subscriber-year. Leaving it in `MISSING_METADATA` and not attached to the version blocks nothing: an incomplete subscription that is not submitted with a version is simply ignored by review. If you ever want it, decide its plan allowance first, add its ID to `SUBSCRIPTION_PRODUCT_IDS`, and ship an app update.
+
+**What to fill in on the monthly product**
+
+- Duration: 1 month (already set)
+- Price: $4.99 USD, with Apple's automatic equivalents in other regions (already set)
 - Free trial or introductory offer: **none**. This is deliberate. A trial hands out 20 plans of API spend per signup to anyone who cancels before day one, and at these margins that is not survivable.
 - Family Sharing: **off**
+- Tax category: the default for apps and digital services. Not physical goods, not reading material.
 
-**Product ID must match exactly.** It is hardcoded in `SubscriptionStore.swift` and in the worker's verification. A typo means the app finds no product, the paywall shows a disabled buy button, and nothing works.
+**Localization (English, US). Change both of these, the current values are wrong.**
 
-**Localization (English, US)**
-- Display name: `MealTime Monthly`
+- Display name: `MealTime Pro Monthly`
+  Currently `Monthly`. The paywall reads this name straight from StoreKit rather than hardcoding it, so whatever you type here is what a customer sees above the price. "Monthly" on its own does not name the thing being bought, which guideline 3.1.2 asks for.
 - Description: `20 new meal plans a month, built by voice for your week.`
+  Currently `Weekly dinner plans and one shared grocery list.` That version never states the 20-plan limit, which is the single most important thing a buyer needs to know, and "shared" invites the reading that one subscription covers both phones.
 
-That description used to say the plans were "shared with the other phone in your household." They are not. The subscription belongs to the Apple Account, so two people sharing a household code each need their own to generate plans, though both can read whatever either one generates. Do not reintroduce the sharing claim; it is a refund request and a 2.3.1 misleading-metadata problem waiting to happen.
+**Never say the subscription is shared.** It belongs to one Apple Account. Two people on the same household code each need their own to generate plans, though both can read whatever either one makes. That claim was removed from the store description and from the paywall itself, where it had said the subscription was "shared with the other phone in your household at no extra cost." It is a refund request and a 2.3.1 misleading-metadata rejection waiting to happen. Do not reintroduce it anywhere.
+
+**Attach it to the version.** On the 1.2 version page, the In-App Purchases and Subscriptions section has to list the monthly product before you submit. A first subscription that is not attached to the version does not get reviewed, and the app ships with a paywall nobody can buy from.
 
 **Review information for the subscription**
 - Screenshot: the paywall screen (screenshot 2 from Section 7). Apple requires a screenshot of the purchase UI for every in-app purchase.
 - Review notes: `Tap the microphone on the Speak tab and say any dinner ideas out loud, then tap to generate. The paywall appears at that point. The subscription unlocks generating new plans; previously saved plans, recipes, and the grocery list stay readable without one.`
-
-**Tax category:** the default for apps and digital services is correct. This is not a physical goods or reading-material product.
 
 ---
 
@@ -174,7 +194,7 @@ What it does:
 - Every generated recipe saved automatically in the Recipe Box, favorites one tap away
 - Syncs between two phones with a private household code
 
-MealTime Monthly, $4.99 per month:
+MealTime Pro Monthly, $4.99 per month:
 - 20 new meal plans a month
 - Billed monthly to your Apple Account until you cancel
 - Cancel anytime in Settings, at least 24 hours before the next renewal
@@ -247,7 +267,7 @@ How:
 
 > MealTime is a private household meal planner intended for UNLISTED distribution. No account or login exists anywhere in the app, so no demo credentials are needed.
 >
-> IMPORTANT FOR REVIEW: generating a new meal plan requires an auto-renewable subscription (MealTime Monthly, $4.99/month, no free trial). In the sandbox environment this purchase is free and requires no payment method. If the purchase does not complete, plan generation will correctly refuse and the app will appear to do nothing, so please complete the purchase first.
+> IMPORTANT FOR REVIEW: generating a new meal plan requires an auto-renewable subscription (MealTime Pro Monthly, $4.99/month, no free trial). In the sandbox environment this purchase is free and requires no payment method. If the purchase does not complete, plan generation will correctly refuse and the app will appear to do nothing, so please complete the purchase first.
 >
 > To review: on first launch tap "Start our household" (this creates a new household instantly, nothing to enter). Go to the Speak tab, allow the microphone permission, and say a few dinner ideas out loud, for example "something with chicken, one pasta night, keep it around a hundred dollars." Tap to generate. The paywall appears, showing the price, the billing period, the auto-renewal terms, how to cancel, and links to the Terms of Use and privacy policy. Complete the sandbox purchase and generation resumes automatically with the request you already spoke. Building the week calls Anthropic's Claude API and can take up to a minute on a slow connection. The Week, Recipe, and List tabs then populate.
 >

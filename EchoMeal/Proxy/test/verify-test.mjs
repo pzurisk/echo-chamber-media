@@ -21,7 +21,7 @@ function toPem(der, label) {
 
 const PEM = toPem(await crypto.subtle.exportKey("pkcs8", keyPair.privateKey), "PRIVATE KEY");
 const BUNDLE = "com.echochambermedia.echomeal";
-const PRODUCT = "com.echochambermedia.echomeal.monthly";
+const PRODUCT = "com.echochamber.mealtime.pro.monthly";
 
 let appleCalls = [];
 let anthropicCalls = 0;
@@ -74,7 +74,7 @@ function appleOk(txnId, { status = 1, productId = PRODUCT, bundleId = BUNDLE } =
       bundleId,
       data: [
         {
-          subscriptionGroupIdentifier: "20983471",
+          subscriptionGroupIdentifier: "22310219",
           lastTransactions: [
             {
               originalTransactionId: txnId,
@@ -97,7 +97,7 @@ function baseEnv(overrides = {}) {
     ANTHROPIC_API_KEY: "test-anthropic-key",
     APP_TOKEN: "test-app-token",
     APPLE_PRIVATE_KEY: PEM,
-    APPLE_KEY_ID: "XR632GR99D",
+    APPLE_KEY_ID: "TESTKEYID01",
     APPLE_ISSUER_ID: "00000000-0000-0000-0000-000000000000",
     SPEND_COUNTER: makeKV(),
     ...overrides,
@@ -351,7 +351,7 @@ await check("the bearer token is a valid ES256 JWT with Apple's required claims"
   const header = decode(headerB64);
   expect(header.alg, "ES256", "alg");
   expect(header.typ, "JWT", "typ");
-  expect(header.kid, "XR632GR99D", "kid");
+  expect(header.kid, "TESTKEYID01", "kid");
 
   const claims = decode(claimsB64);
   expect(claims.aud, "appstoreconnect-v1", "aud");
