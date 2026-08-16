@@ -21,22 +21,32 @@ struct OnboardingView: View {
         ZStack {
             Color.echoBackground.ignoresSafeArea()
 
-            VStack(spacing: 28) {
-                Spacer()
+            // Scrolls only when it has to. The created step carries a QR
+            // code now and overflows a small phone; the other two steps
+            // still sit centred, because minHeight pins the stack to the
+            // screen and the spacers do the centring inside it.
+            GeometryReader { geometry in
+                ScrollView {
+                    VStack(spacing: 28) {
+                        Spacer(minLength: 12)
 
-                switch step {
-                case .choose:
-                    chooseStep
-                case .created(let code):
-                    createdStep(code)
-                case .join:
-                    joinStep
+                        switch step {
+                        case .choose:
+                            chooseStep
+                        case .created(let code):
+                            createdStep(code)
+                        case .join:
+                            joinStep
+                        }
+
+                        Spacer(minLength: 24)
+                        Spacer(minLength: 0)
+                    }
+                    .padding(.horizontal, 28)
+                    .frame(maxWidth: .infinity, minHeight: geometry.size.height)
                 }
-
-                Spacer()
-                Spacer()
+                .scrollBounceBehavior(.basedOnSize)
             }
-            .padding(.horizontal, 28)
         }
     }
 
@@ -89,27 +99,36 @@ struct OnboardingView: View {
     // MARK: - Created
 
     private func createdStep(_ code: String) -> some View {
-        VStack(spacing: 24) {
+        VStack(spacing: 20) {
             Text("Your household code")
                 .font(.headline)
                 .foregroundStyle(Color.echoTextSecondary)
 
-            Text(code)
-                .font(.system(size: 38, weight: .bold, design: .monospaced))
-                .foregroundStyle(Color.echoText)
-                .minimumScaleFactor(0.6)
-                .lineLimit(1)
-                .padding(.vertical, 20)
-                .padding(.horizontal, 24)
-                .frame(maxWidth: .infinity)
-                .echoCardStyle()
+            if let url = HouseholdCrypto.joinURL(for: code) {
+                HouseholdQRView(url: url, side: 170)
+            }
 
-            Text("Share this code with your partner so their phone joins yours.")
+            Text("Point the other phone's camera at this to join. No app needed, the built-in Camera does it.")
                 .font(.subheadline)
                 .foregroundStyle(Color.echoTextSecondary)
                 .multilineTextAlignment(.center)
 
-            ShareLink(item: code) {
+            // The code itself, for the times a camera is not an option.
+            // Selectable so it can be copied out by hand.
+            Text(HouseholdCrypto.formatted(code))
+                .font(.system(.footnote, design: .monospaced))
+                .foregroundStyle(Color.echoText)
+                .multilineTextAlignment(.center)
+                .textSelection(.enabled)
+                .padding(.vertical, 12)
+                .padding(.horizontal, 16)
+                .frame(maxWidth: .infinity)
+                .echoCardStyle()
+
+            // Shares the code as text rather than the link, because a custom
+            // scheme is not reliably tappable in Messages. Pasted into the
+            // join field it normalizes back to the same code.
+            ShareLink(item: HouseholdCrypto.formatted(code)) {
                 Label("Share code", systemImage: "square.and.arrow.up")
                     .font(.headline)
                     .frame(maxWidth: .infinity)
@@ -117,6 +136,11 @@ struct OnboardingView: View {
             }
             .buttonStyle(.bordered)
             .tint(Color.echoText)
+
+            Text("Write it down somewhere safe. It is the only key to your data, and nobody can recover it for you.")
+                .font(.caption)
+                .foregroundStyle(Color.echoTextSecondary)
+                .multilineTextAlignment(.center)
 
             Button {
                 dismiss()
@@ -139,8 +163,13 @@ struct OnboardingView: View {
                 .font(.title3.weight(.semibold))
                 .foregroundStyle(Color.echoText)
 
-            TextField("MEAL-ABC123", text: $joinCode)
-                .font(.title3.monospaced())
+            Text("Easier: point this phone's camera at the QR code on the other one.")
+                .font(.subheadline)
+                .foregroundStyle(Color.echoTextSecondary)
+                .multilineTextAlignment(.center)
+
+            TextField("MEAL-XXXX-XXXX-...", text: $joinCode)
+                .font(.footnote.monospaced())
                 .textInputAutocapitalization(.characters)
                 .autocorrectionDisabled()
                 .multilineTextAlignment(.center)
@@ -180,7 +209,7 @@ struct OnboardingView: View {
             joinError = nil
             dismiss()
         } else {
-            joinError = "That code looks too short. Double check it and try again."
+            joinError = "That is not a complete code. It has 26 characters after MEAL, so scanning the QR is the easy way."
         }
     }
 }

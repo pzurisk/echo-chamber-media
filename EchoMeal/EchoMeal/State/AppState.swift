@@ -103,12 +103,12 @@ final class AppState: ObservableObject {
     private var dirtyKinds: Set<String> = []
 
     init() {
-        // No legacy household migration here, on purpose. Installs from
-        // before per-household codes existed used to adopt a fixed code
-        // hardcoded in this repo, which is public, so anyone could read
-        // that household's records straight out of the public database.
-        // A code-less install goes through onboarding instead. Do not
-        // reintroduce a migration that hardcodes a household code.
+        // Clears the short code and plaintext caches left by the old sync
+        // scheme, before anything reads the code. There is deliberately no
+        // migration that carries a household forward: an install that had
+        // one goes back through onboarding for a 128-bit code. Do not
+        // reintroduce a migration that hardcodes or reuses a short code.
+        HouseholdConfig.purgeLegacyStorageIfNeeded()
 
         UserDefaults.standard.register(defaults: [
             HouseholdConfig.Keys.budgetTarget: 100.0,
@@ -139,9 +139,24 @@ final class AppState: ObservableObject {
 
     // MARK: - Household membership
 
-    /// The code this phone syncs under. Empty until onboarding finishes.
+    /// The code this phone syncs under, canonical form. Empty until
+    /// onboarding finishes. This is key material, so the UI shows
+    /// householdDisplayCode and shares householdJoinURL instead.
     var householdCode: String {
         HouseholdConfig.code
+    }
+
+    /// Grouped for reading and typing: MEAL-XXXX-XXXX-...
+    var householdDisplayCode: String {
+        HouseholdCrypto.formatted(householdCode)
+    }
+
+    /// The link behind the QR code and the share sheet. Scanning it with the
+    /// stock Camera app opens the app and joins, which is the only practical
+    /// way to move a twenty-six character code between two phones.
+    var householdJoinURL: URL? {
+        guard !householdCode.isEmpty else { return nil }
+        return HouseholdCrypto.joinURL(for: householdCode)
     }
 
     /// Starts a brand new household: fresh code, clean slate, new
@@ -155,10 +170,23 @@ final class AppState: ObservableObject {
 
     /// Joins an existing household by its code. Local data is cleared and
     /// the partner's data arrives from the cloud on the refresh. Returns
-    /// false (and changes nothing) when the code is too short to be real.
+    /// false (and changes nothing) unless the code is a full, well-formed
+    /// one. A near miss cannot be accepted: the code derives the decryption
+    /// key, so a wrong character does not land in a neighbouring household,
+    /// it lands in an empty one that looks like data loss.
     func joinHousehold(code raw: String) -> Bool {
         let code = HouseholdConfig.normalize(raw)
-        guard code.count >= 4 else { return false }
+        guard HouseholdCrypto.isValid(code) else { return false }
+        switchToHousehold(code)
+        return true
+    }
+
+    /// Joins from a scanned QR code or a tapped share link. The URL is
+    /// untrusted input and goes through the same validation a typed code
+    /// gets. Returns false on anything that is not one of our join links
+    /// carrying a valid code.
+    func joinHousehold(url: URL) -> Bool {
+        guard let code = HouseholdCrypto.code(fromJoinURL: url) else { return false }
         switchToHousehold(code)
         return true
     }
@@ -198,10 +226,12 @@ final class AppState: ObservableObject {
         clearLocalData()
 
         // Back to a first-launch phone. The cached* keys are already gone
-        // from clearLocalData, so the next launch finds no code and no
-        // cache and goes through onboarding.
+        // from clearLocalData, so once the code leaves the Keychain the next
+        // launch finds nothing and goes through onboarding. Dropping the
+        // code is also what makes the delete final: it is the only copy of
+        // the key those CloudKit records were sealed with.
+        HouseholdConfig.code = ""
         let defaults = UserDefaults.standard
-        defaults.removeObject(forKey: HouseholdConfig.Keys.householdCode)
         defaults.removeObject(forKey: HouseholdConfig.Keys.aiNoticeAccepted)
         defaults.removeObject(forKey: HouseholdConfig.Keys.budgetTarget)
         defaults.removeObject(forKey: HouseholdConfig.Keys.dinnersPerWeek)

@@ -30,6 +30,15 @@ struct EchoMealApp: App {
                 .onAppear {
                     needsOnboarding = !appState.isOnboarded
                 }
+                .onOpenURL { url in
+                    // A mealtime://join link, from the QR code the other
+                    // phone shows. AppState validates it before switching,
+                    // so a malformed or foreign URL changes nothing.
+                    // Onboarding, if it is up, has nothing left to ask.
+                    if appState.joinHousehold(url: url) {
+                        needsOnboarding = false
+                    }
+                }
                 .task {
                     // Reads the entitlement and loads the price before
                     // anyone taps the mic, so a subscriber never sees the

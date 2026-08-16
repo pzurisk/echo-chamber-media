@@ -145,32 +145,46 @@ them too.
 
 ## 4. CloudKit setup
 
-The app uses the **public database** with a small set of records keyed by
-a per-household code. There is no fixed code anymore. On first launch the
-app shows onboarding: one phone taps "Start our household" and gets a
-fresh code in the format `MEAL-XXXXXX`, and the other phone joins by
-typing that code. The code is visible and changeable in Settings.
+The app uses the **public database**, which every iCloud user of the app
+can read. Nothing readable goes into it. On first launch the app shows
+onboarding: one phone taps "Start our household" and gets a fresh 128-bit
+code, and the other phone joins by scanning its QR code. The code is
+visible in Settings, behind a tap for the QR.
 
-There is no legacy migration. An earlier build adopted a fixed household
-code that was hardcoded in this repo, which is public, so anyone reading
-the source could pull that household's records out of the public
+`HouseholdCrypto` turns that code into the only two values CloudKit ever
+sees. HKDF-SHA256 derives a 16-byte **lookup ID**, which names the records,
+and a separate 32-byte **AES key**, which seals the contents. Different
+info strings, so neither reveals the other, and the code itself is never
+written to CloudKit. Someone who downloads the whole container gets opaque
+IDs and AES-GCM blobs.
+
+`HouseholdCryptoTests` covers all of this. Run it before touching the
+scheme.
+
+The code is a house key and an encryption key at once. Anyone who has it
+can read and edit everything, and if both phones lose it the data is
+unrecoverable, because there is no account and no copy anywhere else.
+
+There is no legacy migration, in either direction. An earlier build adopted
+a fixed household code hardcoded in this repo, which is public, so anyone
+reading the source could pull that household's records out of the public
 database. That migration is gone and the affected records were deleted.
-An install with no code goes through onboarding. Never hardcode a
-household code here.
+The short codes that replaced it cannot carry forward either, because
+thirty bits is not enough to derive a key from. An install with no code
+goes through onboarding. Never hardcode or shorten a household code here.
 
-The code works like a house key. Anyone who has it can see and edit the
-meal plan, the grocery list, and the saved recipes, so share it only with
-your household.
+| Record type   | Record name             | Fields                          |
+|---------------|-------------------------|---------------------------------|
+| HouseholdPlan | `plan-<lookupID>`       | payload, householdID, updatedAt |
+| GroceryState  | `grocery-<lookupID>`    | payload, householdID, updatedAt |
+| Favorites     | `favorites-<lookupID>`  | payload, householdID, updatedAt |
+| TasteHistory  | `history-<lookupID>`    | payload, householdID, updatedAt |
+| Ratings       | `ratings-<lookupID>`    | payload, householdID, updatedAt |
+| RecipeBox     | `recipebox-<lookupID>`  | payload, householdID, updatedAt |
+| Pantry        | `pantry-<lookupID>`     | payload, householdID, updatedAt |
 
-| Record type   | Record name         | Fields                                |
-|---------------|---------------------|---------------------------------------|
-| HouseholdPlan | `plan-<code>`       | planJSON, householdID, updatedAt      |
-| GroceryState  | `grocery-<code>`    | checkedIDs, householdID, updatedAt    |
-| Favorites     | `favorites-<code>`  | recipesJSON, householdID, updatedAt   |
-| TasteHistory  | `history-<code>`    | historyJSON, householdID, updatedAt   |
-| Ratings       | `ratings-<code>`    | ratingsJSON, householdID, updatedAt   |
-| RecipeBox     | `recipebox-<code>`  | recipesJSON, keptJSON, householdID, updatedAt |
-| Pantry        | `pantry-<code>`     | staplesJSON, householdID, updatedAt   |
+`payload` is **Bytes** and holds an AES-GCM sealed box (nonce, ciphertext,
+and tag combined). `householdID` holds the lookup ID, not the code.
 
 Steps:
 
@@ -179,22 +193,30 @@ Steps:
    automatically the first time each record is saved.
 2. Open [icloud.developer.apple.com](https://icloud.developer.apple.com),
    pick the `iCloud.com.echochambermedia.echomeal` container.
-3. Schema > Indexes: for each of the record types in the table above, add a
-   **Queryable** index on `householdID`. This is what lets the
-   CKQuerySubscription (live sync push) work. While you are there, also add
-   Queryable on `recordName` for each type (harmless, and useful for
-   browsing records in the console).
-4. **Deploy schema to Production.** CloudKit Console > Deploy Schema
-   Changes. TestFlight builds run against the Production environment, so
-   this step is required before the TestFlight install will sync. Do it
-   again any time the schema changes.
+3. Schema > Indexes: for each record type in the table, add a **Queryable**
+   index on `householdID`. That index is what makes the CKQuerySubscription
+   (live sync push) work, and it is safe because the field holds the derived
+   lookup ID.
+4. Schema > Indexes: make sure `recordName` is **not** Queryable on any
+   record type, and that `payload` carries no index at all. A Queryable
+   `recordName` lets any iCloud user run a `CKQuery` that lists the entire
+   container. Earlier versions of this file told you to add exactly that
+   index, so on an existing container it has to be removed rather than
+   simply not added.
+5. Security Roles: `_world` needs no access at all, and `_icloud` needs read
+   and write. Records are reachable only by exact ID, so nothing legitimate
+   depends on world access.
+6. **Deploy schema to Production.** CloudKit Console > Deploy Schema
+   Changes. TestFlight and App Store builds and App Review all run against
+   the Production environment, so this is required before any of them will
+   sync. Do it again any time the schema changes. A container whose schema
+   exists only in Development works in a Development-pointed TestFlight
+   setup and then fails for the reviewer.
 
-IMPORTANT: the **Pantry** record type (pantry staples) is newer than the
-others. Like every record type, it needs the one-time **Queryable index on
-`householdID`** from step 3 (save a staple once in Development so CloudKit
-creates the type first), and then the schema must be **re-deployed to
-Production** (step 4) before TestFlight or App Store builds will sync
-pantry staples between phones.
+IMPORTANT: every record type needs the one-time **Queryable index on
+`householdID`** from step 3 (save each kind of data once in Development so
+CloudKit creates the type first), and the schema must then be
+**re-deployed to Production** before the phones will sync.
 
 The app registers the subscriptions itself on every launch
 (`CloudKitStore.ensureSubscriptions`), so there is nothing to create by

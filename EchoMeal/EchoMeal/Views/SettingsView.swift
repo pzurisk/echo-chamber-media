@@ -13,6 +13,9 @@ struct SettingsView: View {
     @AppStorage(HouseholdConfig.Keys.themeChoice) private var theme: AppTheme = .hearth
 
     @State private var showNewHouseholdConfirm = false
+    /// Collapsed on every open. The QR is the household key, so showing it
+    /// is a deliberate act, not a remembered preference.
+    @State private var showHouseholdQR = false
     @State private var joinCode = ""
     @State private var joinError: String?
     @State private var newStaple = ""
@@ -96,18 +99,43 @@ struct SettingsView: View {
                 }
 
                 Section("Household") {
-                    HStack {
-                        Text("Code")
-                        Spacer()
-                        Text(appState.householdCode)
-                            .font(.body.monospaced())
-                            .foregroundStyle(Color.echoTextSecondary)
-                        ShareLink(item: appState.householdCode) {
-                            Image(systemName: "square.and.arrow.up")
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("Code")
+                            Spacer()
+                            // Shares the code as text, not the join link. A
+                            // custom URL scheme is not reliably tappable in
+                            // Messages, and pasted text normalizes back to
+                            // the same code anyway.
+                            ShareLink(item: appState.householdDisplayCode) {
+                                Image(systemName: "square.and.arrow.up")
+                            }
+                            .tint(.echoAccentText)
                         }
-                        .tint(.echoAccentText)
+                        Text(appState.householdDisplayCode)
+                            .font(.footnote.monospaced())
+                            .foregroundStyle(Color.echoTextSecondary)
+                            .textSelection(.enabled)
                     }
-                    Text("Both phones use this code, so you both see the same week, list, and favorites. Share it only with your household; anyone who has it can see and edit your plan.")
+
+                    // Behind a tap on purpose. The QR is the whole key in
+                    // one glance, so it should not be sitting open on a
+                    // screen anyone can shoulder-read.
+                    if let url = appState.householdJoinURL {
+                        DisclosureGroup("Show QR code", isExpanded: $showHouseholdQR) {
+                            VStack(spacing: 10) {
+                                HouseholdQRView(url: url, side: 180)
+                                Text("Point the other phone's camera at this to join.")
+                                    .font(.caption)
+                                    .foregroundStyle(Color.echoTextSecondary)
+                                    .multilineTextAlignment(.center)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 8)
+                        }
+                    }
+
+                    Text("Both phones use this code, so you both see the same week, list, and favorites. It is also the key your data is encrypted with, so anyone who has it can read and edit your plan, and nobody can recover it for you if both phones lose it.")
                         .font(.caption)
                         .foregroundStyle(Color.echoTextSecondary)
                     Button("Start a new household", role: .destructive) {
@@ -116,8 +144,8 @@ struct SettingsView: View {
                 }
 
                 Section("Join a different household") {
-                    TextField("MEAL-ABC123", text: $joinCode)
-                        .font(.body.monospaced())
+                    TextField("MEAL-XXXX-XXXX-...", text: $joinCode)
+                        .font(.footnote.monospaced())
                         .textInputAutocapitalization(.characters)
                         .autocorrectionDisabled()
                         .submitLabel(.join)
@@ -129,7 +157,7 @@ struct SettingsView: View {
                     }
                     Button("Join") { attemptJoin() }
                         .disabled(joinCode.trimmingCharacters(in: .whitespaces).isEmpty)
-                    Text("Joining switches this phone to that household's shared plan, list, and favorites.")
+                    Text("Scanning the other phone's QR code does this for you. Joining switches this phone to that household's shared plan, list, and favorites.")
                         .font(.caption)
                         .foregroundStyle(Color.echoTextSecondary)
                 }
@@ -202,7 +230,7 @@ struct SettingsView: View {
                     deleteEverything()
                 }
             } message: {
-                Text("This permanently erases your week, grocery list, favorites, recipe box, ratings, and history from iCloud and from this phone. It also deletes them for the other phone in household \(appState.householdCode). This cannot be undone.")
+                Text("This permanently erases your week, grocery list, favorites, recipe box, ratings, and history from iCloud and from this phone. It also deletes them for the other phone in your household, and it forgets the code, which is the only key to that data. This cannot be undone.")
             }
         }
     }
@@ -301,13 +329,13 @@ struct SettingsView: View {
     }
 
     /// Shared by the text field's submit and the Join button. On success
-    /// the field clears; on a too-short code an inline error shows.
+    /// the field clears; on an incomplete code an inline error shows.
     private func attemptJoin() {
         if appState.joinHousehold(code: joinCode) {
             joinError = nil
             joinCode = ""
         } else {
-            joinError = "That code looks too short. Double check it and try again."
+            joinError = "That is not a complete code. It has 26 characters after MEAL, so scanning the QR is the easy way."
         }
     }
 }
