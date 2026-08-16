@@ -159,8 +159,8 @@ console.log(
   "\nApple rejected these credentials. The usual causes, most likely first:\n" +
     "  1. The key is a Team Key. The App Store Server API needs a key created\n" +
     "     under Users and Access, Integrations, In-App Purchase.\n" +
-    "  2. The Issuer ID is the one from the App Store Connect API page rather\n" +
-    "     than the one printed on the In-App Purchase key page. They differ.\n" +
+    "  2. The Issuer ID is wrong. It is account-level and the same value works\n" +
+    "     for App Store Connect API keys and In-App Purchase keys alike.\n" +
     "  3. The Key ID does not match the key file.\n"
 );
 process.exit(1);
