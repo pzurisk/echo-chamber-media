@@ -7,8 +7,20 @@ compatibility_date = "2026-01-01"
 # what normal use produces. The per-subscription cap below is what an individual
 # household actually feels. Raise this number and redeploy to loosen it.
 # Both are plain variables, not secrets, so they are safe to read in the dashboard.
+#
+# Sized for the real subscriber count, not an imagined one. At two phones plus a
+# handful of TestFlight testers, 60 is roughly ten times normal use and caps a
+# runaway day at about five dollars. The previous value of 400 was around $36 a
+# day at typical cost and $115 at the worst case the token ceiling allows, which
+# is a circuit breaker for a business that does not exist yet. Raise it when the
+# subscriber count justifies it.
+#
+# This matters more than it looks: both quota checks in worker.js are skipped
+# entirely if the KV read fails, so during a Cloudflare outage this cap is not
+# enforced either. The only limit that always holds is the monthly spend cap set
+# on the Anthropic account itself. Keep that one set.
 [vars]
-DAILY_REQUEST_CAP = "400"
+DAILY_REQUEST_CAP = "60"
 
 # One subscription's included meal plans per calendar month. This number is
 # quoted on the paywall, in the App Store description, and in the refusal message

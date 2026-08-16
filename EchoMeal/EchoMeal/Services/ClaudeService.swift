@@ -223,10 +223,21 @@ week and recipes each have exactly \(count) entries, one per day, \(span), in or
             throw ClaudeError.missingKey
         }
         request.httpMethod = "POST"
-        // Planning a full week can take a while, but past 90 seconds it is
-        // almost certainly stuck. Fail fast so the retry ladder and the
-        // AppState watchdog keep the total wait reasonable.
-        request.timeoutInterval = 90
+        // Careful with this number. The relay does not stream (it refuses a
+        // "stream" key outright), so nothing arrives on this connection until
+        // Claude has finished the entire plan. A week of dinners with full
+        // recipes runs roughly 3,000 to 6,000 output tokens, which lands
+        // somewhere between 30 and 100 seconds. The old value of 90 sat inside
+        // that range, and timing out there is the expensive kind of failure:
+        // the relay has already counted the generation against the
+        // subscriber's monthly allowance by the time this fires, and
+        // .timedOut is in transientURLErrorCodes, so the retry below spends a
+        // second one. Two of their twenty, and no plan to show for it.
+        //
+        // 180 clears the slow tail without becoming an infinite wait. The real
+        // backstop is still withPlanningDeadline in AppState at 240 seconds,
+        // which bounds the whole attempt including the retry.
+        request.timeoutInterval = 180
         // Note: the API version header is 2023-06-01. That value is the
         // current, correct one for the Messages API. The proxy forwards it.
         request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
