@@ -39,6 +39,7 @@ schemes:
       config: Debug
       targets:
         - EchoMealTests
+        - EchoMealUITests
     profile:
       config: Release
     analyze:
@@ -99,3 +100,32 @@ targets:
         # Test bundles are never distributed, so signing them with the team's
         # distribution setup is friction for nothing.
         CODE_SIGN_STYLE: Automatic
+
+  # Exists for one job: capture the paywall as App Store Connect's subscription
+  # review screenshot. That image cannot come from TestFlight, because a product
+  # sitting in MISSING_METADATA never resolves, and PaywallView disables the
+  # Subscribe button and prints "Loading the subscription from the App Store"
+  # when the product is nil. A reviewer would see a dead button. The simulator
+  # resolves the product locally from MealTime.storekit instead, so the price and
+  # the live button in the screenshot are the real ones.
+  #
+  # Note that XcodeGen 2.46 accepts storeKitConfiguration only under the scheme's
+  # `run:` action, not `test:`. Without it on the test action the UI test launches
+  # the app with no StoreKit configuration and captures exactly the broken-looking
+  # screen this target exists to avoid. Run scripts/patch-test-storekit.sh after
+  # every `xcodegen generate` to put it back.
+  EchoMealUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: EchoMealUITests
+        excludes:
+          - "**/.DS_Store"
+    dependencies:
+      - target: EchoMeal
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.echochambermedia.echomeal.uitests
+        GENERATE_INFOPLIST_FILE: true
+        CODE_SIGN_STYLE: Automatic
+        TEST_TARGET_NAME: EchoMeal
