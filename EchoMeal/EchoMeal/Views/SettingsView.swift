@@ -262,7 +262,10 @@ struct SettingsView: View {
             }
 
             if subscriptions.status == .subscribed {
-                Text("\(SubscriptionStore.monthlyPlanAllowance) meal plans a month, \(subscriptions.displayPrice) billed monthly to your Apple Account.")
+                // Describes the plan that was actually bought, not whatever
+                // the paywall last highlighted. Reading displayPrice here
+                // would tell an annual subscriber they are billed monthly.
+                Text(subscriptions.entitlementSummary)
                     .font(.caption)
                     .foregroundStyle(Color.echoTextSecondary)
                 Link("Manage or cancel", destination: SubscriptionStore.manageSubscriptionsURL)

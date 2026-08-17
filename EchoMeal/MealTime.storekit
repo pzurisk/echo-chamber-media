@@ -32,14 +32,39 @@
           "codeOffers" : [
 
           ],
-          "displayPrice" : "4.99",
+          "displayPrice" : "39.99",
           "familyShareable" : false,
           "groupNumber" : 1,
+          "internalID" : "6801610468",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "20 new meal plans a month, billed yearly.",
+              "displayName" : "MealTime Pro Annual",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "com.echochamber.mealtime.pro.annual",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "MealTime Pro Annual",
+          "subscriptionGroupID" : "22310219",
+          "type" : "RecurringSubscription"
+        },
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "4.99",
+          "familyShareable" : false,
+          "groupNumber" : 2,
           "internalID" : "6801609469",
           "introductoryOffer" : null,
           "localizations" : [
             {
-              "description" : "20 new meal plans a month, built by voice for your week.",
+              "description" : "20 new meal plans a month, built by voice.",
               "displayName" : "MealTime Pro Monthly",
               "locale" : "en_US"
             }

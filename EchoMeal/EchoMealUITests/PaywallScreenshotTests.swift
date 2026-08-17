@@ -5,7 +5,7 @@ import XCTest
 /// Apple wants one image of the screen where the purchase actually happens.
 /// There is a chicken and egg problem in getting it: the subscription stays in
 /// MISSING_METADATA until the screenshot is uploaded, and a product in that
-/// state does not resolve, so on TestFlight `SubscriptionStore.product` is nil,
+/// state does not resolve, so on TestFlight `SubscriptionStore.selectedProduct` is nil,
 /// PaywallView disables Subscribe and shows "Loading the subscription from the
 /// App Store." Screenshotting that would hand the reviewer a dead button.
 ///
@@ -62,14 +62,16 @@ final class PaywallScreenshotTests: XCTestCase {
         // thing on this screen that distinguishes a loaded product from a
         // missing one.
         //
-        // Every visible string here has a hardcoded fallback in
-        // SubscriptionStore: displayName falls back to "MealTime Pro Monthly"
-        // and displayPrice to "$4.99", and both render while product is still
-        // nil. So the screen looks right in both states. An earlier version of
-        // this test waited for the literal "MealTime Pro Monthly", which is the
-        // fallback, so it passed when StoreKit had failed and failed when it
-        // had worked. PaywallView drives .disabled off `product == nil`, and
-        // nothing fakes that.
+        // History worth keeping: every visible string here used to have a
+        // hardcoded fallback in SubscriptionStore, displayName to "MealTime
+        // Pro Monthly" and displayPrice to "$4.99", so the screen looked
+        // right whether or not the App Store had answered. An earlier version
+        // of this test waited for the literal "MealTime Pro Monthly", which
+        // was the fallback, so it passed when StoreKit had failed and failed
+        // when it had worked. Those fallbacks are gone now and the strings
+        // are empty until a product loads, but keep asserting on the button:
+        // PaywallView drives .disabled off `selectedProduct == nil`, and that
+        // is state with no default behind it at all.
         //
         // Scope the query to the container holding the paywall's header. The
         // Settings row that opened this sheet is also titled Subscribe and is

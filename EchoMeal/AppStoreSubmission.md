@@ -111,12 +111,20 @@ Do these in order once Section 0 is done. Hands-on time about 2 hours.
 
 | Product ID | Reference name | Duration | US price | Ship it? |
 |---|---|---|---|---|
+| `com.echochamber.mealtime.pro.annual` | MealTime Pro Annual | 1 year | $39.99 | **Yes** |
 | `com.echochamber.mealtime.pro.monthly` | MealTime Pro Monthly | 1 month | $4.99 | **Yes** |
-| `com.echochamber.mealtime.pro.annual` | MealTime Pro Annual | 1 year | $39.99 | **No, leave it** |
 
-**Product IDs in App Store Connect are permanent and cannot be reused after deletion**, so the code was changed to match these, not the other way around. `SubscriptionStore.productID`, `MealTime.storekit`, and `SUBSCRIPTION_PRODUCT_IDS` in `Proxy/worker.js` all now read `com.echochamber.mealtime.pro.monthly`. If any one of them drifts, the app finds no product and the paywall shows a permanently disabled buy button.
+**Product IDs in App Store Connect are permanent and cannot be reused after deletion**, so the code was changed to match these, not the other way around. `SubscriptionStore.productIDs`, `MealTime.storekit`, and `SUBSCRIPTION_PRODUCT_IDS` in `Proxy/worker.js` all carry both strings. If any one of them drifts, the app finds no product and the paywall shows a permanently disabled buy button.
 
-**Why annual is not shipping.** An annual subscriber pays $39.99 for the same 240 plans a monthly subscriber pays $59.88 for. After Apple's 15 percent and roughly $18 a year of API spend, annual leaves about $16 of margin against monthly's $33. It roughly halves the return per subscriber-year. Leaving it in `MISSING_METADATA` and not attached to the version blocks nothing: an incomplete subscription that is not submitted with a version is simply ignored by review. If you ever want it, decide its plan allowance first, add its ID to `SUBSCRIPTION_PRODUCT_IDS`, and ship an app update.
+**The annual ships as of 2026-08-17. This reverses the earlier decision recorded here, on purpose.**
+
+The old reasoning: an annual subscriber pays $39.99 for the same 240 plans a monthly subscriber pays $59.88 for, so after Apple's 15 percent and roughly $18 a year of API spend, annual leaves about $16 of margin against monthly's $33.
+
+That arithmetic is correct and the conclusion drawn from it was not, because it compares annual against a monthly subscriber who stays all twelve months. The honest comparison is break-even. Annual clears $33.99 net on day one, guaranteed. Monthly clears $4.24 a month. **Annual wins whenever the average monthly subscriber churns before 8 months**, which for a consumer utility with no free trial is the normal case rather than the exception. It also pulls a year of cash forward and removes eleven chances to cancel.
+
+**The allowance question the old note left open is answered by the relay, not by new code.** The quota key in `worker.js` is `sub-<txnId>-<month>`, per transaction per calendar month, with no product in it. An annual subscriber gets `MONTHLY_GENERATION_CAP` twelve times rather than a yearly bucket. Adding the ID to `SUBSCRIPTION_PRODUCT_IDS` was the entire relay change.
+
+**`MealTime.storekit` does not drive the tests.** Verified by probe on 2026-08-17: the file is a synced configuration, and names, descriptions, and prices all resolve from App Store Connect over the network even though the scheme points at the local file. Setting the annual's display name to "ZZPROBE Annual" and its price to "11.11" changed nothing, and erasing the simulator first ruled out a device cache. So `EchoMealTests/SubscriptionStoreTests` is really asserting against App Store Connect, which is stronger coverage than it looks. The practical rule: **a failing assertion there is fixed in App Store Connect, never by editing the .storekit file.**
 
 **What to fill in on the monthly product**
 
@@ -135,7 +143,7 @@ Do these in order once Section 0 is done. Hands-on time about 2 hours.
 
 **Never say the subscription is shared.** It belongs to one Apple Account. Two people on the same household code each need their own to generate plans, though both can read whatever either one makes. That claim was removed from the store description and from the paywall itself, where it had said the subscription was "shared with the other phone in your household at no extra cost." It is a refund request and a 2.3.1 misleading-metadata rejection waiting to happen. Do not reintroduce it anywhere.
 
-**Attach it to the version.** On the 1.2 version page, the In-App Purchases and Subscriptions section has to list the monthly product before you submit. A first subscription that is not attached to the version does not get reviewed, and the app ships with a paywall nobody can buy from.
+**Attach both to the version.** On the 1.2 version page, the In-App Purchases and Subscriptions section has to list the annual and the monthly before you submit. A first subscription that is not attached to the version does not get reviewed, and the app ships with a paywall nobody can buy from. The reverse is a guideline 2.1 rejection: an in-app purchase submitted for review that a reviewer cannot find or buy in the app. Both are on the paywall as of 2026-08-17, so both go.
 
 **Review information for the subscription**
 - Screenshot: the paywall screen (screenshot 2 from Section 7). Apple requires a screenshot of the purchase UI for every in-app purchase.
@@ -194,9 +202,12 @@ What it does:
 - Every generated recipe saved automatically in the Recipe Box, favorites one tap away
 - Syncs between two phones with a private household code
 
-MealTime Pro Monthly, $4.99 per month:
-- 20 new meal plans a month
-- Billed monthly to your Apple Account until you cancel
+MealTime Pro, two ways to pay:
+- Monthly, $4.99 per month
+- Annual, $39.99 per year
+
+Both include 20 new meal plans a month:
+- Billed to your Apple Account until you cancel
 - Cancel anytime in Settings, at least 24 hours before the next renewal
 - No free trial
 

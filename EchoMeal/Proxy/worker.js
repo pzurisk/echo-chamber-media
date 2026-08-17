@@ -105,11 +105,16 @@ const APPLE_BUNDLE_ID = "com.echochambermedia.echomeal";
 // Which products count as a MealTime subscription. Apple returns every
 // transaction in the subscription group, so a customer who once bought a
 // different tier still has entries here, and only these IDs are honoured.
-// An annual tier exists in App Store Connect but is not shipped and is not
-// listed here on purpose: an unlisted product cannot be bought, and if it is
-// ever launched its allowance has to be decided before it is added.
+//
+// Both plans carry the same allowance, and that needs no code below: the
+// quota key is `sub-<txnId>-<month>`, per transaction per calendar month,
+// with no product in it. An annual subscriber gets MONTHLY_GENERATION_CAP
+// twelve times rather than a yearly bucket. This set must stay in step with
+// `SubscriptionStore.productIDs` in the app. If a plan can be bought but is
+// missing here, the customer pays and every request is refused.
 const SUBSCRIPTION_PRODUCT_IDS = new Set([
   "com.echochamber.mealtime.pro.monthly",
+  "com.echochamber.mealtime.pro.annual",
 ]);
 
 // Apple's subscription status codes. 1 is active and 4 is the billing grace
