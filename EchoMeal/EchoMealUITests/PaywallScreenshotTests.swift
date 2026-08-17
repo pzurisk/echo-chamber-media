@@ -33,12 +33,8 @@ final class PaywallScreenshotTests: XCTestCase {
 
     func testCapturePaywallForAppStoreReview() {
         let app = XCUIApplication()
-        // Skips the first launch onboarding cover. AppState decides that from
-        // `!HouseholdConfig.code.isEmpty`, and HouseholdConfig reads the code
-        // straight out of UserDefaults, so a `-key value` launch argument sets
-        // it for this process without touching the simulator's saved state.
-        app.launchArguments = ["-householdCode", "TESTHOME"]
         app.launch()
+        completeOnboardingIfNeeded(app)
 
         // The gear sits in the Speak tab's trailing toolbar slot. SwiftUI gives
         // an Image(systemName:) button no title, so match on the navigation bar
@@ -62,14 +58,33 @@ final class PaywallScreenshotTests: XCTestCase {
         let header = app.staticTexts["Keep planning dinner"]
         XCTAssertTrue(header.waitForExistence(timeout: 20), "the paywall never appeared")
 
-        // Wait for the product title itself. An earlier version of this test
-        // waited for the "Loading the subscription from the App Store." caption
-        // to disappear, and only if it already existed. That is a race: the
-        // paywall's header renders a frame or two before the caption does, so
-        // the wait was skipped and the assertion ran while product was still
-        // nil. Waiting on the thing you actually want has no such gap.
-        let title = app.staticTexts["MealTime Pro Monthly"]
-        let loaded = title.waitForExistence(timeout: 45)
+        // Wait on the buy button becoming enabled, because that is the only
+        // thing on this screen that distinguishes a loaded product from a
+        // missing one.
+        //
+        // Every visible string here has a hardcoded fallback in
+        // SubscriptionStore: displayName falls back to "MealTime Pro Monthly"
+        // and displayPrice to "$4.99", and both render while product is still
+        // nil. So the screen looks right in both states. An earlier version of
+        // this test waited for the literal "MealTime Pro Monthly", which is the
+        // fallback, so it passed when StoreKit had failed and failed when it
+        // had worked. PaywallView drives .disabled off `product == nil`, and
+        // nothing fakes that.
+        //
+        // Scope the query to the container holding the paywall's header. The
+        // Settings row that opened this sheet is also titled Subscribe and is
+        // still in the hierarchy underneath.
+        let paywall = app.otherElements
+            .containing(.staticText, identifier: "Keep planning dinner")
+            .firstMatch
+        let buyButton = paywall.buttons["Subscribe"]
+        XCTAssertTrue(buyButton.waitForExistence(timeout: 20), "no Subscribe button on the paywall")
+
+        let enabled = expectation(
+            for: NSPredicate(format: "isEnabled == true"),
+            evaluatedWith: buyButton
+        )
+        let loaded = XCTWaiter().wait(for: [enabled], timeout: 45) == .completed
 
         // Attach the screenshot before asserting. If StoreKit did not answer,
         // the picture of what it looked like is the fastest way to tell why.
@@ -78,10 +93,49 @@ final class PaywallScreenshotTests: XCTestCase {
         shot.lifetime = .keepAlways
         add(shot)
 
-        XCTAssertTrue(loaded, "the product title never loaded from MealTime.storekit")
+        XCTAssertTrue(loaded, "Subscribe stayed disabled, so the product never loaded from MealTime.storekit")
         XCTAssertFalse(
             app.staticTexts["Loading the subscription from the App Store."].exists,
             "the paywall still says it is loading, so Subscribe is disabled"
         )
+    }
+
+    /// Gets past the first launch cover by actually creating a household.
+    ///
+    /// This used to be one launch argument, `-householdCode TESTHOME`, which
+    /// worked because HouseholdConfig read the code out of UserDefaults and a
+    /// `-key value` argument writes the argument domain. It reads the Keychain
+    /// now, which no launch argument can reach, and TESTHOME is not a valid
+    /// code anyway: they are twenty-six characters and validated before use.
+    ///
+    /// The tempting fix is a debug hook that lets the code be set from outside
+    /// the app. Do not add one. A way to force a known household code from
+    /// outside is the exact shape of the ZURISK-KITCHEN hole this app just
+    /// spent a release closing, and a hook added for a screenshot is a hook
+    /// that ships. Tapping through the real two button flow costs a couple of
+    /// seconds and leaves no back door.
+    ///
+    /// Skipped when the household already exists. The simulator's Keychain
+    /// survives app reinstalls, so only the first run on a given simulator
+    /// sees onboarding. Erase the simulator if you need the fresh path back.
+    private func completeOnboardingIfNeeded(_ app: XCUIApplication) {
+        XCTAssertTrue(
+            app.wait(for: .runningForeground, timeout: 30),
+            "the app never came to the foreground"
+        )
+
+        // The cover is presented from onAppear, so it is up on the first
+        // render or it is never coming. No need to wait the full launch
+        // budget again here.
+        let start = app.buttons["Start our household"]
+        guard start.waitForExistence(timeout: 10) else { return }
+        start.tap()
+
+        // createHousehold generates the code and dismisses on Continue. The
+        // CloudKit work it kicks off is in a detached Task and the simulator
+        // has no iCloud account, so nothing here waits on the network.
+        let cont = app.buttons["Continue"]
+        XCTAssertTrue(cont.waitForExistence(timeout: 20), "the new household code never appeared")
+        cont.tap()
     }
 }
