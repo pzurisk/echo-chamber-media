@@ -93,7 +93,7 @@ Do these in order once Section 0 is done. Hands-on time about 2 hours.
 
 10. **Attach the subscription to this version.** On the version page, in the In-App Purchases section, add the MealTime Pro Monthly subscription. A subscription's first review has to ride along with an app version; it will not be reviewed on its own.
 
-11. **Export compliance is already handled.** `ITSAppUsesNonExemptEncryption` is false in Info.plist (https://developer.apple.com/help/app-store-connect/manage-app-information/overview-of-export-compliance). Note at the end of this file.
+11. **Export compliance is NOT handled and blocks this submission.** This line used to say it was, citing `ITSAppUsesNonExemptEncryption` as false. That was true for 1.1 and is false now: 1.2 seals every CloudKit payload with AES-256-GCM, the flag is **true** in `Info.plist`, and the app does **not** qualify for an exemption. That requires a BIS Company Identification Number, then an Encryption Registration Number through SNAP-R, then an annual self-classification report, roughly a week of federal turnaround before the build can move to external testing or review. Do not let a wizard talk you into "yes, exempt" because it makes the upload go through. Step by step in `~/EchoChamberHQ/brain/OUTPUTS/mealtime-export-compliance-chrome-handoff.md`, reasoning in README section 7.
 
 12. **Paste the review notes** from Section 8. Leave demo account fields blank; there is still no login.
 
