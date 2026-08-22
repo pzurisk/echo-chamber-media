@@ -18,7 +18,6 @@ struct SettingsView: View {
     @State private var showHouseholdQR = false
     @State private var joinCode = ""
     @State private var joinError: String?
-    @State private var newStaple = ""
     @State private var showDeleteConfirm = false
     @State private var isDeleting = false
     @State private var deleteError: String?
@@ -78,24 +77,23 @@ struct SettingsView: View {
                         .foregroundStyle(Color.echoTextSecondary)
                 }
 
-                Section("Pantry staples") {
-                    Text("Things you always have at home. Plans will skip buying these.")
+                Section("Pantry") {
+                    NavigationLink {
+                        PantryView()
+                    } label: {
+                        HStack {
+                            Text("Manage pantry")
+                            Spacer()
+                            if !appState.pantryItems.isEmpty {
+                                let inStock = appState.pantryItems.filter(\.inStock).count
+                                Text("\(inStock) in stock")
+                                    .foregroundStyle(Color.echoTextSecondary)
+                            }
+                        }
+                    }
+                    Text("Items you always have on hand. Plans will still list them when a recipe needs one, tagged and pre-checked, and skip their cost.")
                         .font(.caption)
                         .foregroundStyle(Color.echoTextSecondary)
-                    ForEach(appState.pantryStaples, id: \.self) { staple in
-                        Text(staple)
-                    }
-                    .onDelete { offsets in
-                        appState.removeStaples(atOffsets: offsets)
-                    }
-                    HStack {
-                        TextField("Add a staple, like rice", text: $newStaple)
-                            .submitLabel(.done)
-                            .onSubmit(addStaple)
-                        Button("Add") { addStaple() }
-                            .buttonStyle(.borderless)
-                            .disabled(newStaple.trimmingCharacters(in: .whitespaces).isEmpty)
-                    }
                 }
 
                 Section("Household") {
@@ -322,13 +320,6 @@ struct SettingsView: View {
                 deleteError = "Could not delete your data. Nothing was removed. Check your internet connection and iCloud sign-in, then try again."
             }
         }
-    }
-
-    /// Shared by the staple field's submit and the Add button. AppState
-    /// trims, ignores empties, and dedupes, so the field just clears.
-    private func addStaple() {
-        appState.addStaple(newStaple)
-        newStaple = ""
     }
 
     /// Shared by the text field's submit and the Join button. On success

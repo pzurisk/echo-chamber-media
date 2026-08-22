@@ -22,6 +22,14 @@ compatibility_date = "2026-01-01"
 [vars]
 DAILY_REQUEST_CAP = "60"
 
+# TEMPORARY (2026-08-21): no build on any phone sends x-txn-id yet, the
+# subscription code landed in git after the last archived build (see
+# EchoMeal.md in the vault). Set to "0" to skip the subscription gate
+# entirely so plans can generate while a build with the subscription flow
+# gets made and installed. Set back to "1", or delete this line, once that
+# build is on the phone and tested end to end.
+REQUIRE_SUBSCRIPTION = "0"
+
 # One subscription's included meal plans per calendar month. This number is
 # quoted on the paywall, in the App Store description, and in the refusal message
 # the app shows at the cap. Changing it here means changing it in all three.

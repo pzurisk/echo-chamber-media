@@ -67,6 +67,13 @@ enum HouseholdConfig {
         static let aiNoticeAccepted = "aiNoticeAccepted"
         static let budgetTarget = "budgetTarget"
         static let dinnersPerWeek = "dinnersPerWeek"
+        /// 1 through 5, Familiar through Wild card. Per-phone, not synced:
+        /// this is "how do we feel tonight," not a household fact.
+        static let adventurousness = "adventurousness"
+        /// Whether Claude should search the web for trending recipes to work
+        /// into the plan. Per-phone, not synced: a mood for tonight, not a
+        /// standing household setting, same as adventurousness.
+        static let webSearchEnabled = "useWebSearchForRecipes"
         static let themeChoice = "themeChoice"
         static let cachedPlan = "cachedPlanJSON"
         static let cachedChecked = "cachedCheckedIDs"
@@ -76,6 +83,8 @@ enum HouseholdConfig {
         static let cachedRecipeBox = "cachedRecipeBoxJSON"
         static let cachedKeptRecipes = "cachedKeptRecipesJSON"
         static let cachedPantry = "cachedPantryJSON"
+        static let cachedFreeformItems = "cachedFreeformItemsJSON"
+        static let cachedLeftoverStatus = "cachedLeftoverStatusJSON"
         static let cachedEditDates = "cachedEditDates"
 
         /// Where the code used to live. Read only by purgeLegacyStorageIfNeeded.

@@ -8,6 +8,12 @@ struct SpeakView: View {
     @EnvironmentObject private var appState: AppState
     @StateObject private var recorder = SpeechRecorder()
     @State private var pulse = false
+    /// How adventurous the household feels tonight. Per-phone, not synced.
+    /// 1 through 5, Familiar through Wild card.
+    @AppStorage(HouseholdConfig.Keys.adventurousness) private var adventurousness = 3.0
+    /// Whether the next plan should let Claude search the web for trending
+    /// recipes. Per-phone, not synced.
+    @AppStorage(HouseholdConfig.Keys.webSearchEnabled) private var webSearchEnabled = false
 
     /// The one sheet this screen can show. Driving all three presentations
     /// through a single item means they can never collide or swallow each
@@ -251,10 +257,50 @@ struct SpeakView: View {
         .frame(minHeight: 90)
     }
 
+    private static let adventurousnessLabels = [
+        "Familiar", "Comfortable", "Balanced", "Adventurous", "Wild card"
+    ]
+
+    /// How adventurous the household feels tonight, fed into every plan
+    /// generated from here on until they move it again.
+    private var adventurousnessSlider: some View {
+        VStack(spacing: 4) {
+            Text(Self.adventurousnessLabels[Int(adventurousness) - 1])
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(Color.echoAccentText)
+            Slider(value: $adventurousness, in: 1...5, step: 1) {
+                Text("How adventurous tonight")
+            }
+            .tint(.echoAccent)
+            .padding(.horizontal, 40)
+        }
+    }
+
+    /// Toggles whether the next plan can pull in a trending dish found by
+    /// web search. Stays on across generations until tapped off again.
+    private var webSearchToggle: some View {
+        Button {
+            webSearchEnabled.toggle()
+        } label: {
+            Label(
+                webSearchEnabled ? "Finding viral recipes" : "Find viral recipes",
+                systemImage: webSearchEnabled ? "sparkle.magnifyingglass" : "magnifyingglass"
+            )
+            .font(.footnote.weight(.semibold))
+            .padding(.horizontal, 14)
+            .padding(.vertical, 7)
+        }
+        .buttonStyle(.bordered)
+        .tint(webSearchEnabled ? .echoAccent : .echoTextSecondary)
+        .accessibilityLabel(webSearchEnabled ? "Viral recipe search on" : "Viral recipe search off")
+    }
+
     /// Idea hints learned from favorites and history, a button that plans a
     /// week with no talking at all, and a typed fallback for loud rooms.
     private var ideasAndSurprise: some View {
         VStack(spacing: 12) {
+            adventurousnessSlider
+            webSearchToggle
             if !appState.suggestionIdeas.isEmpty {
                 Text("Ideas: " + appState.suggestionIdeas.joined(separator: " · "))
                     .font(.footnote)

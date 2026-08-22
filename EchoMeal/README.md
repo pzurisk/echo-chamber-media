@@ -45,18 +45,22 @@ release.
   only the remaining nights, and the grocery list covers everything. Pins
   survive week after week until unpinned.
 - **List tab.** One consolidated grocery list grouped Proteins, Produce,
-  Pantry, Dairy, Bread, Sauces, with a budget bar up top. Pantry staples
-  start pre-checked. Checking an item syncs to the other phone. The app
-  also cross-checks the list against every recipe's ingredients and adds
-  anything missing to a "From recipes" section, so the list is always
-  complete. A cart button turns on store mode: checked items hide, done
-  sections collapse, and a big "9 of 27 items left" count leads the page.
-- **Settings.** Budget target, dinners per week, pantry staples, household
-  code (view it, share it, start a new household, or join a different one).
-  Pantry staples are the things the household always has at home (rice,
-  olive oil, soy sauce). Claude leaves them off the grocery list and out of
-  the budget estimate, and the list they live on syncs between both phones
-  like everything else.
+  Pantry, Dairy, Bread, Sauces, with a budget bar up top. Items you've
+  confirmed as pantry stock start pre-checked, tagged "already have this."
+  Checking an item syncs to the other phone. The app also cross-checks the
+  list against every recipe's ingredients and adds anything missing to a
+  "From recipes" section, so the list is always complete. A cart button
+  turns on store mode: checked items hide, done sections collapse, and a
+  big "9 of 27 items left" count leads the page.
+- **Settings.** Budget target, dinners per week, a link to the Pantry
+  screen, household code (view it, share it, start a new household, or
+  join a different one). Pantry is a full manual inventory: add anything
+  the household has on hand, mark it out when it runs out, mark it
+  restocked when it's back. An in-stock item still gets listed on the
+  grocery list when a recipe needs it, tagged "already have this" and
+  pre-checked, with its cost left out of the budget estimate. Mark it out
+  and it reappears as a normal thing to buy on the next plan. Syncs between
+  both phones like everything else.
 
 ## Project layout
 
@@ -76,8 +80,11 @@ EchoMeal/
     Services/ClaudeService.swift   Anthropic Messages API call + JSON parsing
     Services/CloudKitStore.swift   Public-database records + subscriptions
     State/AppState.swift           App-wide state, sync, local cache
-    Views/                     Onboarding, Speak, Week, RecipeDetail, CookMode, Favorites, RecipeBox, List, Settings
+    Views/                     Onboarding, Speak, Week, RecipeDetail, CookMode, Favorites, RecipeBox, List, Settings, Pantry
 ```
+
+Future direction and roadmap ideas live in [DREAMER.md](DREAMER.md), a standing
+brief kept up to date by Dreamer passes as real usage data comes in.
 
 ## 1. Create the Xcode project
 

@@ -73,8 +73,19 @@ const ALLOWED_KEYS = new Set([
   "thinking",
   "system",
   "messages",
+  "webSearch",
 ]);
 const ALLOWED_ROLES = new Set(["user", "assistant"]);
+
+// Server-pinned web search tool. The app can only ask for it on or off via
+// the "webSearch" boolean; it never gets to shape the tool itself. max_uses
+// bounds how many searches one generation can spend, since each search call
+// carries its own cost on top of the base generation.
+const WEB_SEARCH_TOOL = {
+  type: "web_search_20260209",
+  name: "web_search",
+  max_uses: 4,
+};
 
 const DEFAULT_DAILY_CAP = 400;
 const COUNTER_TTL_SECONDS = 172800; // two days, so old day keys clean themselves up
@@ -483,6 +494,10 @@ function buildUpstreamPayload(parsed) {
     maxTokens = Math.min(parsed.max_tokens, MAX_OUTPUT_TOKENS);
   }
 
+  if (parsed.webSearch !== undefined && typeof parsed.webSearch !== "boolean") {
+    return "webSearch must be true or false.";
+  }
+
   const payload = {
     model: PINNED_MODEL,
     max_tokens: maxTokens,
@@ -493,6 +508,9 @@ function buildUpstreamPayload(parsed) {
   };
   if (parsed.system !== undefined) {
     payload.system = parsed.system;
+  }
+  if (parsed.webSearch === true) {
+    payload.tools = [WEB_SEARCH_TOOL];
   }
   return payload;
 }
@@ -515,8 +533,16 @@ export default {
     // StoreKit originalTransactionId, which is what the monthly quota counts
     // against. No header means the caller is not a subscriber, or is an older
     // build, and either way there is no allowance to spend.
+    //
+    // TEMPORARY BYPASS (2026-08-21): no build on any phone sends x-txn-id yet,
+    // the subscription code landed in git after the last archived build. Set
+    // REQUIRE_SUBSCRIPTION = "0" in wrangler.toml to skip this gate entirely
+    // while a build with the subscription flow gets made and installed. Set it
+    // back to "1" (or remove it) once that build is on the phone and tested.
+    // See 11 - EchoMeal/EchoMeal.md in the vault for the full story.
+    const subscriptionRequired = env.REQUIRE_SUBSCRIPTION !== "0";
     const txnId = request.headers.get("x-txn-id");
-    if (!txnId || !TXN_ID_PATTERN.test(txnId)) {
+    if (subscriptionRequired && (!txnId || !TXN_ID_PATTERN.test(txnId))) {
       return refuse(
         401,
         "MealTime could not confirm your subscription. Open Settings and tap Restore Purchases."
@@ -564,33 +590,38 @@ export default {
     // It runs after the body has been parsed and validated so a malformed
     // request never costs a call to Apple, and before either quota so an
     // unverified caller never gets a counter written for them.
-    if (!env.APPLE_PRIVATE_KEY || !env.APPLE_KEY_ID || !env.APPLE_ISSUER_ID) {
-      // Deploying without the Apple credentials stops the relay rather than
-      // letting an unchecked paywall through. Failing open here would mean
-      // anyone who read the app token out of the bundle could spend the
-      // Anthropic budget, which is the whole problem this step exists to fix.
-      return refuse(
-        502,
-        "MealTime's planning service is not set up correctly right now. This is not a problem with your subscription. Try again later."
-      );
-    }
+    // TEMPORARY BYPASS (2026-08-21): same flag as step 3. See the comment
+    // there. When subscriptionRequired is false, txnId may be null, so this
+    // whole Apple round trip is skipped rather than called with a bad ID.
+    if (subscriptionRequired) {
+      if (!env.APPLE_PRIVATE_KEY || !env.APPLE_KEY_ID || !env.APPLE_ISSUER_ID) {
+        // Deploying without the Apple credentials stops the relay rather than
+        // letting an unchecked paywall through. Failing open here would mean
+        // anyone who read the app token out of the bundle could spend the
+        // Anthropic budget, which is the whole problem this step exists to fix.
+        return refuse(
+          502,
+          "MealTime's planning service is not set up correctly right now. This is not a problem with your subscription. Try again later."
+        );
+      }
 
-    const verdict = await subscriptionVerdict(txnId, env);
-    if (verdict === "unknown") {
-      // Apple could not be reached, or answered with something unusable. That
-      // is a fault at this end, so it must not reach the customer as "your
-      // subscription is bad": the only action that message suggests is
-      // cancelling. 502 lands in the app's transient bucket instead.
-      return refuse(
-        502,
-        "MealTime could not reach the App Store to check your subscription. This is not a problem with your subscription. Try again in a few minutes."
-      );
-    }
-    if (verdict === "inactive") {
-      return refuse(
-        401,
-        "MealTime could not confirm your subscription. Open Settings and tap Restore Purchases."
-      );
+      const verdict = await subscriptionVerdict(txnId, env);
+      if (verdict === "unknown") {
+        // Apple could not be reached, or answered with something unusable. That
+        // is a fault at this end, so it must not reach the customer as "your
+        // subscription is bad": the only action that message suggests is
+        // cancelling. 502 lands in the app's transient bucket instead.
+        return refuse(
+          502,
+          "MealTime could not reach the App Store to check your subscription. This is not a problem with your subscription. Try again in a few minutes."
+        );
+      }
+      if (verdict === "inactive") {
+        return refuse(
+          401,
+          "MealTime could not confirm your subscription. Open Settings and tap Restore Purchases."
+        );
+      }
     }
 
     // 9. Per-subscription monthly quota. This is the allowance the subscriber
@@ -602,42 +633,50 @@ export default {
     // the contract with the app: 402 means "out of plans, here is the date
     // they come back," never "your subscription is bad" and never "show the
     // paywall." A lapsed subscription comes back as 401 at step 3 instead.
+    // TEMPORARY BYPASS (2026-08-21): same flag as steps 3 and 8. txnId is
+    // null when the bypass is on, so this quota (keyed on txnId) is skipped
+    // rather than writing a "sub-null-..." key into KV. The daily cap in
+    // step 10 still applies and is the real spend guard while this is off.
     const monthlyCap = capFrom(env.MONTHLY_GENERATION_CAP, DEFAULT_MONTHLY_CAP);
     const now = new Date();
-    const monthKey = `sub-${txnId}-${monthStamp(now)}`;
     let monthUsed = null;
-    if (env.SPEND_COUNTER) {
-      try {
-        monthUsed =
-          Number.parseInt(await env.SPEND_COUNTER.get(monthKey), 10) || 0;
-      } catch {
-        monthUsed = null;
+    let monthKey = null;
+    if (subscriptionRequired) {
+      monthKey = `sub-${txnId}-${monthStamp(now)}`;
+      if (env.SPEND_COUNTER) {
+        try {
+          monthUsed =
+            Number.parseInt(await env.SPEND_COUNTER.get(monthKey), 10) || 0;
+        } catch {
+          monthUsed = null;
+        }
       }
-    }
-    // A cap of 0 is the emergency stop, not a spent allowance, so it gets its
-    // own sentence. The normal message would read "You have used all 0 meal
-    // plans included this month," which tells a paying customer nothing true.
-    if (monthlyCap === 0) {
-      return refuse(
-        402,
-        "MealTime plan generation is paused right now. This is not a problem with your subscription, and you have not been charged for anything you did not get. Try again later."
-      );
-    }
-    if (monthUsed !== null) {
-      if (monthUsed >= monthlyCap) {
+      // A cap of 0 is the emergency stop, not a spent allowance, so it gets
+      // its own sentence. The normal message would read "You have used all 0
+      // meal plans included this month," which tells a paying customer
+      // nothing true.
+      if (monthlyCap === 0) {
         return refuse(
           402,
-          `You have used all ${monthlyCap} meal plans included this month. Your next ${monthlyCap} arrive on ${nextResetLabel(now)}.`
+          "MealTime plan generation is paused right now. This is not a problem with your subscription, and you have not been charged for anything you did not get. Try again later."
         );
       }
-      // Count before spending, same as the daily counter, so a burst of
-      // requests cannot slip past the cap while the first is still in flight.
-      try {
-        await env.SPEND_COUNTER.put(monthKey, String(monthUsed + 1), {
-          expirationTtl: MONTH_COUNTER_TTL_SECONDS,
-        });
-      } catch {
-        // A KV write failure is not a reason to refuse a paying subscriber.
+      if (monthUsed !== null) {
+        if (monthUsed >= monthlyCap) {
+          return refuse(
+            402,
+            `You have used all ${monthlyCap} meal plans included this month. Your next ${monthlyCap} arrive on ${nextResetLabel(now)}.`
+          );
+        }
+        // Count before spending, same as the daily counter, so a burst of
+        // requests cannot slip past the cap while the first is still in flight.
+        try {
+          await env.SPEND_COUNTER.put(monthKey, String(monthUsed + 1), {
+            expirationTtl: MONTH_COUNTER_TTL_SECONDS,
+          });
+        } catch {
+          // A KV write failure is not a reason to refuse a paying subscriber.
+        }
       }
     }
 
@@ -724,6 +763,12 @@ export default {
     // message suggests is cancelling. 502 lands in the app's transient
     // bucket instead, which is the truth: try again later.
     if (upstream.status === 401 || upstream.status === 402 || upstream.status === 403) {
+      // TEMPORARY DEBUG (2026-08-21): log Anthropic's real status and the
+      // start of its error body so the actual cause is visible in
+      // `wrangler tail`, without ever logging the key itself or any request
+      // content. Remove this block once the key issue is diagnosed.
+      const debugSnippet = await upstream.clone().text();
+      console.log(`[debug] Anthropic upstream status ${upstream.status}: ${debugSnippet.slice(0, 300)}`);
       return refuse(
         502,
         "MealTime's planning service is not answering right now. This is not a problem with your subscription. Try again in a few minutes."

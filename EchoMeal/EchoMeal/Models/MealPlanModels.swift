@@ -17,6 +17,11 @@ struct WeekEntry: Codable, Hashable, Identifiable {
     var cuisine: String
     var cookTimeMin: Int
     var servings: Int
+    /// Set when this dinner was paired with an earlier leftover-yield dinner,
+    /// e.g. "Uses leftover braised chicken from Monday." Optional so plans
+    /// saved before this field existed still decode; nil or empty means no
+    /// pairing.
+    var leftoverNote: String?
 
     var id: String { day }
 }
@@ -30,6 +35,10 @@ struct Recipe: Codable, Hashable, Identifiable {
     var servings: Int
     var ingredients: [Ingredient]
     var steps: [String]
+    /// True when this dinner is sized to intentionally yield a second meal's
+    /// worth of leftovers. Optional so recipes archived before this field
+    /// existed still decode; nil means unknown, treated as false.
+    var leftoverYield: Bool?
 
     var id: String { title }
 }
@@ -66,6 +75,33 @@ struct GroceryItem: Codable, Hashable {
     var recipes: [String]?
 }
 
+// MARK: - Pantry inventory
+
+/// A confirmed item in the household's actual pantry (Feature 2's real
+/// inventory, replacing the old flat staple-name list). inStock gates
+/// whether the item is currently treated as "already have this": marking an
+/// item out makes it reappear as a normal thing to buy on the next
+/// generated list, marking it restocked pre-checks it again.
+struct PantryItem: Codable, Hashable, Identifiable {
+    var id: String = UUID().uuidString
+    var name: String
+    var category: String
+    var inStock: Bool = true
+    var lastUpdated: Date = Date()
+}
+
+// MARK: - Freeform grocery items
+
+/// A grocery item typed or spoken in with no recipe behind it (paper
+/// towels, dog food). Lives outside MealPlan so it survives a plan
+/// regeneration or a night swap instead of getting wiped with the rest of
+/// the grocery list.
+struct FreeformGroceryItem: Codable, Hashable, Identifiable {
+    var id: String = UUID().uuidString
+    var name: String
+    var category: String
+}
+
 // MARK: - Taste history
 
 /// One dinner the app has planned before. The rolling history feeds the
@@ -81,6 +117,10 @@ struct PastDinner: Codable, Hashable {
 extension MealPlan {
     /// Fixed display order for grocery sections.
     static let sectionOrder = ["Proteins", "Produce", "Pantry", "Dairy", "Bread", "Sauces"]
+
+    /// Categories offered when adding a freeform item: the recipe sections
+    /// plus "Other" for anything that isn't food (dog food, paper towels).
+    static let freeformCategories = sectionOrder + ["Other"]
 
     /// Sections sorted into the fixed store-walk order. Unknown names go last.
     var orderedSections: [GrocerySection] {
@@ -180,15 +220,12 @@ extension MealPlan {
     /// Anything uncovered lands in a "From recipes" section, deduped by
     /// normalized name (first qty wins). The new items carry estPrice 0
     /// on purpose: estimatedTotal is a stored value from Claude, and
-    /// pricing the extras at 0 keeps the budget bar math honest.
-    /// pantryStaples are things the household always has at home (Pantry
-    /// Memory). They are deliberately absent from the grocery list, so an
-    /// ingredient whose normalized name matches a normalized staple (same
-    /// containment matching as coverage) is skipped instead of re-added.
-    func reconciledWithRecipes(pantryStaples: [String] = []) -> MealPlan {
-        let staples = pantryStaples
-            .map(Self.normalizedForMatching)
-            .filter { !$0.isEmpty }
+    /// pricing the extras at 0 keeps the budget bar math honest. Pantry
+    /// items are deliberately NOT skipped here (Feature 2): they belong on
+    /// the list like everything else, just pre-tagged and pre-checked by
+    /// reconciledWithPantryInventory, so a household can still see and
+    /// double-check what the plan assumes they already own.
+    func reconciledWithRecipes() -> MealPlan {
         var groceryNames: [String] = []
         for section in grocery.sections {
             for item in section.items {
@@ -215,10 +252,6 @@ extension MealPlan {
                     }
                     continue
                 }
-                let isStaple = staples.contains { staple in
-                    staple.contains(name) || name.contains(staple)
-                }
-                guard !isStaple else { continue }
                 let covered = groceryNames.contains { grocery in
                     grocery.contains(name) || name.contains(grocery)
                 }
@@ -241,6 +274,46 @@ extension MealPlan {
             copy.grocery.sections[index].items.append(contentsOf: missing)
         } else {
             copy.grocery.sections.append(GrocerySection(name: Self.reconciledSectionName, items: missing))
+        }
+        return copy
+    }
+
+    /// Forces "already have this" (pantry: true) on any grocery item that
+    /// matches a confirmed in-stock pantry item, even when Claude's own
+    /// general staple-guessing did not flag it. This is layered on top of
+    /// that guessing, not a replacement for it: an item Claude already
+    /// marked pantry stays as it is, and nothing here ever flips pantry back
+    /// to false, so Claude's own judgment about common staples (salt, olive
+    /// oil) is untouched. Every item newly flagged this way has its price
+    /// moved from estimatedTotal into pantryCredit, so the budget bar stays
+    /// honest about what just got auto-checked.
+    func reconciledWithPantryInventory(_ items: [PantryItem]) -> MealPlan {
+        let inStockNames = items
+            .filter { $0.inStock }
+            .map { Self.normalizedForMatching($0.name) }
+            .filter { !$0.isEmpty }
+        guard !inStockNames.isEmpty else { return self }
+
+        var copy = self
+        var newlyCredited: Double = 0
+        for sectionIndex in copy.grocery.sections.indices {
+            for itemIndex in copy.grocery.sections[sectionIndex].items.indices {
+                var item = copy.grocery.sections[sectionIndex].items[itemIndex]
+                guard !item.pantry else { continue }
+                let name = Self.normalizedForMatching(item.name)
+                guard !name.isEmpty else { continue }
+                let matches = inStockNames.contains { staple in
+                    staple.contains(name) || name.contains(staple)
+                }
+                guard matches else { continue }
+                item.pantry = true
+                newlyCredited += item.estPrice
+                copy.grocery.sections[sectionIndex].items[itemIndex] = item
+            }
+        }
+        if newlyCredited > 0 {
+            copy.grocery.estimatedTotal = max(0, copy.grocery.estimatedTotal - newlyCredited)
+            copy.grocery.pantryCredit += newlyCredited
         }
         return copy
     }

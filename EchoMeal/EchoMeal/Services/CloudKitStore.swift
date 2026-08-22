@@ -21,6 +21,8 @@ import Foundation
 ///   Ratings        "ratings-<lookupID>"    payload, householdID, updatedAt
 ///   RecipeBox      "recipebox-<lookupID>"  payload, householdID, updatedAt
 ///   Pantry         "pantry-<lookupID>"     payload, householdID, updatedAt
+///   FreeformItems  "freeform-<lookupID>"   payload, householdID, updatedAt
+///   LeftoverStatus "leftover-<lookupID>"   payload, householdID, updatedAt
 ///
 /// `payload` is Bytes and holds an AES-GCM sealed box. `householdID` holds
 /// the lookup ID, not the code, and stays QUERYABLE because
@@ -42,6 +44,8 @@ final class CloudKitStore {
     static let ratingsRecordType = "Ratings"
     static let recipeBoxRecordType = "RecipeBox"
     static let pantryRecordType = "Pantry"
+    static let freeformRecordType = "FreeformItems"
+    static let leftoverStatusRecordType = "LeftoverStatus"
 
     /// The single encrypted field on every record type.
     private static let payloadKey = "payload"
@@ -81,9 +85,11 @@ final class CloudKitStore {
         static let ratings = Kind(prefix: "ratings", type: CloudKitStore.ratingsRecordType)
         static let recipeBox = Kind(prefix: "recipebox", type: CloudKitStore.recipeBoxRecordType)
         static let pantry = Kind(prefix: "pantry", type: CloudKitStore.pantryRecordType)
+        static let freeform = Kind(prefix: "freeform", type: CloudKitStore.freeformRecordType)
+        static let leftoverStatus = Kind(prefix: "leftover", type: CloudKitStore.leftoverStatusRecordType)
 
         static let all: [Kind] = [
-            plan, grocery, favorites, history, ratings, recipeBox, pantry
+            plan, grocery, favorites, history, ratings, recipeBox, pantry, freeform, leftoverStatus
         ]
     }
 
@@ -228,19 +234,62 @@ final class CloudKitStore {
         return (read.value.recipes, read.value.kept, read.updatedAt)
     }
 
-    // MARK: - Pantry staples
+    // MARK: - Pantry inventory
 
-    /// Staples the household always has at home (Pantry Memory), stored in
-    /// display order. Plans skip buying these and leave them out of the
-    /// budget estimate.
-    func saveStaples(_ staples: [String]) async throws {
-        try await writeValue(staples, .pantry)
+    /// The household's confirmed pantry (Feature 2's full manual inventory).
+    /// Same record type and prefix the old flat staple-name list used.
+    func savePantryItems(_ items: [PantryItem]) async throws {
+        try await writeValue(items, .pantry)
     }
 
-    /// Returns the staples plus the record's freshness date so the caller
-    /// can skip applying a cloud copy that is older than local edits.
-    func fetchStaples() async -> (staples: [String], updatedAt: Date)? {
-        guard let read = await readValue([String].self, .pantry) else { return nil }
+    /// Returns the pantry items plus the record's freshness date so the
+    /// caller can skip applying a cloud copy that is older than local edits.
+    /// Falls back to decoding the pre-Feature-2 flat `[String]` format and
+    /// migrating it to PantryItem (in stock, category "Other"), so a
+    /// household's existing staples survive the upgrade instead of vanishing
+    /// the first time this reads their old record.
+    func fetchPantryItems() async -> (items: [PantryItem], updatedAt: Date)? {
+        guard let read = await readPayload(.pantry) else { return nil }
+        if let items = try? JSONDecoder().decode([PantryItem].self, from: read.data) {
+            return (items, read.updatedAt)
+        }
+        if let names = try? JSONDecoder().decode([String].self, from: read.data) {
+            let migrated = names.map { PantryItem(name: $0, category: "Other") }
+            return (migrated, read.updatedAt)
+        }
+        return nil
+    }
+
+    // MARK: - Freeform grocery items
+
+    /// Items typed or spoken in with no recipe behind them (paper towels,
+    /// dog food). Stored separately from the plan so they are not wiped out
+    /// by the next plan regeneration.
+    func saveFreeformItems(_ items: [FreeformGroceryItem]) async throws {
+        try await writeValue(items, .freeform)
+    }
+
+    /// Returns the freeform items plus the record's freshness date so the
+    /// caller can skip applying a cloud copy that is older than local edits.
+    func fetchFreeformItems() async -> (items: [FreeformGroceryItem], updatedAt: Date)? {
+        guard let read = await readValue([FreeformGroceryItem].self, .freeform) else { return nil }
+        return (read.value, read.updatedAt)
+    }
+
+    // MARK: - Leftover check-in
+
+    /// Per-day leftover status for the current week ("Monday" -> still in
+    /// the fridge, or eaten). Keyed by day name, so it is only meaningful
+    /// alongside the plan that produced it; AppState clears entries whose
+    /// dinner changed on every regeneration.
+    func saveLeftoverStatus(_ status: [String: Bool]) async throws {
+        try await writeValue(status, .leftoverStatus)
+    }
+
+    /// Returns the leftover status plus the record's freshness date so the
+    /// caller can skip applying a cloud copy that is older than local edits.
+    func fetchLeftoverStatus() async -> (status: [String: Bool], updatedAt: Date)? {
+        guard let read = await readValue([String: Bool].self, .leftoverStatus) else { return nil }
         return (read.value, read.updatedAt)
     }
 

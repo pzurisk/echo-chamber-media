@@ -31,10 +31,20 @@ final class AppState: ObservableObject {
     /// Pinned dinners locked into the next generation. They survive week
     /// after week until the user unpins them.
     @Published var keptRecipes: [Recipe] = []
-    /// Pantry Memory: staples the household always has at home (rice,
-    /// olive oil, soy sauce), in display order, user-managed in Settings.
-    /// Plans skip buying these and leave them out of the budget estimate.
-    @Published var pantryStaples: [String] = []
+    /// Full manual pantry inventory (Feature 2), user-managed on the Pantry
+    /// screen. An in-stock item gets tagged "already have this" on the
+    /// grocery list and excluded from the budget estimate, reversibly;
+    /// marking it out makes it a normal thing to buy again.
+    @Published var pantryItems: [PantryItem] = []
+    /// Grocery items typed or spoken in with no recipe behind them (paper
+    /// towels, dog food). Independent of the plan, so a plan regeneration
+    /// or a night swap never wipes them out.
+    @Published var freeformItems: [FreeformGroceryItem] = []
+    /// Leftover check-in for the current week, keyed by the day that
+    /// produced the leftover ("Monday" -> still in the fridge, or eaten).
+    /// Only meaningful alongside the plan that produced it: entries for a
+    /// day whose dinner changed are dropped on every regeneration.
+    @Published var leftoverStatus: [String: Bool] = [:]
     @Published var pastDinners: [PastDinner] = []
     @Published var ratings: [String: Int] = [:]
     @Published var phase: Phase = .idle
@@ -83,7 +93,7 @@ final class AppState: ObservableObject {
 
     /// When each collection was last edited on this device, keyed by
     /// "plan", "checked", "favorites", "history", "ratings", "recipeBox",
-    /// "pantry".
+    /// "pantry", "freeformItems", "leftoverStatus".
     /// Newest wins: a cloud copy older than the local edit is never applied,
     /// so a stale fetch cannot roll back fresh local data.
     private var localEditDates: [String: Date] = [:]
@@ -264,7 +274,9 @@ final class AppState: ObservableObject {
         favorites = []
         recipeBox = []
         keptRecipes = []
-        pantryStaples = []
+        pantryItems = []
+        freeformItems = []
+        leftoverStatus = [:]
         pastDinners = []
         ratings = [:]
         localEditDates = [:]
@@ -280,6 +292,8 @@ final class AppState: ObservableObject {
         defaults.removeObject(forKey: HouseholdConfig.Keys.cachedRecipeBox)
         defaults.removeObject(forKey: HouseholdConfig.Keys.cachedKeptRecipes)
         defaults.removeObject(forKey: HouseholdConfig.Keys.cachedPantry)
+        defaults.removeObject(forKey: HouseholdConfig.Keys.cachedFreeformItems)
+        defaults.removeObject(forKey: HouseholdConfig.Keys.cachedLeftoverStatus)
         defaults.removeObject(forKey: HouseholdConfig.Keys.cachedEditDates)
     }
 
@@ -293,13 +307,44 @@ final class AppState: ObservableObject {
         UserDefaults.standard.integer(forKey: HouseholdConfig.Keys.dinnersPerWeek)
     }
 
+    /// 1 through 5, Familiar through Wild card. Reads 0 (unset) as 3, the
+    /// same Balanced default the slider itself opens on.
+    var adventurousness: Int {
+        let stored = UserDefaults.standard.double(forKey: HouseholdConfig.Keys.adventurousness)
+        return stored == 0 ? 3 : Int(stored.rounded())
+    }
+
+    /// Whether the next plan should let Claude search the web for trending
+    /// recipes. Reads the same toggle the Speak tab's button writes.
+    var webSearchEnabled: Bool {
+        UserDefaults.standard.bool(forKey: HouseholdConfig.Keys.webSearchEnabled)
+    }
+
+    /// One line telling Claude how adventurous the household feels tonight.
+    /// Always present, unlike the other tasteNotes parts, since every level
+    /// from 1 to 5 has something to say.
+    var adventurousNote: String {
+        switch adventurousness {
+        case 1:
+            return "Tonight the household wants very familiar, comforting dishes. Stay close to things they already know and love, minimal surprises."
+        case 2:
+            return "Tonight the household wants mostly familiar dishes, with at most one small twist."
+        case 4:
+            return "Tonight the household wants to lean adventurous. Reach for less common cuisines or techniques."
+        case 5:
+            return "Tonight the household wants to go fully adventurous. Push into bold, unfamiliar territory: new cuisines, new techniques."
+        default:
+            return "Tonight the household wants a balanced mix of familiar and new dishes."
+        }
+    }
+
     // MARK: - Taste learning
 
     /// A short profile built from favorites and the rolling dinner history.
     /// Sent along with every planning request so suggestions improve as the
     /// app learns what the household actually likes.
     var tasteNotes: String {
-        var parts: [String] = []
+        var parts: [String] = [adventurousNote]
         if !favorites.isEmpty {
             let titles = favorites.suffix(8).map(\.title).joined(separator: ", ")
             parts.append("Recipes they saved as favorites. Do not copy these or rearrange them into new titles. Read them for the underlying principles the household responds to, then give them something new that satisfies the same instinct: \(titles).")
@@ -308,9 +353,24 @@ final class AppState: ObservableObject {
         if !topCuisines.isEmpty {
             parts.append("Cuisines they have already had a lot of, give them at most one of these this week: \(topCuisines.joined(separator: ", ")).")
         }
-        let recent = pastDinners.suffix(40).map(\.title)
-        if !recent.isEmpty {
-            parts.append("Dinners from recent weeks. Do not repeat these, and do not repeat close variations of them. Same primary protein plus same cuisine counts as a repeat even when the title is different, and so does combining two of them into one dish: \(recent.joined(separator: ", ")).")
+        // Rotation memory: a hard 14-day window (never repeat, no exceptions
+        // unless the household explicitly names the dish again) plus a
+        // softer note for everything older, out to the usual 40-entry cap.
+        // The two-week line is what "cooked in the last 10-14 days" from the
+        // Dreamer memo actually means; the older list is for general variety,
+        // not a standing ban.
+        let rotationCutoff = Calendar.current.date(byAdding: .day, value: -14, to: Date()) ?? .distantPast
+        let recentTitles = Array(Set(pastDinners.filter { $0.date >= rotationCutoff }.map(\.title))).sorted()
+        if !recentTitles.isEmpty {
+            parts.append("Rotation memory, cooked in the last 14 days. Never repeat these, and never repeat a close variation of them (same primary protein plus same cuisine counts as a repeat even when the title is different), unless the household explicitly asks for one of them again by name: \(recentTitles.joined(separator: ", ")).")
+        }
+        let olderTitles = pastDinners.filter { $0.date < rotationCutoff }.suffix(40).map(\.title)
+        if !olderTitles.isEmpty {
+            parts.append("Dinners from recent weeks, older than 14 days. Vary away from these where you can, but a repeat is fine if nothing else fits as well: \(olderTitles.joined(separator: ", ")).")
+        }
+        let leftovers = leftoverAvailability
+        if !leftovers.isEmpty {
+            parts.append(leftovers)
         }
         // Rating keys are stored lowercased; capitalize them back into
         // something that reads like a dish title.
@@ -332,12 +392,36 @@ final class AppState: ObservableObject {
         return parts.joined(separator: " ")
     }
 
-    /// One line telling Claude what the household already owns, so plans
-    /// stop re-buying staples and the budget estimate gets honest. Empty
-    /// when no staples are set, so tasteNotes stays clean.
+    /// One line telling Claude what the household has confirmed in stock.
+    /// Unlike the old Pantry Memory, this does NOT ask Claude to omit these
+    /// items: they should still appear on the list, tagged and priced at 0,
+    /// so the household can double-check instead of the app silently
+    /// deciding for them. The app forces that tag client-side regardless of
+    /// whether Claude follows this instruction; see
+    /// MealPlan.reconciledWithPantryInventory. Empty when nothing is marked
+    /// in stock, so tasteNotes stays clean.
     var pantryNotes: String {
-        guard !pantryStaples.isEmpty else { return "" }
-        return "Pantry staples this household always has, never add them to the grocery list and never count them in the budget: \(pantryStaples.joined(separator: ", "))."
+        let inStock = pantryItems.filter { $0.inStock }.map(\.name)
+        guard !inStock.isEmpty else { return "" }
+        return "Pantry items this household has confirmed they already have in stock: \(inStock.joined(separator: ", ")). When a recipe needs one, still list it on the grocery list as usual, tagged pantry: true, but leave its cost out of the estimated total since they will not be buying it."
+    }
+
+    /// Days from the CURRENT week whose dinner is tagged leftoverYield and
+    /// has not been checked in as eaten. This is what lets "give me
+    /// something with the leftover chicken from Monday" work as a real
+    /// constraint: Claude is told what is actually still around, separate
+    /// from the rotation-memory "do not repeat" list, which would otherwise
+    /// discourage building around the same dish. Empty when there is no
+    /// active plan or nothing tagged.
+    var leftoverAvailability: String {
+        guard let plan else { return "" }
+        let lines = plan.week.compactMap { entry -> String? in
+            guard let recipe = plan.recipe(forDay: entry.day), recipe.leftoverYield == true else { return nil }
+            guard leftoverStatus[entry.day] != false else { return nil }
+            return "\(entry.day): \(entry.title)"
+        }
+        guard !lines.isEmpty else { return "" }
+        return "Leftovers likely still available from this week's dinners, usable as a real ingredient in a new dinner if the household asks for one by name: \(lines.joined(separator: "; "))."
     }
 
     /// Most common cuisines across the dinner history, best first.
@@ -367,7 +451,8 @@ final class AppState: ObservableObject {
             userText: transcript,
             lockedRecipes: keptRecipes,
             preserveChecks: false,
-            dinners: dinnersPerWeek
+            dinners: dinnersPerWeek,
+            useWebSearch: webSearchEnabled
         )
     }
 
@@ -408,11 +493,14 @@ final class AppState: ObservableObject {
         // A swap regenerates the week at its CURRENT size, not the settings
         // value, so changing dinners per week mid-week cannot silently
         // resize the plan (the setting applies to the next spoken week).
+        // Web search is deliberately left off here: it is a "find something
+        // for the whole week" ask, not a fit for replacing one dinner.
         runPlanGeneration(
             userText: userText,
             lockedRecipes: locked,
             preserveChecks: true,
-            dinners: plan.week.count
+            dinners: plan.week.count,
+            useWebSearch: false
         )
     }
 
@@ -428,7 +516,7 @@ final class AppState: ObservableObject {
     /// eaten and must be bought again). A swap happens mid-week against a
     /// list that is mostly unchanged, so check-offs still present on the
     /// new list carry over, unioned with the new plan's pantry staples.
-    private func runPlanGeneration(userText: String, lockedRecipes: [Recipe], preserveChecks: Bool, dinners: Int) {
+    private func runPlanGeneration(userText: String, lockedRecipes: [Recipe], preserveChecks: Bool, dinners: Int, useWebSearch: Bool = false) {
         guard phase != .planning else {
             // Never swallow the tap silently. Tell the user why nothing
             // new started.
@@ -441,14 +529,14 @@ final class AppState: ObservableObject {
         // one only spares the UI a flicker it would otherwise show every
         // single time a non-subscriber taps the mic.
         if subscriptions.status == .notSubscribed {
-            presentPaywall(resuming: userText, lockedRecipes: lockedRecipes, preserveChecks: preserveChecks, dinners: dinners)
+            presentPaywall(resuming: userText, lockedRecipes: lockedRecipes, preserveChecks: preserveChecks, dinners: dinners, useWebSearch: useWebSearch)
             return
         }
         phase = .planning
         let budget = budgetTarget
         let notes = tasteNotes
         let locked = lockedRecipes
-        let staples = pantryStaples
+        let stockedItems = pantryItems
         planTask = Task {
             do {
                 // The relay bills this month's allowance against the
@@ -458,7 +546,7 @@ final class AppState: ObservableObject {
                 // here, not by a refusal from the server.
                 guard let subscriptionID = await self.subscriptions.activeTransactionID() else {
                     self.phase = .idle
-                    self.presentPaywall(resuming: userText, lockedRecipes: locked, preserveChecks: preserveChecks, dinners: dinners)
+                    self.presentPaywall(resuming: userText, lockedRecipes: locked, preserveChecks: preserveChecks, dinners: dinners, useWebSearch: useWebSearch)
                     return
                 }
                 let rawPlan = try await Self.withPlanningDeadline {
@@ -468,25 +556,39 @@ final class AppState: ObservableObject {
                         dinners: dinners,
                         subscriptionID: subscriptionID,
                         tasteNotes: notes,
-                        lockedRecipes: locked
+                        lockedRecipes: locked,
+                        useWebSearch: useWebSearch
                     )
                 }
                 // Safety net: guarantee every recipe ingredient is on the
                 // grocery list before anything downstream uses the plan
                 // (recipe box archive, checked-item IDs, CloudKit save).
-                // Pantry Memory staples are deliberately off the list, so
-                // they are passed in and skipped instead of re-added.
-                let newPlan = rawPlan.reconciledWithRecipes(pantryStaples: staples)
+                // Confirmed in-stock pantry items get tagged "already have
+                // this" and pre-checked, on top of whatever Claude's own
+                // staple-guessing already flagged.
+                let newPlan = rawPlan.reconciledWithRecipes().reconciledWithPantryInventory(stockedItems)
                 // Archive before replacing so nothing is ever lost. The old
                 // plan covers weeks generated before the Recipe Box existed;
                 // the new plan is archived right away so it survives the
                 // next replacement too.
                 let replacedTitles = Set(self.plan?.week.map(\.title) ?? [])
-                if let oldPlan = self.plan {
+                let oldPlan = self.plan
+                if let oldPlan {
                     self.archiveIntoRecipeBox(oldPlan.recipes)
                 }
                 self.archiveIntoRecipeBox(newPlan.recipes)
                 self.plan = newPlan
+                // Leftover check-in only makes sense for a day whose dinner
+                // did not change: a swap keeps the untouched nights' status,
+                // a full regeneration (no oldPlan day matches) drops all of
+                // it for the fresh week.
+                self.leftoverStatus = self.leftoverStatus.filter { day, _ in
+                    oldPlan?.week.first(where: { $0.day == day })?.title
+                        == newPlan.week.first(where: { $0.day == day })?.title
+                }
+                self.markEdited("leftoverStatus")
+                let leftoverSnapshot = self.leftoverStatus
+                self.backgroundSave("leftoverStatus") { try await self.store.saveLeftoverStatus(leftoverSnapshot) }
                 if preserveChecks {
                     // Swap: the shopping week is already in motion, so
                     // check-offs for items still on the new list carry
@@ -539,7 +641,7 @@ final class AppState: ObservableObject {
                 // worst possible response.
                 if await self.subscriptions.activeTransactionID() == nil {
                     self.phase = .idle
-                    self.presentPaywall(resuming: userText, lockedRecipes: locked, preserveChecks: preserveChecks, dinners: dinners)
+                    self.presentPaywall(resuming: userText, lockedRecipes: locked, preserveChecks: preserveChecks, dinners: dinners, useWebSearch: useWebSearch)
                 } else {
                     self.phase = .error("MealTime could not confirm your subscription with the planning service. Check your connection and try again. If it keeps happening, tap Restore Purchases in Settings.")
                 }
@@ -559,13 +661,14 @@ final class AppState: ObservableObject {
     /// flag RootView watches. Every planning entry point comes through
     /// runPlanGeneration, so this is the only place the paywall is triggered
     /// and no future feature can accidentally skip it.
-    private func presentPaywall(resuming userText: String, lockedRecipes: [Recipe], preserveChecks: Bool, dinners: Int) {
+    private func presentPaywall(resuming userText: String, lockedRecipes: [Recipe], preserveChecks: Bool, dinners: Int, useWebSearch: Bool = false) {
         pendingGeneration = { [weak self] in
             self?.runPlanGeneration(
                 userText: userText,
                 lockedRecipes: lockedRecipes,
                 preserveChecks: preserveChecks,
-                dinners: dinners
+                dinners: dinners,
+                useWebSearch: useWebSearch
             )
         }
         showPaywall = true
@@ -849,7 +952,7 @@ final class AppState: ObservableObject {
                 updatedPlan.week[weekIndex].cookTimeMin = edited.cookTimeMin
                 updatedPlan.week[weekIndex].servings = edited.servings
             }
-            let reconciled = updatedPlan.reconciledWithRecipes(pantryStaples: pantryStaples)
+            let reconciled = updatedPlan.reconciledWithRecipes().reconciledWithPantryInventory(pantryItems)
             plan = reconciled
             // Check-offs carry over for every item still on the list;
             // brand-new items start unchecked.
@@ -945,33 +1048,46 @@ final class AppState: ObservableObject {
         backgroundSave("favorites") { try await self.store.saveFavorites(favs) }
     }
 
-    // MARK: - Pantry staples
+    // MARK: - Pantry inventory
 
-    /// Adds a staple to Pantry Memory. Whitespace is trimmed, an empty
-    /// result is ignored, and a title already on the list (compared case
-    /// insensitively) is not added twice.
-    func addStaple(_ raw: String) {
-        let staple = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !staple.isEmpty else { return }
-        guard !pantryStaples.contains(where: {
-            $0.caseInsensitiveCompare(staple) == .orderedSame
+    /// Adds a pantry item, in stock by default. Whitespace is trimmed, an
+    /// empty result is ignored, and a name already on the list (compared
+    /// case insensitively) is not added twice.
+    func addPantryItem(name raw: String, category: String) {
+        let name = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { return }
+        guard !pantryItems.contains(where: {
+            $0.name.caseInsensitiveCompare(name) == .orderedSame
         }) else { return }
-        pantryStaples.append(staple)
+        let resolvedCategory = MealPlan.freeformCategories.contains(category) ? category : "Other"
+        pantryItems.append(PantryItem(name: name, category: resolvedCategory))
         persistPantry()
     }
 
-    /// Removes one staple by its display text (matched case insensitively).
-    func removeStaple(_ staple: String) {
-        guard let index = pantryStaples.firstIndex(where: {
-            $0.caseInsensitiveCompare(staple) == .orderedSame
-        }) else { return }
-        pantryStaples.remove(at: index)
+    /// Marks an item out: the next generated list treats it as a normal
+    /// thing to buy again instead of auto-checking it.
+    func markPantryItemOut(_ item: PantryItem) {
+        setPantryItem(item, inStock: false)
+    }
+
+    /// Reverses markPantryItemOut once the household restocks.
+    func markPantryItemRestocked(_ item: PantryItem) {
+        setPantryItem(item, inStock: true)
+    }
+
+    private func setPantryItem(_ item: PantryItem, inStock: Bool) {
+        guard let index = pantryItems.firstIndex(where: { $0.id == item.id }) else { return }
+        pantryItems[index].inStock = inStock
+        pantryItems[index].lastUpdated = Date()
         persistPantry()
     }
 
-    /// Swipe-to-delete support for the Settings list.
-    func removeStaples(atOffsets offsets: IndexSet) {
-        pantryStaples.remove(atOffsets: offsets)
+    /// Removes an item from the pantry entirely (the household stopped
+    /// keeping it around), as opposed to marking it out, which just means
+    /// "buy it again next time."
+    func removePantryItem(_ item: PantryItem) {
+        guard let index = pantryItems.firstIndex(where: { $0.id == item.id }) else { return }
+        pantryItems.remove(at: index)
         persistPantry()
     }
 
@@ -979,8 +1095,80 @@ final class AppState: ObservableObject {
     /// edit (which also saves the offline cache), then push to CloudKit.
     private func persistPantry() {
         markEdited("pantry")
-        let snapshot = pantryStaples
-        backgroundSave("pantry") { try await self.store.saveStaples(snapshot) }
+        let snapshot = pantryItems
+        backgroundSave("pantry") { try await self.store.savePantryItems(snapshot) }
+    }
+
+    // MARK: - Freeform grocery items
+
+    /// Adds an item with no recipe behind it. Name is trimmed; an empty
+    /// result is ignored. Category falls back to "Other" for anything not
+    /// in the known list.
+    func addFreeformItem(name raw: String, category: String) {
+        let name = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { return }
+        let resolvedCategory = MealPlan.freeformCategories.contains(category) ? category : "Other"
+        freeformItems.append(FreeformGroceryItem(name: name, category: resolvedCategory))
+        persistFreeformItems()
+    }
+
+    /// Removes a freeform item and its checked state, matched by ID.
+    func removeFreeformItem(_ item: FreeformGroceryItem) {
+        guard let index = freeformItems.firstIndex(where: { $0.id == item.id }) else { return }
+        freeformItems.remove(at: index)
+        checkedItemIDs.remove(Self.freeformItemID(item))
+        persistFreeformItems()
+        let snapshot = checkedItemIDs
+        backgroundSave("checked") { try await self.store.saveChecked(snapshot) }
+    }
+
+    /// Shared persistence tail for every freeform-item mutation.
+    private func persistFreeformItems() {
+        markEdited("freeformItems")
+        let snapshot = freeformItems
+        backgroundSave("freeformItems") { try await self.store.saveFreeformItems(snapshot) }
+    }
+
+    /// Stable ID for a freeform item's checked state. Prefixed so it can
+    /// never collide with a recipe item's "section|name" ID, and reuses the
+    /// same checkedItemIDs set and sync path every other grocery row does.
+    static func freeformItemID(_ item: FreeformGroceryItem) -> String {
+        "freeform|\(item.id)"
+    }
+
+    func isFreeformChecked(_ item: FreeformGroceryItem) -> Bool {
+        checkedItemIDs.contains(Self.freeformItemID(item))
+    }
+
+    func toggleFreeform(_ item: FreeformGroceryItem) {
+        let id = Self.freeformItemID(item)
+        if checkedItemIDs.contains(id) {
+            checkedItemIDs.remove(id)
+        } else {
+            checkedItemIDs.insert(id)
+        }
+        markEdited("checked")
+        let snapshot = checkedItemIDs
+        backgroundSave("checked") { try await self.store.saveChecked(snapshot) }
+    }
+
+    // MARK: - Leftover check-in
+
+    /// Cycles a day's leftover status: unset -> still in the fridge -> eaten
+    /// -> still in the fridge. A day only has anything to cycle when its
+    /// dinner is tagged leftoverYield; the UI only shows the control there.
+    func cycleLeftoverStatus(day: String) {
+        switch leftoverStatus[day] {
+        case .none:
+            leftoverStatus[day] = true
+        case .some(true):
+            leftoverStatus[day] = false
+        case .some(false):
+            leftoverStatus[day] = true
+        }
+        markEdited("leftoverStatus")
+        let snapshot = leftoverStatus
+        backgroundSave("leftoverStatus") { try await self.store.saveLeftoverStatus(snapshot) }
     }
 
     // MARK: - Sync
@@ -1044,8 +1232,14 @@ final class AppState: ObservableObject {
                 let kept = keptRecipes
                 backgroundSave("recipeBox") { try await self.store.saveRecipeBox(box, kept: kept) }
             case "pantry":
-                let snapshot = pantryStaples
-                backgroundSave("pantry") { try await self.store.saveStaples(snapshot) }
+                let snapshot = pantryItems
+                backgroundSave("pantry") { try await self.store.savePantryItems(snapshot) }
+            case "freeformItems":
+                let snapshot = freeformItems
+                backgroundSave("freeformItems") { try await self.store.saveFreeformItems(snapshot) }
+            case "leftoverStatus":
+                let snapshot = leftoverStatus
+                backgroundSave("leftoverStatus") { try await self.store.saveLeftoverStatus(snapshot) }
             default:
                 break
             }
@@ -1132,12 +1326,26 @@ final class AppState: ObservableObject {
             }
             localEditDates["recipeBox"] = remote.updatedAt
         }
-        if let remote = await store.fetchStaples(), stillCurrent(),
+        if let remote = await store.fetchPantryItems(), stillCurrent(),
            remote.updatedAt > localEditDate(for: "pantry") {
-            if remote.staples != pantryStaples {
-                pantryStaples = remote.staples
+            if remote.items != pantryItems {
+                pantryItems = remote.items
             }
             localEditDates["pantry"] = remote.updatedAt
+        }
+        if let remote = await store.fetchFreeformItems(), stillCurrent(),
+           remote.updatedAt > localEditDate(for: "freeformItems") {
+            if remote.items != freeformItems {
+                freeformItems = remote.items
+            }
+            localEditDates["freeformItems"] = remote.updatedAt
+        }
+        if let remote = await store.fetchLeftoverStatus(), stillCurrent(),
+           remote.updatedAt > localEditDate(for: "leftoverStatus") {
+            if remote.status != leftoverStatus {
+                leftoverStatus = remote.status
+            }
+            localEditDates["leftoverStatus"] = remote.updatedAt
         }
         guard stillCurrent() else { return }
         saveLocalCache()
@@ -1183,9 +1391,24 @@ final class AppState: ObservableObject {
             keptRecipes = cached
         }
         if let json = defaults.string(forKey: HouseholdConfig.Keys.cachedPantry),
+           let data = json.data(using: .utf8) {
+            if let cached = try? JSONDecoder().decode([PantryItem].self, from: data) {
+                pantryItems = cached
+            } else if let legacy = try? JSONDecoder().decode([String].self, from: data) {
+                // Pre-Feature-2 cache: a flat staple-name list. Migrated in
+                // place so it survives the upgrade instead of vanishing.
+                pantryItems = legacy.map { PantryItem(name: $0, category: "Other") }
+            }
+        }
+        if let json = defaults.string(forKey: HouseholdConfig.Keys.cachedFreeformItems),
            let data = json.data(using: .utf8),
-           let cached = try? JSONDecoder().decode([String].self, from: data) {
-            pantryStaples = cached
+           let cached = try? JSONDecoder().decode([FreeformGroceryItem].self, from: data) {
+            freeformItems = cached
+        }
+        if let json = defaults.string(forKey: HouseholdConfig.Keys.cachedLeftoverStatus),
+           let data = json.data(using: .utf8),
+           let cached = try? JSONDecoder().decode([String: Bool].self, from: data) {
+            leftoverStatus = cached
         }
         if let stamps = defaults.dictionary(forKey: HouseholdConfig.Keys.cachedEditDates) as? [String: Double] {
             localEditDates = stamps.mapValues { Date(timeIntervalSince1970: $0) }
@@ -1220,9 +1443,17 @@ final class AppState: ObservableObject {
            let json = String(data: data, encoding: .utf8) {
             defaults.set(json, forKey: HouseholdConfig.Keys.cachedKeptRecipes)
         }
-        if let data = try? JSONEncoder().encode(pantryStaples),
+        if let data = try? JSONEncoder().encode(pantryItems),
            let json = String(data: data, encoding: .utf8) {
             defaults.set(json, forKey: HouseholdConfig.Keys.cachedPantry)
+        }
+        if let data = try? JSONEncoder().encode(freeformItems),
+           let json = String(data: data, encoding: .utf8) {
+            defaults.set(json, forKey: HouseholdConfig.Keys.cachedFreeformItems)
+        }
+        if let data = try? JSONEncoder().encode(leftoverStatus),
+           let json = String(data: data, encoding: .utf8) {
+            defaults.set(json, forKey: HouseholdConfig.Keys.cachedLeftoverStatus)
         }
         let stamps = localEditDates.mapValues { $0.timeIntervalSince1970 }
         defaults.set(stamps, forKey: HouseholdConfig.Keys.cachedEditDates)

@@ -58,7 +58,12 @@ struct WeekView: View {
                                             isFavorite: appState.isFavorite(recipe),
                                             rating: appState.rating(forTitle: entry.title),
                                             isKept: appState.isKept(recipe),
-                                            isTonight: isTonight(entry.day)
+                                            isTonight: isTonight(entry.day),
+                                            leftoverYield: recipe.leftoverYield == true,
+                                            leftoverStatus: appState.leftoverStatus[entry.day],
+                                            onToggleLeftoverStatus: recipe.leftoverYield == true
+                                                ? { appState.cycleLeftoverStatus(day: entry.day) }
+                                                : nil
                                         )
                                     }
                                     .swipeActions(edge: .trailing, allowsFullSwipe: false) {
@@ -213,6 +218,13 @@ struct DinnerCard: View {
     /// cannot open a recipe. Shows a prompt to regenerate rather than
     /// looking tappable but doing nothing.
     var missingRecipe: Bool = false
+    /// True when this dinner is sized to intentionally yield leftovers.
+    var leftoverYield: Bool = false
+    /// nil: not checked in yet. true: still in the fridge. false: eaten.
+    /// Only meaningful when leftoverYield is true.
+    var leftoverStatus: Bool?
+    /// Present only when leftoverYield is true; cycles the status on tap.
+    var onToggleLeftoverStatus: (() -> Void)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -254,6 +266,28 @@ struct DinnerCard: View {
             }
             .font(.footnote)
             .foregroundStyle(Color.echoTextSecondary)
+
+            if let note = entry.leftoverNote, !note.isEmpty {
+                Label(note, systemImage: "arrow.triangle.branch")
+                    .font(.caption)
+                    .foregroundStyle(Color.echoAccentText)
+            }
+
+            if leftoverYield, let onToggleLeftoverStatus {
+                Button(action: onToggleLeftoverStatus) {
+                    switch leftoverStatus {
+                    case .none:
+                        Label("Makes leftovers. Tap to log", systemImage: "takeoutbag.and.cup.and.straw")
+                    case .some(true):
+                        Label("Leftovers still in the fridge", systemImage: "refrigerator")
+                    case .some(false):
+                        Label("Leftovers eaten", systemImage: "checkmark.circle")
+                    }
+                }
+                .buttonStyle(.plain)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(leftoverStatus == false ? Color.echoTextSecondary : Color.echoAccentText)
+            }
 
             if missingRecipe {
                 Label("Recipe details didn't load. Regenerate this week on the Speak tab.", systemImage: "exclamationmark.triangle.fill")

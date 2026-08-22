@@ -1,11 +1,27 @@
 import SwiftUI
 import UIKit
 
+/// One row on the grocery list: either a recipe-driven item or a freeform
+/// one with no recipe behind it. Lets one section render both kinds through
+/// a single checked/toggle/label surface.
+private enum GroceryDisplayItem {
+    case recipe(sectionName: String, item: GroceryItem)
+    case freeform(FreeformGroceryItem)
+}
+
+/// A merged section: the recipe items Claude generated for this category
+/// plus any freeform items the household added under it, in that order.
+private struct GroceryDisplaySection {
+    let name: String
+    let items: [GroceryDisplayItem]
+}
+
 /// Tab 3. The consolidated grocery list, grouped by section, with a slim
 /// budget bar up top. Checked state syncs live between both phones.
 struct GroceryListView: View {
     @EnvironmentObject private var appState: AppState
     @State private var showSettings = false
+    @State private var showAddItem = false
     /// Store mode: show only what is still left to grab. Persisted so it
     /// survives a relaunch in the middle of a shopping trip.
     @AppStorage("storeModeOn") private var storeModeOn = false
@@ -15,20 +31,50 @@ struct GroceryListView: View {
     @State private var showConfetti = false
     @State private var confettiHideTask: Task<Void, Never>?
 
+    /// Recipe sections (in their fixed store-walk order) merged with
+    /// freeform items grouped into the same categories. A freeform item in
+    /// a category with no recipe items of its own (usually "Other") gets
+    /// its own section. Empty sections are dropped.
+    private var displaySections: [GroceryDisplaySection] {
+        var order = MealPlan.freeformCategories
+        let planSections = appState.plan?.orderedSections ?? []
+        for section in planSections where !order.contains(section.name) {
+            order.append(section.name)
+        }
+
+        var itemsByName: [String: [GroceryDisplayItem]] = [:]
+        for section in planSections {
+            itemsByName[section.name, default: []].append(
+                contentsOf: section.items.map { .recipe(sectionName: section.name, item: $0) }
+            )
+        }
+        for item in appState.freeformItems {
+            itemsByName[item.category, default: []].append(.freeform(item))
+        }
+
+        return order.compactMap { name in
+            guard let items = itemsByName[name], !items.isEmpty else { return nil }
+            return GroceryDisplaySection(name: name, items: items)
+        }
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
                 Color.echoBackground.ignoresSafeArea()
 
-                if let plan = appState.plan {
-                    let totalItems = plan.grocery.sections.reduce(0) { $0 + $1.items.count }
-                    let remainingItems = plan.orderedSections.reduce(0) { $0 + remainingCount(in: $1) }
+                let sections = displaySections
+                if !sections.isEmpty {
+                    let totalItems = sections.reduce(0) { $0 + $1.items.count }
+                    let remainingItems = sections.reduce(0) { $0 + remainingCount(in: $1) }
 
                     VStack(spacing: 0) {
-                        BudgetBar(grocery: plan.grocery)
-                            .padding(.horizontal)
-                            .padding(.top, 4)
-                            .padding(.bottom, 10)
+                        if let plan = appState.plan {
+                            BudgetBar(grocery: plan.grocery)
+                                .padding(.horizontal)
+                                .padding(.top, 4)
+                                .padding(.bottom, 10)
+                        }
 
                         ScrollView {
                             VStack(alignment: .leading, spacing: 18) {
@@ -42,13 +88,13 @@ struct GroceryListView: View {
                                             .padding(.horizontal, 4)
                                     }
 
-                                    ForEach(plan.orderedSections, id: \.name) { section in
+                                    ForEach(sections, id: \.name) { section in
                                         if !storeModeOn || remainingCount(in: section) > 0 {
                                             GrocerySectionView(section: section, hideChecked: storeModeOn)
                                         }
                                     }
 
-                                    if !plan.grocery.notes.isEmpty {
+                                    if let plan = appState.plan, !plan.grocery.notes.isEmpty {
                                         Text(plan.grocery.notes)
                                             .font(.footnote)
                                             .foregroundStyle(Color.echoTextSecondary)
@@ -75,7 +121,7 @@ struct GroceryListView: View {
                         Text("No list yet")
                             .font(.title3.weight(.semibold))
                             .foregroundStyle(Color.echoText)
-                        Text("Plan a week first and the list builds itself.")
+                        Text("Plan a week, or add an item, and the list builds itself.")
                             .font(.subheadline)
                             .foregroundStyle(Color.echoTextSecondary)
                     }
@@ -102,6 +148,13 @@ struct GroceryListView: View {
                             .accessibilityLabel(storeModeOn ? "Show all items" : "Show remaining items only")
                         }
                         Button {
+                            showAddItem = true
+                        } label: {
+                            Image(systemName: "plus")
+                                .foregroundStyle(Color.echoTextSecondary)
+                        }
+                        .accessibilityLabel("Add item")
+                        Button {
                             showSettings = true
                         } label: {
                             Image(systemName: "gearshape")
@@ -113,13 +166,25 @@ struct GroceryListView: View {
             .sheet(isPresented: $showSettings) {
                 SettingsView()
             }
+            .sheet(isPresented: $showAddItem) {
+                AddFreeformItemSheet()
+            }
+        }
+    }
+
+    private func isChecked(_ item: GroceryDisplayItem) -> Bool {
+        switch item {
+        case .recipe(let sectionName, let groceryItem):
+            return appState.isChecked(section: sectionName, item: groceryItem.name)
+        case .freeform(let freeformItem):
+            return appState.isFreeformChecked(freeformItem)
         }
     }
 
     /// Items in a section not yet checked off. Pantry staples start
     /// checked, so they count as already handled, same as the rows show.
-    private func remainingCount(in section: GrocerySection) -> Int {
-        section.items.filter { !appState.isChecked(section: section.name, item: $0.name) }.count
+    private func remainingCount(in section: GroceryDisplaySection) -> Int {
+        section.items.filter { !isChecked($0) }.count
     }
 
     /// Full-list celebration: a success thump and a confetti burst over
@@ -153,6 +218,238 @@ struct GroceryListView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.top, 60)
+    }
+}
+
+// MARK: - Add freeform item
+
+/// The "add item" entry point: a name and a category, for anything with no
+/// recipe behind it. Separate from the recipe-driven flow on purpose.
+private struct AddFreeformItemSheet: View {
+    @EnvironmentObject private var appState: AppState
+    @Environment(\.dismiss) private var dismiss
+    @State private var name = ""
+    @State private var category = "Other"
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    TextField("Item, like paper towels", text: $name)
+                        .onSubmit(add)
+                    Picker("Category", selection: $category) {
+                        ForEach(MealPlan.freeformCategories, id: \.self) { name in
+                            Text(name).tag(name)
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Add Item")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Add", action: add)
+                        .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+            }
+        }
+        .presentationDetents([.medium])
+    }
+
+    private func add() {
+        guard !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        appState.addFreeformItem(name: name, category: category)
+        dismiss()
+    }
+}
+
+// MARK: - Sections and rows
+
+private struct GrocerySectionView: View {
+    @EnvironmentObject private var appState: AppState
+    let section: GroceryDisplaySection
+    /// Store mode: checked items drop out of the section entirely.
+    var hideChecked: Bool = false
+
+    private var visibleItems: [GroceryDisplayItem] {
+        guard hideChecked else { return section.items }
+        return section.items.filter { !isChecked($0) }
+    }
+
+    private func isChecked(_ item: GroceryDisplayItem) -> Bool {
+        switch item {
+        case .recipe(let sectionName, let groceryItem):
+            return appState.isChecked(section: sectionName, item: groceryItem.name)
+        case .freeform(let freeformItem):
+            return appState.isFreeformChecked(freeformItem)
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(section.name.uppercased())
+                .font(.caption.weight(.bold))
+                .tracking(1.2)
+                .foregroundStyle(Color.echoTextSecondary)
+                .padding(.horizontal, 4)
+
+            VStack(spacing: 0) {
+                // Keyed by position, not identity, so two same-named items
+                // in one section (possible in model output) cannot collide.
+                ForEach(Array(visibleItems.enumerated()), id: \.offset) { index, item in
+                    GroceryRow(displayItem: item)
+                    if index < visibleItems.count - 1 {
+                        Divider().overlay(Color.echoCardBorder)
+                    }
+                }
+            }
+            .echoCardStyle()
+        }
+    }
+}
+
+/// One checkbox row. Big touch target, clear checked state, fast to tap
+/// through in a store.
+private struct GroceryRow: View {
+    @EnvironmentObject private var appState: AppState
+    let displayItem: GroceryDisplayItem
+
+    private var checked: Bool {
+        switch displayItem {
+        case .recipe(let sectionName, let item):
+            return appState.isChecked(section: sectionName, item: item.name)
+        case .freeform(let item):
+            return appState.isFreeformChecked(item)
+        }
+    }
+
+    private var name: String {
+        switch displayItem {
+        case .recipe(_, let item): return item.name
+        case .freeform(let item): return item.name
+        }
+    }
+
+    /// Quantity line, recipe items only. Freeform items have none.
+    private var qty: String? {
+        switch displayItem {
+        case .recipe(_, let item): return item.qty
+        case .freeform: return nil
+        }
+    }
+
+    private var isPantryTagged: Bool {
+        if case .recipe(_, let item) = displayItem { return item.pantry }
+        return false
+    }
+
+    private var estPrice: Double {
+        if case .recipe(_, let item) = displayItem { return item.estPrice }
+        return 0
+    }
+
+    /// Why this item is on the list: the recipe(s) that use it, or a plain
+    /// "added by you" for a freeform item, so the list explains itself
+    /// while you're standing in the aisle.
+    private var sourceTag: String? {
+        switch displayItem {
+        case .recipe(_, let item):
+            guard let plan = appState.plan else { return nil }
+            let tags = plan.recipeTitles(for: item)
+            return tags.isEmpty ? nil : tags.joined(separator: " · ")
+        case .freeform:
+            return "Added by you"
+        }
+    }
+
+    private func toggle() {
+        switch displayItem {
+        case .recipe(let sectionName, let item):
+            appState.toggle(section: sectionName, item: item.name)
+        case .freeform(let item):
+            appState.toggleFreeform(item)
+        }
+    }
+
+    var body: some View {
+        Button(action: toggle) {
+            HStack(spacing: 14) {
+                Image(systemName: checked ? "checkmark.circle.fill" : "circle")
+                    .font(.title2)
+                    .foregroundStyle(checked ? Color.echoGreen : Color.echoTextSecondary)
+                    .symbolEffect(.bounce, value: checked)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 6) {
+                        Text(name)
+                            .font(.body.weight(.medium))
+                            .foregroundStyle(checked ? Color.echoTextSecondary : Color.echoText)
+                            .strikethrough(checked, color: Color.echoTextSecondary)
+                        if case .freeform = displayItem {
+                            // Light visual marker so a freeform item reads
+                            // as different from a recipe-driven one without
+                            // breaking the shopping flow into two lists.
+                            Image(systemName: "square.and.pencil")
+                                .font(.caption2)
+                                .foregroundStyle(Color.echoTextSecondary)
+                        }
+                    }
+                    if let qty {
+                        HStack(spacing: 8) {
+                            Text(qty)
+                            if isPantryTagged {
+                                Text("already have this")
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 1)
+                                    .background(Capsule().fill(Color.echoFill))
+                            }
+                        }
+                        .font(.caption)
+                        .foregroundStyle(Color.echoTextSecondary)
+                    }
+                    if let sourceTag {
+                        Text(sourceTag)
+                            .font(.caption2)
+                            .foregroundStyle(Color.echoAccentText.opacity(0.9))
+                            .lineLimit(2)
+                    }
+                }
+
+                Spacer()
+
+                // Items added by the recipe reconciliation, and every
+                // freeform item, carry estPrice 0 on purpose; a "$0.00"
+                // label would just read as broken.
+                if estPrice > 0 {
+                    Text(String(format: "$%.2f", estPrice))
+                        .font(.footnote)
+                        .foregroundStyle(Color.echoTextSecondary)
+                }
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 13)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        // Checking off feels like something: a solid thump on check, a
+        // lighter tick on uncheck.
+        .sensoryFeedback(trigger: checked) { _, isNowChecked in
+            isNowChecked ? .impact(weight: .medium) : .impact(weight: .light)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(qty != nil ? "\(name), \(qty!)" : name)
+        .accessibilityValue(checked ? "checked" : "not checked")
+        .accessibilityAddTraits(.isButton)
+        .contextMenu {
+            if case .freeform(let item) = displayItem {
+                Button("Remove", role: .destructive) {
+                    appState.removeFreeformItem(item)
+                }
+            }
+        }
     }
 }
 
@@ -212,129 +509,15 @@ struct BudgetBar: View {
     }
 }
 
-// MARK: - Sections and rows
-
-struct GrocerySectionView: View {
-    @EnvironmentObject private var appState: AppState
-    let section: GrocerySection
-    /// Store mode: checked items drop out of the section entirely.
-    var hideChecked: Bool = false
-
-    private var visibleItems: [GroceryItem] {
-        guard hideChecked else { return section.items }
-        return section.items.filter {
-            !appState.isChecked(section: section.name, item: $0.name)
-        }
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(section.name.uppercased())
-                .font(.caption.weight(.bold))
-                .tracking(1.2)
-                .foregroundStyle(Color.echoTextSecondary)
-                .padding(.horizontal, 4)
-
-            VStack(spacing: 0) {
-                // Keyed by position, not name, so two same-named items in
-                // one section (possible in model output) cannot collide.
-                ForEach(Array(visibleItems.enumerated()), id: \.offset) { index, item in
-                    GroceryRow(sectionName: section.name, item: item)
-                    if index < visibleItems.count - 1 {
-                        Divider().overlay(Color.echoCardBorder)
-                    }
-                }
-            }
-            .echoCardStyle()
-        }
-    }
-}
-
-/// One checkbox row. Big touch target, clear checked state, fast to tap
-/// through in a store.
-struct GroceryRow: View {
-    @EnvironmentObject private var appState: AppState
-    let sectionName: String
-    let item: GroceryItem
-
-    private var checked: Bool {
-        appState.isChecked(section: sectionName, item: item.name)
-    }
-
-    var body: some View {
-        Button {
-            appState.toggle(section: sectionName, item: item.name)
-        } label: {
-            HStack(spacing: 14) {
-                Image(systemName: checked ? "checkmark.circle.fill" : "circle")
-                    .font(.title2)
-                    .foregroundStyle(checked ? Color.echoGreen : Color.echoTextSecondary)
-                    .symbolEffect(.bounce, value: checked)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(item.name)
-                        .font(.body.weight(.medium))
-                        .foregroundStyle(checked ? Color.echoTextSecondary : Color.echoText)
-                        .strikethrough(checked, color: Color.echoTextSecondary)
-                    HStack(spacing: 8) {
-                        Text(item.qty)
-                        if item.pantry {
-                            Text("pantry")
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 1)
-                                .background(Capsule().fill(Color.echoFill))
-                        }
-                    }
-                    .font(.caption)
-                    .foregroundStyle(Color.echoTextSecondary)
-                    // Which dinner(s) this item is for. Tagged by the
-                    // model on new plans; older plans (including the week
-                    // already on the phones) fall back to local
-                    // ingredient matching. General items show no line.
-                    if let plan = appState.plan {
-                        let tags = plan.recipeTitles(for: item)
-                        if !tags.isEmpty {
-                            Text(tags.joined(separator: " · "))
-                                .font(.caption2)
-                                .foregroundStyle(Color.echoAccentText.opacity(0.9))
-                                .lineLimit(2)
-                        }
-                    }
-                }
-
-                Spacer()
-
-                // Items added by the recipe reconciliation carry estPrice 0
-                // on purpose; a "$0.00" label would just read as broken.
-                if item.estPrice > 0 {
-                    Text(String(format: "$%.2f", item.estPrice))
-                        .font(.footnote)
-                        .foregroundStyle(Color.echoTextSecondary)
-                }
-            }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 13)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        // Checking off feels like something: a solid thump on check, a
-        // lighter tick on uncheck.
-        .sensoryFeedback(trigger: checked) { _, isNowChecked in
-            isNowChecked ? .impact(weight: .medium) : .impact(weight: .light)
-        }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(item.name), \(item.qty)")
-        .accessibilityValue(checked ? "checked" : "not checked")
-        .accessibilityAddTraits(.isButton)
-    }
-}
-
 // MARK: - Confetti
 
 /// One celebratory burst from the top of the screen, used when the last
 /// grocery item is checked off. CAEmitterLayer does the physics; the
 /// emitter stops after a beat so it reads as a burst, not endless rain,
-/// and the pieces already in the air fall out on their own.
+/// and the pieces already in the air fall out on their own. Falling
+/// jack-o'-lanterns instead of confetti squares, drawn from the emoji so
+/// each particle already carries its own color and no per-cell tint
+/// is needed.
 private struct ConfettiBurst: UIViewRepresentable {
     func makeUIView(context: Context) -> UIView {
         let view = UIView()
@@ -344,34 +527,19 @@ private struct ConfettiBurst: UIViewRepresentable {
         let width = UIScreen.main.bounds.width
         emitter.emitterPosition = CGPoint(x: width / 2, y: -10)
         emitter.emitterSize = CGSize(width: width, height: 1)
-        // CAEmitterCell takes a CGColor, which cannot follow a palette
-        // change on its own, so these get resolved once here. Resolve
-        // against the environment's scheme rather than view.traitCollection:
-        // at makeUIView time the view is not in the window yet, so its own
-        // traits can report the wrong style.
-        let traits = UITraitCollection(
-            userInterfaceStyle: context.environment.colorScheme == .dark ? .dark : .light
-        )
-        let colors: [UIColor] = [
-            UIColor(Color.echoAccent), UIColor(Color.echoGreen),
-            UIColor(Color.echoWarning), UIColor(Color.echoInfo)
-        ].map { $0.resolvedColor(with: traits) }
-        emitter.emitterCells = colors.map { color in
-            let cell = CAEmitterCell()
-            cell.birthRate = 9
-            cell.lifetime = 6
-            cell.velocity = 190
-            cell.velocityRange = 90
-            cell.emissionLongitude = .pi
-            cell.emissionRange = .pi / 5
-            cell.spin = 3.5
-            cell.spinRange = 4
-            cell.scale = 0.6
-            cell.scaleRange = 0.3
-            cell.color = color.cgColor
-            cell.contents = Self.particle.cgImage
-            return cell
-        }
+        let cell = CAEmitterCell()
+        cell.birthRate = 9
+        cell.lifetime = 6
+        cell.velocity = 190
+        cell.velocityRange = 90
+        cell.emissionLongitude = .pi
+        cell.emissionRange = .pi / 5
+        cell.spin = 3.5
+        cell.spinRange = 4
+        cell.scale = 0.6
+        cell.scaleRange = 0.3
+        cell.contents = Self.particle.cgImage
+        emitter.emitterCells = [cell]
         view.layer.addSublayer(emitter)
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
             emitter.birthRate = 0
@@ -381,15 +549,20 @@ private struct ConfettiBurst: UIViewRepresentable {
 
     func updateUIView(_ uiView: UIView, context: Context) {}
 
-    /// Small white rounded rectangle each cell tints its own color.
+    /// A small jack-o'-lantern, drawn from the emoji so it comes with its
+    /// own color baked in and needs no per-cell tint.
     private static let particle: UIImage = {
-        let size = CGSize(width: 12, height: 8)
+        let size = CGSize(width: 28, height: 28)
+        let font = UIFont.systemFont(ofSize: 24)
         return UIGraphicsImageRenderer(size: size).image { _ in
-            UIColor.white.setFill()
-            UIBezierPath(
-                roundedRect: CGRect(origin: .zero, size: size),
-                cornerRadius: 2
-            ).fill()
+            let string = "🎃" as NSString
+            let attributes: [NSAttributedString.Key: Any] = [.font: font]
+            let stringSize = string.size(withAttributes: attributes)
+            let origin = CGPoint(
+                x: (size.width - stringSize.width) / 2,
+                y: (size.height - stringSize.height) / 2
+            )
+            string.draw(at: origin, withAttributes: attributes)
         }
     }()
 }

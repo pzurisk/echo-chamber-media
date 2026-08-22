@@ -73,12 +73,24 @@ enum ClaudeService {
     /// Builds the system prompt for the requested number of dinners. The
     /// prompt used to be a frozen constant hardcoded to 5 weeknights; the
     /// dinner count and day list now follow the household's setting.
-    static func systemPrompt(dinners: Int) -> String {
+    /// webSearchEnabled appends the instruction for using the web_search
+    /// tool the Worker attaches when the app asks for it; the prompt itself
+    /// says nothing about search when the tool is not there to use.
+    static func systemPrompt(dinners: Int, webSearchEnabled: Bool = false) -> String {
         let count = min(max(dinners, 1), 7)
         let days = dayNames.prefix(count)
         let first = days.first ?? "Monday"
         let last = days.last ?? "Friday"
         let span = count == 1 ? "on \(first)" : "\(first) through \(last)"
+        let webSearchInstructions = webSearchEnabled ? """
+
+
+Web search, enabled for this plan:
+- You have a web_search tool. Use it, a few searches at most, to find dishes that are genuinely trending or widely praised online right now.
+- Let one or two of this week's dinners be inspired by an actual dish you find that way, adapted into a real 30 to 60 minute weeknight meal for two that still follows every rule above: variety, craft, budget, a complete plate.
+- Everything else in the week comes from your own judgment as usual.
+- Do not describe your search or cite a source in the output. Return JSON only, matching the schema exactly, with no extra fields.
+""" : ""
         return """
 You plan weekly dinners for a two-person household. You will receive a short, possibly messy voice transcript of cravings, proteins, or dish ideas. Build a full \(count)-dinner plan, \(span), around whatever they mention, and fill the remaining nights yourself with dinners that fit.
 
@@ -106,16 +118,21 @@ Craft. This is what separates a real dinner from filler:
 - Regional honesty. If a dish is Vietnamese, use the real aromatics. Never sand a cuisine down into a generic weeknight version of itself.
 - Every step states why it matters in one short clause, so the cook learns instead of just obeying. Write "Sear undisturbed 4 minutes so a crust can form" rather than "sear the chicken."
 
+Leftovers, a soft nudge, not a rule:
+- For any dinner where cooking a larger batch is natural and the extra keeps well 1 to 2 days (braises, roasts, chili, curry, a big pot of grains or beans), set "leftoverYield": true on its recipe entry and size the recipe to intentionally yield a second meal's worth, not just dinner-night portions.
+- Where it genuinely fits, pair a leftoverYield dinner with a later dinner 1 to 2 days after it that reuses or riffs on that leftover: a second preparation of the same protein, or a different plate built around the leftover component. Only pair meals when the fit is real. Never force a bad pairing just to use this feature.
+- When you pair two dinners this way, set "leftoverNote" on the LATER day's week entry to one short sentence naming the connection, e.g. "Uses leftover braised chicken from Monday." Every day without a pairing omits leftoverNote or leaves it empty.
+
 Return JSON only. No prose, no markdown, no backticks. Match this schema exactly:
 
 {
   "week": [
-    { "day": "Monday", "title": "", "cuisine": "", "cookTimeMin": 0, "servings": 2 }
+    { "day": "Monday", "title": "", "cuisine": "", "cookTimeMin": 0, "servings": 2, "leftoverNote": "" }
   ],
   "recipes": [
     { "day": "Monday", "title": "", "cookTimeMin": 0, "servings": 2,
       "ingredients": [ { "item": "", "qty": "" } ],
-      "steps": [ "" ] }
+      "steps": [ "" ], "leftoverYield": false }
   ],
   "grocery": {
     "budgetTarget": 100,
@@ -128,7 +145,7 @@ Return JSON only. No prose, no markdown, no backticks. Match this schema exactly
   }
 }
 
-week and recipes each have exactly \(count) entries, one per day, \(span), in order. grocery.sections use only these names when relevant: Proteins, Produce, Pantry, Dairy, Bread, Sauces.
+week and recipes each have exactly \(count) entries, one per day, \(span), in order. grocery.sections use only these names when relevant: Proteins, Produce, Pantry, Dairy, Bread, Sauces.\(webSearchInstructions)
 """
     }
 
@@ -149,7 +166,10 @@ week and recipes each have exactly \(count) entries, one per day, \(span), in or
     /// subscription. The relay counts this month's plans against it and
     /// refuses any request without one, so callers must resolve it from
     /// SubscriptionStore before calling rather than passing a placeholder.
-    static func planWeek(transcript: String, budget: Double, dinners: Int, subscriptionID: String, tasteNotes: String = "", lockedRecipes: [Recipe] = []) async throws -> MealPlan {
+    /// useWebSearch asks the Worker to attach its pinned web_search tool and
+    /// switches in the search paragraph of the system prompt; the Worker,
+    /// not this flag, is what actually authorizes the tool.
+    static func planWeek(transcript: String, budget: Double, dinners: Int, subscriptionID: String, tasteNotes: String = "", lockedRecipes: [Recipe] = [], useWebSearch: Bool = false) async throws -> MealPlan {
         var context = "Budget target: \(Int(budget)). Dinners: \(dinners). "
         if !tasteNotes.isEmpty {
             context += "Taste notes about this household: \(tasteNotes) "
@@ -166,16 +186,16 @@ week and recipes each have exactly \(count) entries, one per day, \(span), in or
         context += "Cravings: \(transcript) "
         context += "Coverage rule: every single ingredient used by any recipe in the plan must appear on the grocery list, either as its own item or as a clearly matching combined item. The household shops from this list alone, so nothing may be missing."
         do {
-            return try await requestPlan(userText: context, dinners: dinners, subscriptionID: subscriptionID)
+            return try await requestPlan(userText: context, dinners: dinners, subscriptionID: subscriptionID, useWebSearch: useWebSearch)
         } catch ClaudeError.parseFailed {
             let reminder = context + "\n\nReminder: return only valid JSON matching the schema. No prose, no markdown, no backticks. The \"recipes\" array is required and must contain one full recipe object for every day in \"week\" (same count, matching \"day\" values), each with its ingredients and numbered steps. Do not return an empty or partial recipes array."
-            return try await requestPlan(userText: reminder, dinners: dinners, subscriptionID: subscriptionID)
+            return try await requestPlan(userText: reminder, dinners: dinners, subscriptionID: subscriptionID, useWebSearch: useWebSearch)
         } catch let error as URLError where Self.transientURLErrorCodes.contains(error.code) {
             try await Task.sleep(nanoseconds: 2_000_000_000)
-            return try await requestPlan(userText: context, dinners: dinners, subscriptionID: subscriptionID)
+            return try await requestPlan(userText: context, dinners: dinners, subscriptionID: subscriptionID, useWebSearch: useWebSearch)
         } catch ClaudeError.badStatus(let code, _) where (500...599).contains(code) {
             try await Task.sleep(nanoseconds: 2_000_000_000)
-            return try await requestPlan(userText: context, dinners: dinners, subscriptionID: subscriptionID)
+            return try await requestPlan(userText: context, dinners: dinners, subscriptionID: subscriptionID, useWebSearch: useWebSearch)
         }
     }
 
@@ -200,7 +220,7 @@ week and recipes each have exactly \(count) entries, one per day, \(span), in or
         return value
     }
 
-    private static func requestPlan(userText: String, dinners: Int, subscriptionID: String) async throws -> MealPlan {
+    private static func requestPlan(userText: String, dinners: Int, subscriptionID: String, useWebSearch: Bool = false) async throws -> MealPlan {
         var request: URLRequest
         if let proxyString = configValue("CLAUDE_PROXY_URL"),
            let proxyURL = URL(string: proxyString) {
@@ -243,7 +263,7 @@ week and recipes each have exactly \(count) entries, one per day, \(span), in or
         request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
         request.setValue("application/json", forHTTPHeaderField: "content-type")
 
-        let body: [String: Any] = [
+        var body: [String: Any] = [
             "model": "claude-sonnet-5",
             // Room for a full week: up to 7 recipes with ingredients and
             // steps, plus the grocery list. 8000 could clip a verbose plan
@@ -259,11 +279,16 @@ week and recipes each have exactly \(count) entries, one per day, \(span), in or
             // cut output from ~14k tokens to ~4k and made recipes reliably
             // complete. (Sonnet 5 accepts "disabled"; only Fable 5 rejects it.)
             "thinking": ["type": "disabled"],
-            "system": systemPrompt(dinners: dinners),
+            "system": systemPrompt(dinners: dinners, webSearchEnabled: useWebSearch),
             "messages": [
                 ["role": "user", "content": userText]
             ]
         ]
+        // The Worker decides what tool this actually attaches; this flag is
+        // just the ask. See Proxy/worker.js's WEB_SEARCH_TOOL.
+        if useWebSearch {
+            body["webSearch"] = true
+        }
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
         let (data, response) = try await URLSession.shared.data(for: request)
@@ -287,13 +312,15 @@ week and recipes each have exactly \(count) entries, one per day, \(span), in or
             }
         }
 
-        // Pull the first text block out of the reply. Claude Sonnet 5 can
-        // include thinking blocks before the text, so filter by type instead
-        // of assuming content[0] is text.
+        // Pull the LAST text block out of the reply, not the first. Claude
+        // can include a preamble text block before a web_search_tool_result
+        // block when web search is enabled, with the actual JSON answer in a
+        // text block after the search results; taking the first block would
+        // grab that preamble instead of the plan.
         guard
             let envelope = try JSONSerialization.jsonObject(with: data) as? [String: Any],
             let content = envelope["content"] as? [[String: Any]],
-            let textBlock = content.first(where: { ($0["type"] as? String) == "text" }),
+            let textBlock = content.last(where: { ($0["type"] as? String) == "text" }),
             let text = textBlock["text"] as? String,
             !text.isEmpty
         else {
