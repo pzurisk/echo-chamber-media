@@ -184,18 +184,41 @@ week and recipes each have exactly \(count) entries, one per day, \(span), in or
             }
         }
         context += "Cravings: \(transcript) "
+        // Trending dishes, when asked for, arrive as context from a separate
+        // short search call rather than from a tool attached to this request.
+        // See trendingDishes for why. An empty list means the lookup failed
+        // or found nothing, and the week is planned normally instead of
+        // failing, so this is a bonus and never a dependency.
+        var planUsesSearchTool = useWebSearch
+        if useWebSearch {
+            let trending = await trendingDishes(subscriptionID: subscriptionID)
+            if trending.isEmpty {
+                HouseholdConfig.trace("plan.trendingEmpty, planning without it")
+            } else {
+                context += "Trending right now: these dishes are currently popular online: \(trending.joined(separator: ", ")). Let one or two of this week's dinners be inspired by one of them, adapted into a real 30 to 60 minute weeknight meal for two that still follows every rule above, including the variety rules. Everything else comes from your own judgment. Do not mention trends, searches, or sources anywhere in the output. "
+            }
+            // The tool never gets attached to the plan request either way.
+            // Attaching it is what caused the 524.
+            planUsesSearchTool = false
+        }
         context += "Coverage rule: every single ingredient used by any recipe in the plan must appear on the grocery list, either as its own item or as a clearly matching combined item. The household shops from this list alone, so nothing may be missing."
         do {
-            return try await requestPlan(userText: context, dinners: dinners, subscriptionID: subscriptionID, useWebSearch: useWebSearch)
+            return try await requestPlan(userText: context, dinners: dinners, subscriptionID: subscriptionID, useWebSearch: planUsesSearchTool)
         } catch ClaudeError.parseFailed {
             let reminder = context + "\n\nReminder: return only valid JSON matching the schema. No prose, no markdown, no backticks. The \"recipes\" array is required and must contain one full recipe object for every day in \"week\" (same count, matching \"day\" values), each with its ingredients and numbered steps. Do not return an empty or partial recipes array."
-            return try await requestPlan(userText: reminder, dinners: dinners, subscriptionID: subscriptionID, useWebSearch: useWebSearch)
+            return try await requestPlan(userText: reminder, dinners: dinners, subscriptionID: subscriptionID, useWebSearch: planUsesSearchTool)
         } catch let error as URLError where Self.transientURLErrorCodes.contains(error.code) {
             try await Task.sleep(nanoseconds: 2_000_000_000)
-            return try await requestPlan(userText: context, dinners: dinners, subscriptionID: subscriptionID, useWebSearch: useWebSearch)
-        } catch ClaudeError.badStatus(let code, _) where (500...599).contains(code) {
+            return try await requestPlan(userText: context, dinners: dinners, subscriptionID: subscriptionID, useWebSearch: planUsesSearchTool)
+        } catch ClaudeError.badStatus(let code, _) where (500...599).contains(code) && code != 524 {
+            // 524 is excluded deliberately. It is Cloudflare cutting the
+            // connection after about 126 seconds, which is a deadline, not a
+            // hiccup. Retrying it spends another 126 seconds to fail the same
+            // way and pushes the whole attempt past the 240 second planning
+            // deadline, so the household waits four minutes to be told the
+            // connection is bad. Failing once and fast is the honest answer.
             try await Task.sleep(nanoseconds: 2_000_000_000)
-            return try await requestPlan(userText: context, dinners: dinners, subscriptionID: subscriptionID, useWebSearch: useWebSearch)
+            return try await requestPlan(userText: context, dinners: dinners, subscriptionID: subscriptionID, useWebSearch: planUsesSearchTool)
         }
     }
 
@@ -218,6 +241,113 @@ week and recipes each have exactly \(count) entries, one per day, \(span), in or
             return nil
         }
         return value
+    }
+
+    /// Builds a request to the relay with the shared headers. Split out of
+    /// requestPlan so the trending-dish lookup can reuse it with its own,
+    /// much shorter timeout instead of copying the header setup.
+    private static func relayRequest(subscriptionID: String, timeout: TimeInterval) throws -> URLRequest {
+        guard
+            let proxyString = configValue("CLAUDE_PROXY_URL"),
+            let proxyURL = URL(string: proxyString)
+        else {
+            // No fallback on purpose. Calling api.anthropic.com from the
+            // device would need an API key inside the app bundle, readable by
+            // anyone who unzips a shipped .ipa.
+            throw ClaudeError.missingKey
+        }
+        var request = URLRequest(url: proxyURL)
+        if let token = configValue("CLAUDE_PROXY_TOKEN") {
+            request.setValue(token, forHTTPHeaderField: "x-app-token")
+        }
+        request.setValue(subscriptionID, forHTTPHeaderField: "x-txn-id")
+        request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
+        request.setValue("application/json", forHTTPHeaderField: "content-type")
+        request.httpMethod = "POST"
+        request.timeoutInterval = timeout
+        return request
+    }
+
+    /// Asks Claude, with web search on, for a handful of dishes that are
+    /// genuinely trending right now. Returns their names only.
+    ///
+    /// Why this is its own call. Running web search inside the plan request
+    /// stacks up to four search round trips on top of a generation that
+    /// already takes about 70 seconds, and nothing streams back because the
+    /// relay returns the response whole. Cloudflare cuts the connection at
+    /// roughly 126 seconds and answers 524, every time, deterministically:
+    /// measured on device and from a Mac on 2026-08-28, 126.3s both. The
+    /// plan Claude had built is thrown away at that moment.
+    ///
+    /// Splitting it keeps both requests comfortably under that wall. This
+    /// one asks for names and nothing else, with a small token budget, so it
+    /// returns in a few seconds. The plan call then runs with no tool at all,
+    /// back to its normal ~70 seconds, with the names handed to it as
+    /// context.
+    ///
+    /// Never throws. A trending lookup that fails must not cost the
+    /// household their dinner plan, so every failure path returns an empty
+    /// list and the week gets planned the ordinary way.
+    static func trendingDishes(subscriptionID: String) async -> [String] {
+        let system = """
+        You find dishes that are genuinely trending or widely praised online right now.
+
+        Use the web_search tool, at most two searches, to find real dishes people are actually talking about at the moment. Prefer dinners that a home cook could make on a weeknight in 30 to 60 minutes.
+
+        Return JSON only. No prose, no markdown, no backticks. Match this schema exactly:
+
+        {"dishes": ["dish name", "dish name", "dish name"]}
+
+        Between three and five dishes. Each entry is just the dish name, no description, no source, no link.
+        """
+        do {
+            var request = try relayRequest(subscriptionID: subscriptionID, timeout: 75)
+            let body: [String: Any] = [
+                "model": "claude-sonnet-5",
+                // Small on purpose. This call returns a handful of names, so
+                // a large budget would only buy a longer wait against the
+                // same Cloudflare ceiling this split exists to stay under.
+                "max_tokens": 1500,
+                "thinking": ["type": "disabled"],
+                "system": system,
+                "messages": [["role": "user", "content": "What dinners are trending right now?"]],
+                "webSearch": true
+            ]
+            request.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+            let (data, response) = try await URLSession.shared.data(for: request)
+            guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
+                let code = (response as? HTTPURLResponse)?.statusCode ?? 0
+                HouseholdConfig.trace("trending.failed status=\(code)")
+                return []
+            }
+            guard
+                let envelope = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                let content = envelope["content"] as? [[String: Any]],
+                let textBlock = content.last(where: { ($0["type"] as? String) == "text" }),
+                let text = textBlock["text"] as? String
+            else {
+                HouseholdConfig.trace("trending.noTextBlock")
+                return []
+            }
+            guard
+                let json = stripFences(from: text).data(using: .utf8),
+                let parsed = try? JSONSerialization.jsonObject(with: json) as? [String: Any],
+                let dishes = parsed["dishes"] as? [String]
+            else {
+                HouseholdConfig.trace("trending.parseFailed")
+                return []
+            }
+            let cleaned = dishes
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
+                .prefix(5)
+            HouseholdConfig.trace("trending.found \(cleaned.count)")
+            return Array(cleaned)
+        } catch {
+            HouseholdConfig.trace("trending.threw \(error.localizedDescription)")
+            return []
+        }
     }
 
     private static func requestPlan(userText: String, dinners: Int, subscriptionID: String, useWebSearch: Bool = false) async throws -> MealPlan {
@@ -295,6 +425,7 @@ week and recipes each have exactly \(count) entries, one per day, \(span), in or
         guard let http = response as? HTTPURLResponse else {
             throw ClaudeError.badStatus(0, "No HTTP response.")
         }
+        HouseholdConfig.trace("relay.response status=\(http.statusCode) bytes=\(data.count)")
         guard http.statusCode == 200 else {
             let snippet = String(data: data, encoding: .utf8)?.prefix(300) ?? ""
             // The relay's two subscription answers get their own cases so
@@ -342,8 +473,10 @@ week and recipes each have exactly \(count) entries, one per day, \(span), in or
         // planned day as a parse failure so planWeek retries with a corrective
         // reminder instead of saving an unusable plan.
         guard !plan.week.isEmpty, plan.recipes.count >= plan.week.count else {
+            HouseholdConfig.trace("plan.coverageFail week=\(plan.week.count) recipes=\(plan.recipes.count)")
             throw ClaudeError.parseFailed
         }
+        HouseholdConfig.trace("plan.decoded week=\(plan.week.count) recipes=\(plan.recipes.count)")
         return plan
     }
 

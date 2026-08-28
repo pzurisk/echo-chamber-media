@@ -31,6 +31,19 @@ enum HouseholdConfig {
     /// enabled in Signing & Capabilities and the entitlements file.
     static let cloudKitContainerID = "iCloud.com.echochambermedia.echomeal"
 
+    /// Temporary debugging trace. Prints to stdout, which is what
+    /// `devicectl device process launch --console` captures, because GUI and
+    /// os_log paths are unreliable on this Mac. Compiled only into Debug
+    /// builds or a Release build carrying TEST_UNLOCK, exactly like the test
+    /// unlock, so it cannot reach an App Store build. Delete this and its
+    /// call sites once the Speak-tab reset is understood.
+    static func trace(_ message: String) {
+        #if DEBUG || TEST_UNLOCK
+        print("ECHOTRACE \(Date().timeIntervalSince1970) \(message)")
+        fflush(stdout)
+        #endif
+    }
+
     /// Makes a fresh 128-bit household code.
     static func generateCode() -> String {
         HouseholdCrypto.generateCode()
