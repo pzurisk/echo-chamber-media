@@ -192,9 +192,7 @@ week and recipes each have exactly \(count) entries, one per day, \(span), in or
         var planUsesSearchTool = useWebSearch
         if useWebSearch {
             let trending = await trendingDishes(subscriptionID: subscriptionID)
-            if trending.isEmpty {
-                HouseholdConfig.trace("plan.trendingEmpty, planning without it")
-            } else {
+            if !trending.isEmpty {
                 context += "Trending right now: these dishes are currently popular online: \(trending.joined(separator: ", ")). Let one or two of this week's dinners be inspired by one of them, adapted into a real 30 to 60 minute weeknight meal for two that still follows every rule above, including the variety rules. Everything else comes from your own judgment. Do not mention trends, searches, or sources anywhere in the output. "
             }
             // The tool never gets attached to the plan request either way.
@@ -317,8 +315,6 @@ week and recipes each have exactly \(count) entries, one per day, \(span), in or
 
             let (data, response) = try await URLSession.shared.data(for: request)
             guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
-                let code = (response as? HTTPURLResponse)?.statusCode ?? 0
-                HouseholdConfig.trace("trending.failed status=\(code)")
                 return []
             }
             guard
@@ -327,7 +323,6 @@ week and recipes each have exactly \(count) entries, one per day, \(span), in or
                 let textBlock = content.last(where: { ($0["type"] as? String) == "text" }),
                 let text = textBlock["text"] as? String
             else {
-                HouseholdConfig.trace("trending.noTextBlock")
                 return []
             }
             guard
@@ -335,17 +330,14 @@ week and recipes each have exactly \(count) entries, one per day, \(span), in or
                 let parsed = try? JSONSerialization.jsonObject(with: json) as? [String: Any],
                 let dishes = parsed["dishes"] as? [String]
             else {
-                HouseholdConfig.trace("trending.parseFailed")
                 return []
             }
             let cleaned = dishes
                 .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
                 .filter { !$0.isEmpty }
                 .prefix(5)
-            HouseholdConfig.trace("trending.found \(cleaned.count)")
             return Array(cleaned)
         } catch {
-            HouseholdConfig.trace("trending.threw \(error.localizedDescription)")
             return []
         }
     }
@@ -425,7 +417,6 @@ week and recipes each have exactly \(count) entries, one per day, \(span), in or
         guard let http = response as? HTTPURLResponse else {
             throw ClaudeError.badStatus(0, "No HTTP response.")
         }
-        HouseholdConfig.trace("relay.response status=\(http.statusCode) bytes=\(data.count)")
         guard http.statusCode == 200 else {
             let snippet = String(data: data, encoding: .utf8)?.prefix(300) ?? ""
             // The relay's two subscription answers get their own cases so
@@ -473,10 +464,8 @@ week and recipes each have exactly \(count) entries, one per day, \(span), in or
         // planned day as a parse failure so planWeek retries with a corrective
         // reminder instead of saving an unusable plan.
         guard !plan.week.isEmpty, plan.recipes.count >= plan.week.count else {
-            HouseholdConfig.trace("plan.coverageFail week=\(plan.week.count) recipes=\(plan.recipes.count)")
             throw ClaudeError.parseFailed
         }
-        HouseholdConfig.trace("plan.decoded week=\(plan.week.count) recipes=\(plan.recipes.count)")
         return plan
     }
 

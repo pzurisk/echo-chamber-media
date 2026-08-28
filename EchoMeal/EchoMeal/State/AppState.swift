@@ -545,12 +545,10 @@ final class AppState: ObservableObject {
                 // that lapsed or was cancelled since launch has to be caught
                 // here, not by a refusal from the server.
                 guard let subscriptionID = await self.subscriptions.activeTransactionID() else {
-                    HouseholdConfig.trace("plan.noSubscriptionID -> paywall")
                     self.phase = .idle
                     self.presentPaywall(resuming: userText, lockedRecipes: locked, preserveChecks: preserveChecks, dinners: dinners, useWebSearch: useWebSearch)
                     return
                 }
-                HouseholdConfig.trace("plan.start txn=\(subscriptionID) dinners=\(dinners) webSearch=\(useWebSearch) chars=\(userText.count)")
                 let rawPlan = try await Self.withPlanningDeadline {
                     try await ClaudeService.planWeek(
                         transcript: userText,
@@ -631,9 +629,7 @@ final class AppState: ObservableObject {
                 self.backgroundSave("recipeBox") { try await self.store.saveRecipeBox(box, kept: kept) }
             } catch is CancellationError {
                 // cancelPlanning already reset the phase. Nothing to show.
-                HouseholdConfig.trace("plan.CANCELLED silently")
             } catch ClaudeService.ClaudeError.subscriptionRefused {
-                HouseholdConfig.trace("plan.subscriptionRefused")
                 guard !Task.isCancelled else { return }
                 // The relay would not accept the subscription this request
                 // carried. Ask StoreKit who is right before saying anything:
@@ -653,7 +649,6 @@ final class AppState: ObservableObject {
                 // A cancel can also surface as URLError.cancelled from the
                 // network layer. Either way the user asked for it, so stay
                 // quiet instead of raising an error alert.
-                HouseholdConfig.trace("plan.CAUGHT \(type(of: error)) cancelled=\(Task.isCancelled) desc=\(error.localizedDescription)")
                 guard !Task.isCancelled else { return }
                 self.phase = .error(error.localizedDescription)
             }
@@ -700,7 +695,6 @@ final class AppState: ObservableObject {
     /// Stops the in-flight generation and returns the app to idle. Safe to
     /// call at any time; does nothing when no plan is being built.
     func cancelPlanning() {
-        HouseholdConfig.trace("cancelPlanning called, phase=\(phase)")
         planTask?.cancel()
         planTask = nil
         if phase == .planning { phase = .idle }
@@ -712,7 +706,6 @@ final class AppState: ObservableObject {
     /// resetting), fall back to idle so the Speak button works again.
     func recoverIfStuck() {
         guard phase == .planning else { return }
-        HouseholdConfig.trace("recoverIfStuck, task=\(planTask == nil ? "nil" : "live") cancelled=\(planTask?.isCancelled ?? false)")
         if planTask == nil || planTask!.isCancelled {
             phase = .idle
         }

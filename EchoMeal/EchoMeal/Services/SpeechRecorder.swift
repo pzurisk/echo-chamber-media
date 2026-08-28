@@ -101,20 +101,13 @@ final class SpeechRecorder: NSObject, ObservableObject {
             try audioEngine.start()
             isRecording = true
             isStarting = false
-            HouseholdConfig.trace("recorder.beginRecording isRecording=true")
 
             recognitionTask = recognizer.recognitionTask(with: request) { [weak self] result, error in
                 DispatchQueue.main.async {
                     guard let self else { return }
                     if let result {
                         self.transcript = result.bestTranscription.formattedString
-                        if result.isFinal {
-                            HouseholdConfig.trace("recorder.result isFinal chars=\(self.transcript.count)")
-                            self.finish()
-                        }
-                    }
-                    if let error {
-                        HouseholdConfig.trace("recorder.error isRecording=\(self.isRecording) err=\(error.localizedDescription)")
+                        if result.isFinal { self.finish() }
                     }
                     if error != nil, self.isRecording {
                         // Recognition errored mid-stream. Keep whatever text
@@ -131,12 +124,8 @@ final class SpeechRecorder: NSObject, ObservableObject {
     }
 
     private func finish() {
-        guard isRecording else {
-            HouseholdConfig.trace("recorder.finish IGNORED, isRecording already false")
-            return
-        }
+        guard isRecording else { return }
         isRecording = false
-        HouseholdConfig.trace("recorder.finish isRecording=false chars=\(transcript.count)")
 
         audioEngine.stop()
         audioEngine.inputNode.removeTap(onBus: 0)
@@ -149,10 +138,8 @@ final class SpeechRecorder: NSObject, ObservableObject {
 
         let text = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
         if !text.isEmpty {
-            HouseholdConfig.trace("recorder.onFinish firing chars=\(text.count)")
             onFinish?(text)
         } else {
-            HouseholdConfig.trace("recorder.onFinish SKIPPED, empty transcript")
             errorMessage = "I did not catch anything. Tap the button and try again."
         }
     }
