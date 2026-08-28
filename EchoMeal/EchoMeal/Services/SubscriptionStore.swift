@@ -261,6 +261,22 @@ final class SubscriptionStore: ObservableObject {
     /// before a request goes out and comes back refused.
     func activeTransactionID() async -> String? {
         await refreshEntitlement()
+
+        #if DEBUG || TEST_UNLOCK
+        // Planning gates on this ID, not on `status`, so the test unlock has
+        // to answer here too or it grants a subscribed UI that bounces
+        // straight back to the paywall the moment a plan is asked for.
+        //
+        // Deliberately not a plausible numeric ID. Real originalTransactionId
+        // values are numeric, so this cannot be mistaken for one in a relay
+        // log, and if REQUIRE_SUBSCRIPTION is ever turned back on it fails
+        // TXN_ID_PATTERN and earns a clean 401 rather than quietly spending
+        // someone's allowance.
+        if Self.testUnlockActive, transactionID == nil {
+            return "TESTUNLOCK"
+        }
+        #endif
+
         return transactionID
     }
 
