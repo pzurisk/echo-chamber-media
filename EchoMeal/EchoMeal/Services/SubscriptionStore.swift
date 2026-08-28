@@ -67,6 +67,43 @@ final class SubscriptionStore: ObservableObject {
 
     @Published private(set) var status: Status = .unknown
 
+    #if DEBUG || TEST_UNLOCK
+    /// Test-only paywall bypass. Exists so the app can be exercised end to
+    /// end on a device before the App Store subscription is purchasable,
+    /// which it is not while both products sit in MISSING_METADATA and no
+    /// sandbox tester exists.
+    ///
+    /// Compiled in two ways and no others: any Debug build, or a Release
+    /// build made with `-DTEST_UNLOCK` passed on the xcodebuild command
+    /// line. The archive step in the documented upload method passes
+    /// neither, so a shipped build cannot contain this. Do not add
+    /// TEST_UNLOCK to project.yml or to the scheme; the whole guarantee is
+    /// that it lives on the command line of a build made by hand.
+    ///
+    /// It sets `status` only. `transactionID` stays nil, because there is no
+    /// transaction, and inventing a plausible one would be a lie the relay
+    /// would then have to catch. Planning still works because the relay's
+    /// subscription gate is currently off (REQUIRE_SUBSCRIPTION = "0",
+    /// verified against the deployed worker 2026-08-28). If that gate is
+    /// turned back on, this unlock shows a subscribed UI and still fails to
+    /// plan, which is the correct and honest failure.
+    static let testUnlockKey = "testProUnlock"
+
+    static var testUnlockActive: Bool {
+        UserDefaults.standard.bool(forKey: testUnlockKey)
+    }
+
+    /// The code typed in Settings to turn the bypass on.
+    static let testUnlockCode = "MEALTIME-DEV"
+
+    /// Turns the bypass on or off and re-reads entitlements, so the UI moves
+    /// the moment it is set rather than at the next launch.
+    func setTestUnlock(_ on: Bool) async {
+        UserDefaults.standard.set(on, forKey: Self.testUnlockKey)
+        await refreshEntitlement()
+    }
+    #endif
+
     /// Everything that resolved from the App Store, annual first. Empty means
     /// the lookup failed or has not run, which the paywall shows as a retry
     /// rather than an empty price.
@@ -192,6 +229,18 @@ final class SubscriptionStore: ObservableObject {
     /// Comparing against a single plan would ignore the other one, so a
     /// customer who bought it would be treated as never having subscribed.
     func refreshEntitlement() async {
+        #if DEBUG || TEST_UNLOCK
+        // Checked before StoreKit, not after, so the bypass works on a phone
+        // where the products do not resolve at all. That is the exact
+        // situation it exists for.
+        if Self.testUnlockActive {
+            transactionID = nil
+            entitledProductID = Self.annualProductID
+            status = .subscribed
+            return
+        }
+        #endif
+
         for await entitlement in Transaction.currentEntitlements {
             guard case .verified(let transaction) = entitlement else { continue }
             guard Self.productIDs.contains(transaction.productID) else { continue }

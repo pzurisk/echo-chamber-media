@@ -24,10 +24,19 @@ struct SettingsView: View {
     @State private var showPaywall = false
     @State private var restoreMessage: String?
 
+    #if DEBUG || TEST_UNLOCK
+    @State private var testUnlockEntry = ""
+    @State private var testUnlockError: String?
+    #endif
+
     var body: some View {
         NavigationStack {
             Form {
                 subscriptionSection
+
+                #if DEBUG || TEST_UNLOCK
+                testUnlockSection
+                #endif
 
                 Section("Appearance") {
                     ForEach(AppTheme.allCases) { option in
@@ -301,6 +310,58 @@ struct SettingsView: View {
             }
         }
     }
+
+    #if DEBUG || TEST_UNLOCK
+    /// Test-only. Unlocks Pro without a purchase so the rest of the app can
+    /// be walked through while the App Store subscription is not buyable.
+    /// Never present in a shipped build; see SubscriptionStore.testUnlockKey
+    /// for why that is guaranteed rather than hoped for.
+    private var testUnlockSection: some View {
+        Section {
+            if SubscriptionStore.testUnlockActive {
+                Label("Test unlock is on", systemImage: "wrench.adjustable")
+                    .foregroundStyle(Color.echoWarning)
+                Button("Turn test unlock off", role: .destructive) {
+                    Task {
+                        await subscriptions.setTestUnlock(false)
+                        testUnlockEntry = ""
+                    }
+                }
+            } else {
+                TextField("Test code", text: $testUnlockEntry)
+                    .textInputAutocapitalization(.characters)
+                    .autocorrectionDisabled()
+                    .onSubmit { attemptTestUnlock() }
+                Button("Unlock for testing") { attemptTestUnlock() }
+                    .disabled(testUnlockEntry.isEmpty)
+                if let testUnlockError {
+                    Text(testUnlockError)
+                        .font(.caption)
+                        .foregroundStyle(Color.echoWarning)
+                }
+            }
+        } header: {
+            Text("Testing")
+        } footer: {
+            Text("Not in App Store builds. Unlocks Pro on this phone without a purchase so the app can be tested before the subscription goes live.")
+        }
+    }
+
+    /// Compares case-insensitively and ignores surrounding whitespace,
+    /// because iOS will happily hand back a trailing space from a keyboard
+    /// and failing on that would just look broken.
+    private func attemptTestUnlock() {
+        let typed = testUnlockEntry
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .uppercased()
+        guard typed == SubscriptionStore.testUnlockCode else {
+            testUnlockError = "That code is not right."
+            return
+        }
+        testUnlockError = nil
+        Task { await subscriptions.setTestUnlock(true) }
+    }
+    #endif
 
     /// Deletes the household's cloud records and then this phone. The button
     /// stays disabled while it runs, and a failure shows inline rather than
