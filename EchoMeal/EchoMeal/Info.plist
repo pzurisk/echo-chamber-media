@@ -32,18 +32,18 @@
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
-	<string>11</string>
+	<string>12</string>
 	<key>CLAUDE_PROXY_TOKEN</key>
 	<string>$(CLAUDE_PROXY_TOKEN)</string>
 	<key>CLAUDE_PROXY_URL</key>
 	<string>$(CLAUDE_PROXY_URL)</string>
-	<!-- True since 1.2: HouseholdCrypto seals every CloudKit payload with
-	     AES-256-GCM for confidentiality, which is not one of the exempt
-	     uses (HTTPS, authentication, DRM). Answering false would be a false
-	     statement on a US export declaration. See README section 7 for the
-	     self-classification paperwork this requires. -->
-	<key>ITSAppUsesNonExemptEncryption</key>
-	<true/>
+	<!-- ITSAppUsesNonExemptEncryption is deliberately ABSENT, not false.
+	     HouseholdCrypto seals every CloudKit payload with AES-256-GCM for
+	     confidentiality, which is not an exempt use, so the honest answer is
+	     still yes. It is answered per-build in App Store Connect instead,
+	     because declaring true here requires a compliance code that does not
+	     exist until the BIS paperwork in README section 7 is filed. Do not
+	     add this key back as false to make an upload succeed. -->
 	<key>NSMicrophoneUsageDescription</key>
 	<string>MealTime listens so you can speak your dinner ideas.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
