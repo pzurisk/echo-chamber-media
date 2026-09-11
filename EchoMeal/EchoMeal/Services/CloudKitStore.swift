@@ -50,6 +50,14 @@ final class CloudKitStore {
     /// The single encrypted field on every record type.
     private static let payloadKey = "payload"
 
+    /// Sealed payload written back to the plan record after a full household
+    /// delete. Distinct from the cleared-week tombstone (empty data) so the
+    /// partner phone can tell "the week was cleared" from "the household was
+    /// deleted" and wipe itself too. It carries no user data, and it is
+    /// sealed like everything else, so an observer cannot tell it from any
+    /// other payload.
+    private static let householdDeletedMarker = Data("household-deleted".utf8)
+
     private let database: CKDatabase
     private let container: CKContainer
 
@@ -124,17 +132,22 @@ final class CloudKitStore {
     }
 
     /// Returns the plan plus the record's freshness date so the caller can
-    /// skip applying a cloud copy that is older than local edits. Three
-    /// outcomes: nil means no record exists at all; (nil, date) is a
-    /// tombstone left by saveClearedPlan (empty or unreadable payload),
-    /// which a caller applies by clearing its local plan when the date is
-    /// newer; (plan, date) is a real plan.
-    func fetchPlan() async -> (plan: MealPlan?, updatedAt: Date)? {
+    /// skip applying a cloud copy that is older than local edits. Four
+    /// outcomes: nil means no record exists at all; householdDeleted true
+    /// means the partner phone ran Delete All My Data and this phone must
+    /// wipe itself too; (nil, date, false) is a tombstone left by
+    /// saveClearedPlan (empty or unreadable payload), which a caller applies
+    /// by clearing its local plan when the date is newer; (plan, date,
+    /// false) is a real plan.
+    func fetchPlan() async -> (plan: MealPlan?, updatedAt: Date, householdDeleted: Bool)? {
         guard let read = await readPayload(.plan) else { return nil }
-        guard let plan = try? JSONDecoder().decode(MealPlan.self, from: read.data) else {
-            return (nil, read.updatedAt)
+        if read.data == Self.householdDeletedMarker {
+            return (nil, read.updatedAt, true)
         }
-        return (plan, read.updatedAt)
+        guard let plan = try? JSONDecoder().decode(MealPlan.self, from: read.data) else {
+            return (nil, read.updatedAt, false)
+        }
+        return (plan, read.updatedAt, false)
     }
 
     // MARK: - Grocery checked state
@@ -364,6 +377,16 @@ final class CloudKitStore {
             if let ckError = error as? CKError, ckError.code == .unknownItem { continue }
             throw error
         }
+        // Leave one sealed marker behind on the plan record so the partner
+        // phone finds out. Without it the partner still holds everything in
+        // memory and cache, and its next check-off or rating quietly writes
+        // the deleted household straight back into iCloud, which made the
+        // Settings alert's "deletes them for the other phone" a false
+        // promise. The marker carries no user data. It throws on failure on
+        // purpose: the delete is retryable end to end (already-gone records
+        // count as success above), and reporting success while the partner
+        // phone would resurrect the data is the worse outcome.
+        try await writePayload(Self.householdDeletedMarker, .plan, ctx: ctx)
         await deleteSubscriptions(for: ctx)
     }
 

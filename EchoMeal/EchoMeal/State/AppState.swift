@@ -196,14 +196,53 @@ final class AppState: ObservableObject {
         return true
     }
 
-    /// Joins from a scanned QR code or a tapped share link. The URL is
-    /// untrusted input and goes through the same validation a typed code
-    /// gets. Returns false on anything that is not one of our join links
-    /// carrying a valid code.
-    func joinHousehold(url: URL) -> Bool {
+    /// A join link waiting on the person's yes. Set by requestJoin(url:) and
+    /// watched by RootView, which shows the confirmation alert. Cleared by
+    /// confirmPendingJoin and cancelPendingJoin.
+    @Published var pendingJoinCode: String?
+
+    /// Handles a mealtime://join link from a scanned QR code or a tapped
+    /// share link. The URL is untrusted input and goes through the same
+    /// validation a typed code gets; anything that is not one of our join
+    /// links carrying a valid code changes nothing.
+    ///
+    /// A valid link joins immediately only when this phone has no household
+    /// yet (onboarding by QR, nothing to lose). Once a household exists the
+    /// code is parked in pendingJoinCode for RootView's confirmation alert
+    /// instead, because this is the one entry point that fires without
+    /// anyone typing (a link in Messages, a hostile QR scanned with the
+    /// Camera app) and switching households wipes this phone's data. It
+    /// used to switch silently.
+    ///
+    /// Returns true only when the phone joined right away, which is what
+    /// tells onboarding it has nothing left to ask.
+    func requestJoin(url: URL) -> Bool {
         guard let code = HouseholdCrypto.code(fromJoinURL: url) else { return false }
+        guard code != householdCode else {
+            // Rejoining the household this phone is already in must not
+            // wipe and re-sync everything. Scanning your own partner's QR
+            // twice is easy to do.
+            flashStatus("This phone is already in that household.")
+            return false
+        }
+        if householdCode.isEmpty {
+            switchToHousehold(code)
+            return true
+        }
+        pendingJoinCode = code
+        return false
+    }
+
+    /// The person said yes to the join alert. Switch for real.
+    func confirmPendingJoin() {
+        guard let code = pendingJoinCode else { return }
+        pendingJoinCode = nil
         switchToHousehold(code)
-        return true
+    }
+
+    /// The person cancelled the join alert. Nothing changes.
+    func cancelPendingJoin() {
+        pendingJoinCode = nil
     }
 
     /// Settings uses this to disconnect from the current household and
@@ -229,7 +268,15 @@ final class AppState: ObservableObject {
     /// softer option, and the two are deliberately separate.
     func deleteEverything() async throws {
         try await store.deleteAllHouseholdData()
+        resetToFirstLaunch()
+    }
 
+    /// The local half of a full delete, shared by deleteEverything (this
+    /// phone ran it) and refreshFromCloud (the partner's phone ran it and
+    /// left the household-deleted marker). Both phones must end up equally
+    /// clean, or the one that kept its cache writes the household straight
+    /// back into iCloud.
+    private func resetToFirstLaunch() {
         objectWillChange.send()
         // A generation still in flight must not write the deleted household
         // back in behind the wipe, and a plan mid-build has nowhere to land.
@@ -1343,22 +1390,33 @@ final class AppState: ObservableObject {
         iCloudAvailable = await store.isSignedIn()
         guard iCloudAvailable else { return }
 
-        if let remote = await store.fetchPlan(), stillCurrent(),
-           remote.updatedAt > localEditDate(for: "plan") {
-            if let remotePlan = remote.plan {
-                if remotePlan != plan {
-                    plan = remotePlan
-                }
-            } else {
-                // Tombstone: the other phone cleared the week. Clear the
-                // plan and the check-offs here too so both phones agree,
-                // and drop the cached plan so a relaunch stays empty.
-                plan = nil
-                checkedItemIDs = []
-                UserDefaults.standard.removeObject(forKey: HouseholdConfig.Keys.cachedPlan)
-                localEditDates["checked"] = remote.updatedAt
+        if let remote = await store.fetchPlan(), stillCurrent() {
+            if remote.householdDeleted {
+                // The partner's phone ran Delete All My Data. This wipe is
+                // deliberately NOT gated on newest-wins: a check-off made
+                // after the delete does not outrank the household's decision
+                // to erase itself, and keeping anything here would write the
+                // household straight back into iCloud on the next edit.
+                Self.logger.warning("Household deleted from the other phone. Clearing this phone and returning to onboarding.")
+                resetToFirstLaunch()
+                return
             }
-            localEditDates["plan"] = remote.updatedAt
+            if remote.updatedAt > localEditDate(for: "plan") {
+                if let remotePlan = remote.plan {
+                    if remotePlan != plan {
+                        plan = remotePlan
+                    }
+                } else {
+                    // Tombstone: the other phone cleared the week. Clear the
+                    // plan and the check-offs here too so both phones agree,
+                    // and drop the cached plan so a relaunch stays empty.
+                    plan = nil
+                    checkedItemIDs = []
+                    UserDefaults.standard.removeObject(forKey: HouseholdConfig.Keys.cachedPlan)
+                    localEditDates["checked"] = remote.updatedAt
+                }
+                localEditDates["plan"] = remote.updatedAt
+            }
         }
         if let remote = await store.fetchChecked(), stillCurrent(),
            remote.updatedAt > localEditDate(for: "checked") {

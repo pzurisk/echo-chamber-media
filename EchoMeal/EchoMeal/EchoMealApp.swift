@@ -32,11 +32,28 @@ struct EchoMealApp: App {
                 }
                 .onOpenURL { url in
                     // A mealtime://join link, from the QR code the other
-                    // phone shows. AppState validates it before switching,
-                    // so a malformed or foreign URL changes nothing.
-                    // Onboarding, if it is up, has nothing left to ask.
-                    if appState.joinHousehold(url: url) {
+                    // phone shows. AppState validates it, so a malformed or
+                    // foreign URL changes nothing. With no household yet it
+                    // joins right away (and onboarding, if it is up, has
+                    // nothing left to ask); with one it parks the code for
+                    // RootView's confirmation alert, so a tapped link or a
+                    // hostile QR can never wipe this phone silently.
+                    if appState.requestJoin(url: url) {
                         needsOnboarding = false
+                    }
+                }
+                .onChange(of: appState.isOnboarded) { _, onboarded in
+                    // Delete All My Data, run on this phone or discovered
+                    // from the partner's, drops the household mid-session.
+                    // The cover used to be decided once at launch, which
+                    // stranded the user on a householdless app where every
+                    // save was a silent no-op until the next relaunch.
+                    // Only the false edge presents the cover: onboarding
+                    // dismisses itself when it is done, and dismissing it
+                    // here the moment a code exists would skip the screen
+                    // that shows the new code big.
+                    if !onboarded {
+                        needsOnboarding = true
                     }
                 }
                 .task {

@@ -44,6 +44,25 @@ struct RootView: View {
             }
             .environmentObject(appState.subscriptions)
         }
+        // A tapped or scanned mealtime://join link parks its code in
+        // pendingJoinCode; nothing switches until this alert's yes. The
+        // person taps a link in Messages or scans a QR with the Camera app,
+        // so this is the one path into a household wipe that needs no
+        // typing, and it used to run silently.
+        .alert(
+            "Switch households?",
+            isPresented: Binding(
+                get: { appState.pendingJoinCode != nil },
+                set: { if !$0 { appState.cancelPendingJoin() } }
+            )
+        ) {
+            Button("Switch and wipe this phone", role: .destructive) {
+                appState.confirmPendingJoin()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This link joins a different household. Your current week, Recipe Box, favorites, pantry, and history leave this phone. They stay in iCloud under your current code, and only that code can bring them back.")
+        }
         .alert(
             "Something went wrong",
             isPresented: Binding(
