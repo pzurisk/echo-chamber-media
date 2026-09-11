@@ -45,3 +45,6 @@ EchoMeal/Secrets.xcconfig
 EchoMeal/EchoMeal.xcodeproj/
 EchoMeal/DerivedData/
 EchoMeal/build/
+
+# Claude Code agent worktrees (temporary, session-local)
+.claude/worktrees/
