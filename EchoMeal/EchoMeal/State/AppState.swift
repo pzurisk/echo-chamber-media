@@ -665,7 +665,16 @@ final class AppState: ObservableObject {
                 // this is the relay's problem, not the customer's, and
                 // telling a paying subscriber to buy again would be the
                 // worst possible response.
-                if await self.subscriptions.activeTransactionID() == nil {
+                //
+                // Same 15 second clock as the pre-flight check above. This
+                // await had the identical unbounded hang, and a stalled
+                // StoreKit answer counts as "could not confirm", never as
+                // "not subscribed": the paywall is the wrong response to a
+                // paying customer whose App Store is slow.
+                let recheck = await Self.raceAgainstClock(seconds: 15, {
+                    await self.subscriptions.activeTransactionID()
+                })
+                if case .some(.none) = recheck {
                     self.phase = .idle
                     self.presentPaywall(resuming: userText, lockedRecipes: locked, preserveChecks: preserveChecks, dinners: dinners, useWebSearch: useWebSearch)
                 } else {

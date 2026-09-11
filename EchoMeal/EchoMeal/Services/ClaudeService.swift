@@ -223,7 +223,7 @@ week and recipes each have exactly \(count) entries, one per day, \(span), in or
         if useWebSearch {
             let trending = await trendingDishes(subscriptionID: subscriptionID)
             if !trending.isEmpty {
-                context += "Trending right now: these dishes are currently popular online: \(trending.joined(separator: ", ")). Let one or two of this week's dinners be inspired by one of them, adapted into a real 30 to 60 minute weeknight meal for two that still follows every rule above, including the variety rules. Everything else comes from your own judgment. Do not mention trends, searches, or sources anywhere in the output. "
+                context += "Trending right now: these dishes are currently popular online: \(trending.joined(separator: ", ")). Let one or two of this week's dinners be inspired by one of them, adapted into a real 30 to 60 minute weeknight meal for two that still follows every rule above, including the variety rules. If the household's request sets a style, a theme, or specific dishes, work a trend in only where it genuinely fits that request, or skip the trends entirely; the request always wins. Everything else comes from your own judgment. Do not mention trends, searches, or sources anywhere in the output. "
             }
             // The tool never gets attached to the plan request either way.
             // Attaching it is what caused the 524.
