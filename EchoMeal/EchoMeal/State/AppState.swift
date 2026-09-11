@@ -1,5 +1,6 @@
 import Combine
 import Foundation
+import os
 import SwiftUI
 
 extension Notification.Name {
@@ -83,6 +84,10 @@ final class AppState: ObservableObject {
 
     private let store = CloudKitStore()
     private var cancellables = Set<AnyCancellable>()
+
+    /// Phase transitions and generation outcomes, so a stuck spinner or a
+    /// swallowed error leaves a trail in Console instead of a mystery.
+    private static let logger = Logger(subsystem: "com.echochambermedia.echomeal", category: "planning")
 
     /// Handle for the in-flight generation so it can be cancelled from the
     /// UI and checked by the foreground stuck-state recovery.
@@ -533,6 +538,7 @@ final class AppState: ObservableObject {
             return
         }
         phase = .planning
+        Self.logger.info("Plan generation started: \(dinners, privacy: .public) dinners, \(lockedRecipes.count, privacy: .public) locked, preserveChecks \(preserveChecks, privacy: .public), webSearch \(useWebSearch, privacy: .public).")
         let budget = budgetTarget
         let notes = tasteNotes
         let locked = lockedRecipes
@@ -544,7 +550,24 @@ final class AppState: ObservableObject {
                 // rather than trusting the cached status: a subscription
                 // that lapsed or was cancelled since launch has to be caught
                 // here, not by a refusal from the server.
-                guard let subscriptionID = await self.subscriptions.activeTransactionID() else {
+                //
+                // The read gets its own clock. It used to be an unbounded
+                // await sitting OUTSIDE withPlanningDeadline, and StoreKit's
+                // entitlement sequence can stall, so a stall here held the
+                // phase at .planning forever: spinner on screen, no error,
+                // no timeout, which is exactly the frozen swap Billy hit.
+                // raceAgainstClock rather than the deadline group on purpose,
+                // because the group waits for its children on the way out and
+                // StoreKit's cancellation support is not guaranteed.
+                guard let entitlement = await Self.raceAgainstClock(seconds: 15, {
+                    await self.subscriptions.activeTransactionID()
+                }) else {
+                    Self.logger.error("Entitlement check did not answer within 15s. Surfacing an error instead of holding the spinner.")
+                    self.phase = .error("MealTime could not check your subscription with the App Store. Try again in a moment.")
+                    return
+                }
+                guard let subscriptionID = entitlement else {
+                    // A real answer: this phone has no subscription.
                     self.phase = .idle
                     self.presentPaywall(resuming: userText, lockedRecipes: locked, preserveChecks: preserveChecks, dinners: dinners, useWebSearch: useWebSearch)
                     return
@@ -611,6 +634,7 @@ final class AppState: ObservableObject {
                     replacingTitles: replacedTitles,
                     onlyNewDinners: preserveChecks
                 )
+                Self.logger.info("Plan generation succeeded: \(newPlan.week.count, privacy: .public) days.")
                 self.phase = .idle
                 self.selectedTab = .week
                 self.markEdited("plan")
@@ -629,8 +653,10 @@ final class AppState: ObservableObject {
                 self.backgroundSave("recipeBox") { try await self.store.saveRecipeBox(box, kept: kept) }
             } catch is CancellationError {
                 // cancelPlanning already reset the phase. Nothing to show.
+                Self.logger.info("Plan generation cancelled.")
             } catch ClaudeService.ClaudeError.subscriptionRefused {
                 guard !Task.isCancelled else { return }
+                Self.logger.error("Plan generation refused: relay rejected the subscription.")
                 // The relay would not accept the subscription this request
                 // carried. Ask StoreKit who is right before saying anything:
                 // if the entitlement really is gone (cancelled, lapsed,
@@ -650,6 +676,7 @@ final class AppState: ObservableObject {
                 // network layer. Either way the user asked for it, so stay
                 // quiet instead of raising an error alert.
                 guard !Task.isCancelled else { return }
+                Self.logger.error("Plan generation failed: \(String(describing: error), privacy: .public)")
                 self.phase = .error(error.localizedDescription)
             }
         }
@@ -707,6 +734,7 @@ final class AppState: ObservableObject {
     func recoverIfStuck() {
         guard phase == .planning else { return }
         if planTask == nil || planTask!.isCancelled {
+            Self.logger.warning("Recovered a stuck planning phase with no live task behind it.")
             phase = .idle
         }
     }
@@ -748,6 +776,42 @@ final class AppState: ObservableObject {
     private struct PlanningTimeoutError: LocalizedError {
         var errorDescription: String? {
             "That took too long. Check your connection and try again."
+        }
+    }
+
+    /// Races non-throwing work against a wall clock and returns nil when the
+    /// clock wins. Unlike withPlanningDeadline's task group, this returns the
+    /// moment the deadline passes even if the work never finishes: the loser
+    /// is left to complete quietly on its own instead of being awaited. That
+    /// matters for calls whose cancellation support is not guaranteed, like
+    /// StoreKit's entitlement read; a task group cancels its children and
+    /// then WAITS for them, so a child that ignores cancellation would hang
+    /// the group and the spinner right along with it.
+    private static func raceAgainstClock<T: Sendable>(
+        seconds: UInt64,
+        _ work: @escaping @Sendable () async -> T
+    ) async -> T? {
+        let gate = OneShotGate()
+        return await withCheckedContinuation { continuation in
+            Task {
+                let value = await work()
+                if await gate.claim() { continuation.resume(returning: value) }
+            }
+            Task {
+                try? await Task.sleep(nanoseconds: seconds * 1_000_000_000)
+                if await gate.claim() { continuation.resume(returning: nil) }
+            }
+        }
+    }
+
+    /// Serializes the two racers above so the continuation resumes exactly
+    /// once no matter how close the finish is.
+    private actor OneShotGate {
+        private var claimed = false
+        func claim() -> Bool {
+            if claimed { return false }
+            claimed = true
+            return true
         }
     }
 

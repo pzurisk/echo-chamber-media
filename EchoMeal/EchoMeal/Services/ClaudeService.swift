@@ -1,4 +1,5 @@
 import Foundation
+import os
 
 /// Calls the Anthropic Messages API and turns a voice transcript into a MealPlan.
 ///
@@ -13,6 +14,29 @@ import Foundation
 ///   key out of it. A missing or malformed CLAUDE_PROXY_URL is now a hard
 ///   failure rather than a silent fallback that reships the key.
 enum ClaudeService {
+
+    /// Request and response logging for every relay call. Statuses, errors,
+    /// and the outgoing prompt are marked public so Console shows them
+    /// instead of <private>: this is a two-person household app and the
+    /// content is their own dinner plan. If Console proves unreliable again,
+    /// the devicectl stdout method in the vault's 524 writeup still applies.
+    static let logger = Logger(subsystem: "com.echochambermedia.echomeal", category: "claude")
+
+    /// Console truncates one interpolated string near 1 KB, which would cut
+    /// the outgoing prompt mid-sentence and defeat the point of logging it.
+    /// Chunked lines survive intact; filter on the label to reassemble.
+    private static func logLongText(_ label: String, _ text: String) {
+        let chunkSize = 800
+        var start = text.startIndex
+        var part = 1
+        while start < text.endIndex {
+            let end = text.index(start, offsetBy: chunkSize, limitedBy: text.endIndex) ?? text.endIndex
+            let chunk = String(text[start..<end])
+            logger.info("\(label, privacy: .public) [\(part, privacy: .public)]: \(chunk, privacy: .public)")
+            start = end
+            part += 1
+        }
+    }
 
     enum ClaudeError: LocalizedError {
         case missingKey
@@ -92,20 +116,22 @@ Web search, enabled for this plan:
 - Do not describe your search or cite a source in the output. Return JSON only, matching the schema exactly, with no extra fields.
 """ : ""
         return """
-You plan weekly dinners for a two-person household. You will receive a short, possibly messy voice transcript of cravings, proteins, or dish ideas. Build a full \(count)-dinner plan, \(span), around whatever they mention, and fill the remaining nights yourself with dinners that fit.
+You plan weekly dinners for a two-person household. You will receive the household's request. Sometimes it is a short, messy voice transcript of cravings, and sometimes it is a detailed typed brief with a specific style in mind. Build a full \(count)-dinner plan, \(span), from that request, and fill whatever it leaves open with dinners that fit.
+
+The request outranks everything below. When it names a style, a theme, example dishes, a cuisine to stay inside, a protein to repeat, an appetizer, a comfort level, or any other explicit instruction, follow it exactly, even where it contradicts a rule in this prompt. The rules below are defaults for the parts of the week the request leaves open, never a reason to override what the household actually asked for. Taste notes in the context are background about the household and also never override the request.
 
 Rules:
-- Bold, global flavors. Cook time 30 to 60 minutes per meal.
+- Bold, global flavors by default. If the request points elsewhere (comfort food, familiar dishes, one cuisine, nothing exotic), its direction wins. Cook time 30 to 60 minutes per meal.
 - Maximize ingredient overlap. Reuse a small shared pool of pantry staples across the week to cut cost and waste.
 - Cook for 2 people, leftovers fine.
 - Respect the weekly budget target passed in the transcript context. Estimate realistic US grocery prices. Mark staples the household likely already owns as pantry items and subtract their cost. Report the estimated total and whether it is under or over target.
 - Consolidate duplicate ingredients across recipes into one grocery entry with the quantities summed.
-- Every dinner is a complete plate: a protein, a carb or starch side (rice, pasta, potatoes, tortillas, bread, or grains), and a vegetable. The sides are part of the recipe, with their ingredients in the ingredient list, their prep in the steps, and their items on the grocery list. Never plan a protein-only dinner.
+- Every dinner is a complete plate: a protein, a carb or starch side (rice, pasta, potatoes, tortillas, bread, or grains), and a vegetable. The sides are part of the recipe, with their ingredients in the ingredient list, their prep in the steps, and their items on the grocery list. Never plan a protein-only dinner. Exception: when the request asks for something else for one of the nights, like a shareable appetizer, give them exactly that instead of forcing it into a plate.
 - Every grocery item carries a "recipes" array listing the exact title of each recipe in this plan that uses it. An item shared by several dinners lists all of them.
 
-Variety, non-negotiable:
+Variety, required unless the request asks otherwise (a themed week, one cuisine, a repeated protein, or a specific style the household spelled out always wins):
 - No two dinners this week share a cuisine.
-- At most two dinners share a primary protein, and only when the household asked for that protein. Otherwise every dinner uses a different one.
+- At most two dinners share a primary protein, unless the request centers on one protein. Otherwise every dinner uses a different one.
 - Vary the cooking method across the week. Do not plan three skillet dinners. Mix searing, roasting, braising, grilling, and stir-frying.
 - At least two dinners must use a cuisine or a primary technique that does not appear anywhere in the recent-dinner history you are given.
 
@@ -170,9 +196,14 @@ week and recipes each have exactly \(count) entries, one per day, \(span), in or
     /// switches in the search paragraph of the system prompt; the Worker,
     /// not this flag, is what actually authorizes the tool.
     static func planWeek(transcript: String, budget: Double, dinners: Int, subscriptionID: String, tasteNotes: String = "", lockedRecipes: [Recipe] = [], useWebSearch: Bool = false) async throws -> MealPlan {
-        var context = "Budget target: \(Int(budget)). Dinners: \(dinners). "
+        // The request leads the message and is labeled as the instruction to
+        // follow. It used to sit mid-context as "Cravings:", after a wall of
+        // taste notes, and a detailed typed brief got treated as loose
+        // inspiration instead of instructions, which is the drift Billy saw.
+        var context = "The household's request, the top instruction for this plan, follow it exactly: \(transcript)\n\n"
+        context += "Context. Budget target: \(Int(budget)). Dinners: \(dinners). "
         if !tasteNotes.isEmpty {
-            context += "Taste notes about this household: \(tasteNotes) "
+            context += "Background taste notes about this household. These are defaults and history, never a reason to override the request above: \(tasteNotes) "
         }
         if !lockedRecipes.isEmpty {
             let data = (try? JSONEncoder().encode(lockedRecipes)) ?? Data("[]".utf8)
@@ -183,7 +214,6 @@ week and recipes each have exactly \(count) entries, one per day, \(span), in or
                 context += "Locked dinners: the household wants these exact dinners included in the week again, unchanged (same title, ingredients, steps). Place each on a sensible day, generate only the remaining \(dinners - lockedRecipes.count) dinners as new ideas, and make sure the grocery list covers the locked dinners' ingredients too. Locked dinners JSON: \(json) "
             }
         }
-        context += "Cravings: \(transcript) "
         // Trending dishes, when asked for, arrive as context from a separate
         // short search call rather than from a tool attached to this request.
         // See trendingDishes for why. An empty list means the lookup failed
@@ -203,9 +233,11 @@ week and recipes each have exactly \(count) entries, one per day, \(span), in or
         do {
             return try await requestPlan(userText: context, dinners: dinners, subscriptionID: subscriptionID, useWebSearch: planUsesSearchTool)
         } catch ClaudeError.parseFailed {
+            logger.warning("Plan reply failed to parse. Retrying once with the JSON reminder appended.")
             let reminder = context + "\n\nReminder: return only valid JSON matching the schema. No prose, no markdown, no backticks. The \"recipes\" array is required and must contain one full recipe object for every day in \"week\" (same count, matching \"day\" values), each with its ingredients and numbered steps. Do not return an empty or partial recipes array."
             return try await requestPlan(userText: reminder, dinners: dinners, subscriptionID: subscriptionID, useWebSearch: planUsesSearchTool)
         } catch let error as URLError where Self.transientURLErrorCodes.contains(error.code) {
+            logger.warning("Transport failure (\(error.code.rawValue, privacy: .public)). Retrying once after 2s.")
             try await Task.sleep(nanoseconds: 2_000_000_000)
             return try await requestPlan(userText: context, dinners: dinners, subscriptionID: subscriptionID, useWebSearch: planUsesSearchTool)
         } catch ClaudeError.badStatus(let code, _) where (500...599).contains(code) && code != 524 {
@@ -215,6 +247,7 @@ week and recipes each have exactly \(count) entries, one per day, \(span), in or
             // way and pushes the whole attempt past the 240 second planning
             // deadline, so the household waits four minutes to be told the
             // connection is bad. Failing once and fast is the honest answer.
+            logger.warning("Relay answered \(code, privacy: .public). Retrying once after 2s.")
             try await Task.sleep(nanoseconds: 2_000_000_000)
             return try await requestPlan(userText: context, dinners: dinners, subscriptionID: subscriptionID, useWebSearch: planUsesSearchTool)
         }
@@ -385,6 +418,7 @@ week and recipes each have exactly \(count) entries, one per day, \(span), in or
         request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
         request.setValue("application/json", forHTTPHeaderField: "content-type")
 
+        let system = systemPrompt(dinners: dinners, webSearchEnabled: useWebSearch)
         var body: [String: Any] = [
             "model": "claude-sonnet-5",
             // Room for a full week: up to 7 recipes with ingredients and
@@ -401,7 +435,7 @@ week and recipes each have exactly \(count) entries, one per day, \(span), in or
             // cut output from ~14k tokens to ~4k and made recipes reliably
             // complete. (Sonnet 5 accepts "disabled"; only Fable 5 rejects it.)
             "thinking": ["type": "disabled"],
-            "system": systemPrompt(dinners: dinners, webSearchEnabled: useWebSearch),
+            "system": system,
             "messages": [
                 ["role": "user", "content": userText]
             ]
@@ -413,12 +447,35 @@ week and recipes each have exactly \(count) entries, one per day, \(span), in or
         }
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        // The full outgoing prompt, so a drifting plan can be checked against
+        // what actually went out instead of what the code was believed to
+        // send. Chunked because Console truncates long single lines.
+        logLongText("outgoing system prompt", system)
+        logLongText("outgoing user text", userText)
+        logger.info("Plan request out: \(userText.count, privacy: .public) chars of user text, \(dinners, privacy: .public) dinners, webSearch \(useWebSearch, privacy: .public), timeout \(Int(request.timeoutInterval), privacy: .public)s.")
+
+        let started = Date()
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await URLSession.shared.data(for: request)
+        } catch {
+            // The swap bug hid here for a while: a hung or failed call left
+            // nothing behind to diagnose. Every transport failure now names
+            // itself and how long it took before anything else handles it.
+            let elapsed = Int(Date().timeIntervalSince(started))
+            logger.error("Plan request transport failure after \(elapsed, privacy: .public)s: \(String(describing: error), privacy: .public)")
+            throw error
+        }
+        let elapsed = Int(Date().timeIntervalSince(started))
         guard let http = response as? HTTPURLResponse else {
+            logger.error("Plan request got a non-HTTP response after \(elapsed, privacy: .public)s.")
             throw ClaudeError.badStatus(0, "No HTTP response.")
         }
+        logger.info("Relay answered \(http.statusCode, privacy: .public) in \(elapsed, privacy: .public)s with \(data.count, privacy: .public) bytes.")
         guard http.statusCode == 200 else {
             let snippet = String(data: data, encoding: .utf8)?.prefix(300) ?? ""
+            logger.error("Relay refused with status \(http.statusCode, privacy: .public): \(String(snippet), privacy: .public)")
             // The relay's two subscription answers get their own cases so
             // they never land in the generic "the service could not be
             // reached" bucket, and so neither can be swept into the 5xx
@@ -446,6 +503,7 @@ week and recipes each have exactly \(count) entries, one per day, \(span), in or
             let text = textBlock["text"] as? String,
             !text.isEmpty
         else {
+            logger.error("Relay 200 carried no text block. Envelope was \(data.count, privacy: .public) bytes.")
             throw ClaudeError.emptyReply
         }
 
@@ -454,6 +512,7 @@ week and recipes each have exactly \(count) entries, one per day, \(span), in or
             let planData = cleaned.data(using: .utf8),
             let plan = try? JSONDecoder().decode(MealPlan.self, from: planData)
         else {
+            logger.error("Plan JSON failed to decode. Reply starts: \(String(cleaned.prefix(300)), privacy: .public)")
             throw ClaudeError.parseFailed
         }
         // The model occasionally returns a well-formed plan with the week and
@@ -464,6 +523,7 @@ week and recipes each have exactly \(count) entries, one per day, \(span), in or
         // planned day as a parse failure so planWeek retries with a corrective
         // reminder instead of saving an unusable plan.
         guard !plan.week.isEmpty, plan.recipes.count >= plan.week.count else {
+            logger.error("Plan decoded but incomplete: \(plan.week.count, privacy: .public) days, \(plan.recipes.count, privacy: .public) recipes.")
             throw ClaudeError.parseFailed
         }
         return plan
