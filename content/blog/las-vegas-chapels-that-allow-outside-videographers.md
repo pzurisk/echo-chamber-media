@@ -7,7 +7,7 @@ image: "/images/elopements/hand-hold.webp"
 imageAlt: "A couple holding hands during their Las Vegas elopement"
 keywords: "Las Vegas chapel outside videographer, Las Vegas wedding chapels that allow outside videographers, bring your own videographer Las Vegas, Las Vegas elopement videographer chapel, can I hire my own videographer Las Vegas chapel"
 cta: elopement
-draft: true
+draft: false
 faq:
   - q: "Can I bring my own videographer to a Las Vegas wedding chapel?"
     a: "It depends on the chapel. Some allow outside videographers, some charge a vendor fee, some only allow filming outside, and some only allow their in-house team. Ask before you book the chapel, and get the answer in writing."
