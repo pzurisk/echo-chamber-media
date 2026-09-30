@@ -37,8 +37,7 @@ a deploy build fails if anything regresses. What it enforces:
 Currently allowed external hosts, and why: www.googletagmanager.com and
 *.google-analytics.com (GA4), i.ytimg.com (YouTube thumbnails), www.youtube.com
 and www.youtube-nocookie.com (demo embeds), kuula.co (360 walkthrough embeds),
-api.web3forms.com (contact form AJAX, live since 2026-09-30; key in src/lib/site.ts is public by design and delivers to the sales inbox),
-formsubmit.co (old form backend, down, no longer used in code, can be removed from the CSP). Do not remove any without checking what uses it.
+api.web3forms.com (contact form AJAX, live since 2026-09-30; key in src/lib/site.ts is public by design and delivers to the sales inbox). Do not remove any without checking what uses it.
 
 NOTE ON HOSTING (2026-07-30): the live site now serves from **Vercel**
 (`server: Vercel` response header), NOT the Mac mini dev server described below.

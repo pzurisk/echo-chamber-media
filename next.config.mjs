@@ -13,13 +13,13 @@ const csp = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://i.ytimg.com https://www.google-analytics.com https://www.googletagmanager.com",
   "font-src 'self'",
-  // GA4 beacons + the contact form's AJAX post to Web3Forms (formsubmit.co kept until Web3Forms is proven live).
-  "connect-src 'self' https://*.google-analytics.com https://www.googletagmanager.com https://api.web3forms.com https://formsubmit.co",
+  // GA4 beacons + the contact form's AJAX post to Web3Forms.
+  "connect-src 'self' https://*.google-analytics.com https://www.googletagmanager.com https://api.web3forms.com",
   // YouTube demo embeds + Kuula 360 walkthrough embeds.
   "frame-src https://www.youtube.com https://www.youtube-nocookie.com https://kuula.co",
   "object-src 'none'",
   "base-uri 'self'",
-  "form-action 'self' https://api.web3forms.com https://formsubmit.co",
+  "form-action 'self' https://api.web3forms.com",
   "frame-ancestors 'self'",
 ].join("; ");
 
