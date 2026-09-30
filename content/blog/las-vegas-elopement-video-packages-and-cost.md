@@ -24,7 +24,7 @@ Short, sweet, and done right.
 - Ceremony plus one nearby spot
 - A 2 to 3 minute film
 - Full ceremony audio
-- Delivered in 3 weeks
+- Delivered in 1 week
 
 Pick this if you want your ceremony captured beautifully and you do not need a long day.
 
@@ -36,7 +36,7 @@ Say your vows, then walk the lights. This is the package behind our Luciano and 
 - Ceremony plus a Fremont Street walk
 - A 3 to 4 minute film plus a 30 second teaser
 - Full ceremony audio
-- Delivered in 3 weeks
+- Delivered in 1 week
 
 Pick this if you want the ceremony and the neon, with a short teaser you can share right away.
 
@@ -48,7 +48,7 @@ Red rock at golden hour, city lights after dark.
 - A desert location plus downtown or the Strip
 - A 4 to 5 minute film plus a 30 second teaser
 - Drone shots where allowed
-- Delivered in 4 weeks
+- Delivered in 1 week
 
 Pick this if you want the full Las Vegas story, from the landscape to the lights.
 

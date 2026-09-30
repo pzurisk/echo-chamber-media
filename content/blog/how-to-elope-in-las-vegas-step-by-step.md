@@ -38,7 +38,7 @@ Our three packages follow that shape: [The Chapel at $500, Downtown at $750, and
 
 ## 5. Book your filmmaker early
 
-Once you know your date and your spot, book the film. We plan with you, shoot on cinema cameras, color grade the film, and set it to licensed music. You get your film in 3 to 4 weeks, depending on the package.
+Once you know your date and your spot, book the film. We plan with you, shoot on cinema cameras, color grade the film, and set it to licensed music. You get your film in 1 week.
 
 ## 6. Enjoy the day
 

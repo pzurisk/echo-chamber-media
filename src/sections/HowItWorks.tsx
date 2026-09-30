@@ -12,7 +12,7 @@ const steps = [
   {
     n: "Three",
     title: "Get your film",
-    body: "Edited, color graded, and set to licensed music. Delivered in 3 to 4 weeks, ready for everyone who could not be there.",
+    body: "Edited, color graded, and set to licensed music. Delivered in 1 week, ready for everyone who could not be there.",
   },
 ];
 

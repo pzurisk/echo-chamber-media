@@ -25,7 +25,7 @@ export const PACKAGES: Package[] = [
       "Ceremony plus one nearby spot",
       "2 to 3 minute film",
       "Full ceremony audio",
-      "Delivered in 3 weeks",
+      "Delivered in 1 week",
     ],
   },
   {
@@ -41,7 +41,7 @@ export const PACKAGES: Package[] = [
       "Ceremony plus Fremont Street walk",
       "3 to 4 minute film plus a 30 second teaser",
       "Full ceremony audio",
-      "Delivered in 3 weeks",
+      "Delivered in 1 week",
     ],
   },
   {
@@ -56,7 +56,7 @@ export const PACKAGES: Package[] = [
       "Desert location plus downtown or Strip",
       "4 to 5 minute film plus a 30 second teaser",
       "Drone shots where allowed",
-      "Delivered in 4 weeks",
+      "Delivered in 1 week",
     ],
   },
 ];

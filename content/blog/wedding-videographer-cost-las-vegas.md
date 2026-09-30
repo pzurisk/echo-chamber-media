@@ -40,9 +40,9 @@ Four things drive the number.
 
 Every package includes planning help, cinema camera coverage, a color graded film, and licensed music.
 
-- **The Chapel, $500.** 1 hour of coverage, a 2 to 3 minute film, delivered in 3 weeks.
-- **Downtown, $750.** 2 hours of coverage with a Fremont Street walk, a 3 to 4 minute film plus a 30 second teaser, delivered in 3 weeks.
-- **Desert & Lights, $1,000.** 4 hours of coverage with drive time included, a 4 to 5 minute film plus a teaser, drone shots where allowed, delivered in 4 weeks.
+- **The Chapel, $500.** 1 hour of coverage, a 2 to 3 minute film, delivered in 1 week.
+- **Downtown, $750.** 2 hours of coverage with a Fremont Street walk, a 3 to 4 minute film plus a 30 second teaser, delivered in 1 week.
+- **Desert & Lights, $1,000.** 4 hours of coverage with drive time included, a 4 to 5 minute film plus a teaser, drone shots where allowed, delivered in 1 week.
 
 See every detail on the [elopements page](/elopements#packages).
 
