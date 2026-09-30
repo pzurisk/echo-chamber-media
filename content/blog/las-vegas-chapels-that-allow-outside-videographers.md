@@ -10,7 +10,7 @@ cta: elopement
 draft: true
 faq:
   - q: "Can I bring my own videographer to a Las Vegas wedding chapel?"
-    a: "Often yes, but it depends on the chapel. Some allow outside videographers, some charge a vendor fee, and some only allow their in-house team. Ask before you book the chapel, and get the answer in writing."
+    a: "It depends on the chapel. Some allow outside videographers, some charge a vendor fee, some only allow filming outside, and some only allow their in-house team. Ask before you book the chapel, and get the answer in writing."
   - q: "Should I book the chapel or the videographer first?"
     a: "Confirm the chapel's outside vendor policy first, then book your videographer for the same date and time. If the chapel says no outside video, you want to know that before you pay a deposit."
   - q: "What should I ask a chapel about outside videographers?"
@@ -19,20 +19,23 @@ faq:
     a: "Our Las Vegas elopement films start at $500 for The Chapel, $750 for Downtown, and $1,000 for Desert & Lights."
 ---
 
-Yes, you can often bring your own videographer to a Las Vegas chapel. But not every chapel says yes, and the rules change from one to the next. Here is how to find out before you pay a deposit, and what to ask so the day goes smoothly.
+It depends on the chapel. Some let an outside videographer film the ceremony, some only let them shoot outside, and some do not allow them at all. Here is how to find out before you pay a deposit, and what to ask so the day goes smoothly.
 
 ## Why this question matters
 
+The chapel will not bring this up for you. It is up to you to ask, and the best time is before you pick the chapel, not after.
+
 Most Las Vegas chapels sell a package that includes photos, and some include video. Their in-house team is usually fine. But if you want a film made by someone who shoots cinematic work, you will want to bring your own.
 
-A chapel that does not allow outside video is not a bad chapel. You just need to know before you book it.
+A chapel that charges for outside video, or only lets you film outside, is not a bad chapel. You just need to know before you book it, so the fee and the rules are part of how you choose.
 
 ## What chapels usually say
 
-Policies fall into three groups. Always confirm the current rule with the chapel directly, because policies change.
+Policies fall into a few groups. Always confirm the current rule with the chapel directly, because policies change.
 
 - **Outside videographers welcome.** No extra charge.
 - **Outside videographers allowed for a fee.** You pay a vendor or access fee.
+- **Outside only.** Your videographer can film outside the chapel, but not inside.
 - **In-house team only.** Outside photographers and videographers are not allowed.
 
 Some chapels also set their own rules about where an outside vendor can stand, how long they can stay, and whether they can be in the room during other couples' ceremonies.
@@ -67,19 +70,18 @@ Keep the reply. If something changes on the day, you have it in writing.
 
 ## A chapel film from us
 
-Our **Chapel package is $500**. You get one hour of coverage, the ceremony plus one nearby spot, a 2 to 3 minute film, full ceremony audio, and delivery in 1 week. Every package includes planning help, cinema camera coverage, a color graded film, and licensed music.
+Our **Chapel package is $500**. You get one hour of coverage, the ceremony plus one nearby spot, a 2 to 3 minute film, full ceremony audio, and delivery in 2 weeks (ask about rush delivery). Every package includes planning help, cinema camera coverage, a color graded film, and licensed music.
 
 Want more than the chapel? Our **Downtown package is $750** and adds a Fremont Street walk. Our **Desert & Lights package is $1,000** and adds a desert location and a longer film. You can see all three and the films we have made on the [elopements page](/elopements).
 
-<!--
-BILLY: add your own section here before publishing. Nothing below renders until you remove the comment marks.
+## What happened when we tried
 
-## Chapels we have filmed in
+At the Little Vegas Chapel, we were allowed to film a ceremony on a phone on a tripod, at no extra cost. A phone on a tripod is not the same as bringing a videographer with cinema cameras and microphones, so ask about the exact setup you have in mind and do not assume one answer covers the other.
 
-- Chapel name: what it was like to film there (light, space, audio), and whether it let you bring your own videographer.
+At the Little Church of the West, we were only allowed to shoot outside the gate. We were told an outside videographer could film inside for a fee, about $500, so the answer was not a flat no. Still, it is a cost you want to know about before you book. Fees change, so get the current number from the chapel yourself.
 
-Only list chapels you have actually filmed in, and only state a policy you have confirmed this year.
--->
+Downtown was the opposite. On our Fremont Street shoot, nobody asked us to stop, so we were able to film the walk and the lights without a problem. Rules on the street are different from rules inside a chapel, and they can change, so do not treat that as a guarantee.
+
 
 ## Ready to check your date?
 

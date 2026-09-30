@@ -32,7 +32,7 @@ export default function ElopementHero() {
           </div>
           <p className="font-sans text-[15px] text-ink">
             <span className="font-semibold">Films from $500.</span>{" "}
-            <span className="text-muted">Delivered in 1 week.</span>
+            <span className="text-muted">Delivered in 2 weeks. Ask about rush delivery.</span>
           </p>
         </div>
       </div>

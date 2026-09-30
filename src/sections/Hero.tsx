@@ -24,7 +24,7 @@ export default function Hero() {
           </div>
           <p className="font-sans text-[15px] text-ink">
             <span className="font-semibold">Elopement films from $500.</span>{" "}
-            <span className="text-muted">Delivered in 1 week.</span>
+            <span className="text-muted">Delivered in 2 weeks. Ask about rush delivery.</span>
           </p>
           <span className="font-sans text-[15px] text-muted">
             Artist or band?{" "}
