@@ -6,13 +6,13 @@ import Footer from "@/sections/Footer";
 export const metadata: Metadata = {
   title: "Links",
   description:
-    "Everywhere Echo Chamber Media lives online. Services, portfolio, contact, and social links for Las Vegas video production.",
+    "Everywhere Echo Chamber Media lives online. Las Vegas elopement films, music videos, contact, and social links.",
   alternates: { canonical: "https://echochambermedia.com/links" },
   robots: { index: true, follow: true },
   openGraph: {
     title: "Links | Echo Chamber Media",
     description:
-      "Las Vegas video production. Weddings, corporate, music videos, documentaries, photography, and 360 walkthroughs.",
+      "Las Vegas elopement films and music videos.",
     url: "https://echochambermedia.com/links",
     type: "website",
     locale: "en_US",
@@ -35,53 +35,27 @@ type SocialItem = {
 
 const primaryLinks: LinkItem[] = [
   {
-    label: "Get a Free Quote",
-    description: "Tell us about your project and we'll get back the same day.",
-    href: "mailto:sales@echochambermedia.com",
-    external: true,
+    label: "Check Your Date",
+    description: "Tell us your wedding date and we'll get back within 24 hours.",
+    href: "/elopements#date",
   },
   {
-    label: "View Our Work",
-    description: "Recent films, commercials, and event coverage.",
-    href: "/#portfolio",
+    label: "Watch the Films",
+    description: "Luciano and Muriel, our featured Las Vegas elopement film.",
+    href: "/#work",
   },
 ];
 
 const serviceLinks: LinkItem[] = [
   {
-    label: "Wedding Videography",
-    description: "Cinema-camera wedding films, shot like a short film.",
-    href: "/services/wedding-videography",
-  },
-  {
-    label: "Wedding Photography",
-    description: "Editorial wedding photography across the Las Vegas valley.",
-    href: "/services/wedding-photography",
-  },
-  {
-    label: "Corporate & Commercial",
-    description: "Brand films, product spots, and event recaps.",
-    href: "/services/corporate",
+    label: "Weddings & Elopements",
+    description: "Cinematic Las Vegas wedding films from $500. Chapel, downtown, or desert.",
+    href: "/elopements",
   },
   {
     label: "Music Videos",
     description: "Concept, cinematography, and edit. You bring the song.",
-    href: "/services/music-videos",
-  },
-  {
-    label: "Documentary",
-    description: "Long-form storytelling, start to finish.",
-    href: "/services/documentary",
-  },
-  {
-    label: "Las Vegas Photographer",
-    description: "Proposals, bachelorette, tourist, and editorial shoots.",
-    href: "/services/las-vegas-photographer",
-  },
-  {
-    label: "360 Walkthroughs",
-    description: "Immersive property and venue tours.",
-    href: "/services/360-walkthroughs",
+    href: "/music-videos",
   },
 ];
 
@@ -134,8 +108,8 @@ const socials: SocialItem[] = [
   },
   {
     label: "Email",
-    handle: "sales@echochambermedia.com",
-    href: "mailto:sales@echochambermedia.com",
+    handle: "echochambermediasales@gmail.com",
+    href: "mailto:echochambermediasales@gmail.com",
     icon: MailIcon,
   },
 ];
@@ -227,10 +201,11 @@ export default function LinksPage() {
                 {/* Image container */}
                 <div className="relative h-60 w-60 overflow-hidden rounded-[26px] bg-brand-charcoal shadow-2xl shadow-black/60 sm:h-72 sm:w-72">
                   <Image
-                    src="/images/billy-portrait.jpg"
+                    src="/images/billy-zurisk.webp"
                     alt="Billy Zurisk, Founder, Echo Chamber Media"
                     fill
-                    className="object-cover object-center"
+                    className="object-cover"
+                    style={{ objectPosition: "50% 30%" }}
                     sizes="(max-width: 640px) 240px, 288px"
                     priority
                   />
@@ -250,7 +225,7 @@ export default function LinksPage() {
               MEDIA
             </h1>
             <p className="font-body mx-auto mt-5 max-w-md text-base sm:text-lg text-brand-off-white/90 leading-relaxed">
-              Las Vegas video production. Films, commercials, stories.
+              Las Vegas elopement films and music videos.
             </p>
 
             {/* Social row */}
@@ -292,15 +267,14 @@ export default function LinksPage() {
         <section className="px-6 py-20">
           <div className="mx-auto max-w-2xl text-center">
             <h2 className="font-heading text-3xl lg:text-4xl font-black text-brand-gold tracking-editorial mb-6">
-              HAVE A PROJECT IN MIND?
+              READY TO START?
             </h2>
             <p className="font-body text-brand-off-white mb-8 leading-relaxed">
-              We handle video projects from concept through final delivery.
-              Weddings, corporate, music videos, documentaries. Tell us what
-              you need and we&apos;ll put a plan together.
+              Eloping in Las Vegas or shooting a music video? Tell us your date
+              or send your song and we&apos;ll put a plan together.
             </p>
             <a
-              href="mailto:sales@echochambermedia.com"
+              href="mailto:echochambermediasales@gmail.com"
               className="inline-block bg-brand-gold text-brand-black font-heading font-bold py-4 px-8 rounded-lg hover:bg-brand-gold-hover transition-all uppercase tracking-editorial"
             >
               Tell Us About Your Project

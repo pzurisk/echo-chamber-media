@@ -1,51 +1,43 @@
-import SectionWrapper from "@/components/SectionWrapper";
-import Heading from "@/components/Heading";
+/* eslint-disable @next/next/no-img-element */
+import fs from "fs";
+import path from "path";
+
+const PORTRAIT = "/images/billy-zurisk.webp";
 
 export default function About() {
+  // Render the portrait only when the file is present, so a missing file never ships as a broken image.
+  const hasPortrait = fs.existsSync(path.join(process.cwd(), "public", PORTRAIT));
+
   return (
-    <SectionWrapper id="about" dark={false}>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-        {/* ── Image ── */}
-        <div className="relative aspect-[4/3] overflow-hidden bg-brand-black">
-          <div
-            className="absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: "url(/images/about-bts.jpg)" }}
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-brand-charcoal/60 to-transparent" />
-        </div>
-
-        {/* ── Copy ── */}
-        <div>
-          <Heading as="h2" gold>
-            About
-          </Heading>
-          <div className="mt-4 h-px w-16 bg-brand-gold" />
-
-          <p className="mt-8 text-brand-off-white/90 font-body text-base md:text-lg leading-relaxed">
-            Echo Chamber Media is a Las Vegas production company that handles
-            video projects from concept through final delivery. Weddings,
-            corporate content, property walk-throughs, documentaries, and music
-            videos. We bring film-set gear and process to every shoot.
-          </p>
-
-          <p className="mt-4 text-brand-gray font-body text-base leading-relaxed">
-            Billy Zurisk founded the company and runs every project. On the
-            independent side, his feature &ldquo;The Classified Mind&rdquo; has
-            picked up festival laurels, and the same standards that go into a
-            feature go into a wedding or a corporate edit. Our Google reviews
-            sit at 5.0 because we don&apos;t cut corners and we don&apos;t use
-            templates.
-          </p>
-
-          <div className="mt-8 flex items-center gap-4">
-            <div className="h-px flex-1 bg-brand-charcoal" />
-            <span className="text-sm text-brand-gold font-body uppercase tracking-editorial">
-              Las Vegas, NV
-            </span>
-            <div className="h-px flex-1 bg-brand-charcoal" />
+    <section id="about" className="scroll-mt-24 border-t border-gilt/20 bg-ivory px-4 py-16 md:px-16 md:py-[104px]">
+      <div className="mx-auto grid max-w-[1312px] grid-cols-1 items-center gap-10 md:grid-cols-12 md:gap-x-10">
+        {hasPortrait && (
+          <div className="md:col-span-4">
+            <img
+              src={PORTRAIT}
+              alt="Billy Zurisk, director and founder of Echo Chamber Media"
+              loading="lazy"
+              decoding="async"
+              className="aspect-[4/5] w-full rounded-lg object-cover"
+              style={{ objectPosition: "50% 30%" }}
+            />
+          </div>
+        )}
+        <div className={`flex flex-col gap-6 ${hasPortrait ? "md:col-span-7 md:col-start-6" : "md:col-span-8 md:col-start-3"}`}>
+          <span className="font-sans text-xs uppercase tracking-[0.3em] text-gilt">About</span>
+          <h2 className="font-display text-[44px] font-normal leading-none tracking-[-0.01em] text-ink md:text-[64px]">
+            Hi, I&apos;m <span className="italic text-gilt">Billy.</span>
+          </h2>
+          <div className="flex flex-col gap-5 font-sans text-[17px] leading-[1.65] text-muted md:text-lg">
+            <p>
+              Echo Chamber Media is a Las Vegas film company. I run every project myself, from the first call to the final color.
+            </p>
+            <p>
+              The Classified Mind, which I co-wrote with Pete Miceli, has picked up festival awards including Best Horror and Best Short. That same care goes into a three minute elopement film and a music video.
+            </p>
           </div>
         </div>
       </div>
-    </SectionWrapper>
+    </section>
   );
 }

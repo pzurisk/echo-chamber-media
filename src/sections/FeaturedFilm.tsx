@@ -1,222 +1,31 @@
-"use client";
-
-import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
-import Link from "next/link";
-import SectionWrapper from "@/components/SectionWrapper";
-import Heading from "@/components/Heading";
-
-/* ── Film video ── */
-const FILM_YOUTUBE_ID = "wGoX4MbAKCw";
-const filmVideoJsonLd = {
-  "@context": "https://schema.org",
-  "@type": "VideoObject",
-  name: "The Classified Mind, Echo Chamber Media",
-  description:
-    "The Classified Mind. An Echo Chamber Media production. A psychological short about Gideon, alone with his theories, certain something is watching.",
-  thumbnailUrl: `https://i.ytimg.com/vi/${FILM_YOUTUBE_ID}/maxresdefault.jpg`,
-  // TODO: set to the real YouTube publish date (YYYY-MM-DD).
-  uploadDate: "2026-01-01",
-  contentUrl: `https://www.youtube.com/watch?v=${FILM_YOUTUBE_ID}`,
-  embedUrl: `https://www.youtube.com/embed/${FILM_YOUTUBE_ID}`,
-  publisher: {
-    "@type": "Organization",
-    name: "Echo Chamber Media",
-    url: "https://echochambermedia.com",
-  },
-};
-
-/* ── Credits ── */
-const credits = [
-  { role: "Directed by", name: "Pete Miceli" },
-  { role: "Written by", name: "Billy Zurisk & Pete Miceli" },
-  { role: "Produced by", name: "Billy Zurisk" },
-  { role: "Cinematography", name: "Billy Zurisk" },
-  { role: "Starring", name: "Mark Vanis & Milla Dawn" },
-  { role: "Original Score", name: "Tim Legvold" },
-  { role: "Sound Mix", name: "Anastasia Shuvayeva" },
-  { role: "Production Design", name: "Billy Zurisk, Pete Miceli & Melissa Phillips" },
-  { role: "Special Effects", name: "Billy Zurisk" },
-  { role: "Gaffer", name: "Melissa Phillips" },
-  { role: "Alien Performance", name: "Pete Miceli" },
-];
-/* ── Laurels ── */
-const laurels = [
-  { festival: "The Dunwich Horror Fest", type: "Award Winner" },
-  { festival: "Las Vegas Indie Film Festival 2026", type: "Best Horror" },
-  { festival: "Las Vegas Indie Film Festival 2026", type: "Best Film Score" },
-  { festival: "Golden Nugget International Film Festival 2026", type: "Best Short" },
-  { festival: "RED Movie Awards 2027", type: "Finalist" },
-  { festival: "Golden Nugget International Film Festival 2026", type: "Official Selection" },
-  { festival: "Indie Vegas Film Festival 2026", type: "Official Selection" },
-  { festival: "Bocas Film Fest 2026", type: "Official Selection" },
-];
+import PlayCard from "@/components/PlayCard";
+import { FILMS, IMG } from "@/lib/site";
 
 export default function FeaturedFilm() {
-  const sectionRef = useRef<HTMLDivElement>(null);
-  const [inView, setInView] = useState(false);
-
-  useEffect(() => {
-    const el = sectionRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setInView(true);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.15 }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
   return (
-    <SectionWrapper id="featured-film" dark={false}>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(filmVideoJsonLd) }}
-      />
-      <div ref={sectionRef}>
-        {/* Section header */}
-        <div className="text-center mb-16">
-          <p className="text-sm uppercase tracking-editorial text-brand-gold font-body mb-4">
-            Featured Film
+    <section id="work" className="scroll-mt-24 bg-champagne px-4 pb-6 pt-14 md:px-16 md:pb-10 md:pt-28">
+      <div className="mx-auto flex max-w-[1312px] flex-col gap-8 md:gap-10">
+        <div className="flex flex-col items-center gap-2.5 text-center">
+          <span className="font-sans text-[11px] uppercase tracking-[0.3em] text-gilt md:text-xs">
+            Featured elopement
+          </span>
+          <span className="font-script text-5xl leading-[1.1] text-ink md:text-[76px]">
+            Luciano &amp; Muriel
+          </span>
+          <p className="max-w-[620px] font-sans text-base leading-[1.6] text-muted md:text-lg">
+            One afternoon in downtown Las Vegas. A ceremony at the Little Church of the West, the Carousel Bar, marquee lights, and a slow dance on the sidewalk to close it out.
           </p>
-          <Heading as="h2">
-            The Classified Mind
-          </Heading>
-          <div className="mt-4 h-px w-16 bg-brand-gold mx-auto" />
         </div>
-
-        {/* Film video */}
-        <div className="max-w-4xl mx-auto mb-16">
-          <div className="relative w-full aspect-video border border-brand-gold/20 bg-brand-charcoal">
-            <iframe
-              src={`https://www.youtube.com/embed/${FILM_YOUTUBE_ID}`}
-              title="The Classified Mind, Echo Chamber Media"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              allowFullScreen
-              loading="lazy"
-              className="absolute inset-0 w-full h-full"
-            />
-          </div>
-        </div>
-
-        {/* Poster + Details grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-start">
-          {/* Poster */}
-          <div
-            className={`relative aspect-[2/3] overflow-hidden transition-all duration-1000 ${
-              inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-            }`}
-          >            <Image
-              src="/images/the classified mind poster.png"
-              alt="The Classified Mind Official Movie Poster"
-              fill
-              className="object-cover object-top"
-              sizes="(max-width: 1024px) 100vw, 50vw"
-              priority
-            />
-            {/* Subtle gold border glow */}
-            <div className="absolute inset-0 ring-1 ring-brand-gold/20 pointer-events-none" />
-          </div>
-
-          {/* Details column */}
-          <div
-            className={`flex flex-col justify-center transition-all duration-1000 delay-300 ${
-              inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-            }`}
-          >
-            {/* Synopsis */}
-            <p className="text-brand-off-white font-body text-lg leading-relaxed mb-2">
-              An Echo Chamber Media Production
-            </p>
-            <p className="text-brand-gray font-body leading-relaxed mb-4">
-              Gideon lives in his mother&apos;s basement, alone with his
-              theories. The boards are covered. The patterns are there. He
-              knows something is watching. He can feel it. But the closer
-              he gets to the truth, the less certain he becomes of what the
-              truth actually is.
-            </p>
-            <p className="text-brand-gray font-body leading-relaxed italic mb-4">
-              He might be wrong about everything. Then again, he might not be.
-            </p>
-            <p className="text-brand-gray/60 font-body text-sm leading-relaxed mb-8">
-              Shot on DJI Ronin 4D. Edited in Adobe Premiere Pro. Color graded in DaVinci Resolve.
-            </p>
-            {/* Laurels */}
-            <div className="flex flex-wrap gap-6 mb-10">
-              {laurels.map((l) => (
-                <div
-                  key={`${l.festival}-${l.type}`}
-                  className="flex items-center gap-3 bg-brand-black/60 px-4 py-3 border border-brand-gold/20"
-                >
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    className="text-brand-gold flex-shrink-0"
-                  >
-                    <path
-                      d="M12 2L9 7L3 8.5L7 13L6 19L12 16L18 19L17 13L21 8.5L15 7L12 2Z"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                  <div>
-                    <span className="block text-xs uppercase tracking-editorial text-brand-gold font-body">
-                      {l.type}
-                    </span>
-                    <span className="text-sm text-brand-off-white font-body">
-                      {l.festival}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-            {/* Credits */}
-            <div className="border-t border-brand-charcoal pt-8">
-              <h3 className="text-sm uppercase tracking-editorial text-brand-gold font-body mb-6">
-                Credits
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3">
-                {credits.map((c) => (
-                  <div key={c.role}>
-                    <span className="text-xs uppercase tracking-editorial text-brand-gray font-body">
-                      {c.role}
-                    </span>
-                    <p className="text-brand-off-white font-body text-sm mt-0.5">
-                      {c.name}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Case study CTA */}
-            <div className="mt-10 pt-8 border-t border-brand-charcoal">
-              <Link
-                href="/blog/classified-mind-behind-the-scenes"
-                className="inline-flex items-center gap-2 text-brand-gold font-body text-sm uppercase tracking-editorial border-b border-brand-gold/30 hover:border-brand-gold transition-colors pb-1"
-              >
-                Read the Production Story
-                <svg
-                  className="w-4 h-4"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path d="M5 12h14M12 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </Link>
-            </div>
-          </div>
-        </div>
+        <PlayCard
+          href={FILMS.lucianoMuriel.url}
+          src={IMG.marqueeLaugh}
+          alt="Luciano and Muriel laughing together under the gold marquee lights"
+          label="Play the Luciano and Muriel elopement film on YouTube"
+          caption={`Watch the film · ${FILMS.lucianoMuriel.length}`}
+          className="h-[260px] md:h-[600px]"
+          objectPosition="center 40%"
+        />
       </div>
-    </SectionWrapper>
+    </section>
   );
 }

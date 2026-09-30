@@ -42,13 +42,22 @@ const nextConfig = {
       },
     ];
   },
+  // The site is weddings/elopements and music videos only (rebuild 2026-09). Old service
+  // pages keep their code but are unreachable, so their links and rankings flow to the new pages.
   async redirects() {
+    const to = (source, destination) => ({ source, destination, permanent: true });
     return [
-      {
-        source: "/contact",
-        destination: "/#contact",
-        permanent: true,
-      },
+      to("/contact", "/elopements#date"),
+      to("/services/wedding-videography", "/elopements"),
+      to("/services/wedding-photography", "/elopements"),
+      to("/services/music-videos", "/music-videos"),
+      to("/services/corporate", "/"),
+      to("/services/documentary", "/"),
+      to("/services/360-walkthroughs", "/"),
+      to("/services/las-vegas-photographer", "/"),
+      to("/ai-ads", "/"),
+      to("/blog/what-ai-ad-production-costs", "/"),
+      to("/blog/the-chair-tattoo-documentary", "/"),
     ];
   },
 };

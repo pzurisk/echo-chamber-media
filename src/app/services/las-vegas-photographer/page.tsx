@@ -16,7 +16,7 @@ const jsonLd = {
   description: 'Professional photography and videography services for Las Vegas visitors and tourists',
   image: 'https://echochambermedia.com/images/las-vegas-photographer-hero.jpg',
   url: 'https://echochambermedia.com/services/las-vegas-photographer',
-  telephone: '+1-702-XXX-XXXX',
+  telephone: '+1-916-468-9419',
   address: {
     '@type': 'PostalAddress',
     streetAddress: 'Las Vegas, NV',
@@ -311,7 +311,7 @@ export default function LasVegasPhotographerPage() {
             </button>
           </div>
           <p className="font-body text-brand-gray mt-8 text-sm">
-            Questions? Contact us at sales@echochambermedia.com or call (702) XXX-XXXX
+            Questions? Contact us at echochambermediasales@gmail.com or call (916) 468-9419
           </p>
         </div>
       </section>

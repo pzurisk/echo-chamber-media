@@ -470,7 +470,7 @@ export default function WeddingVideographyPage() {
                 '@type': 'LocalBusiness',
                 name: 'Echo Chamber Media',
                 url: 'https://echochambermedia.com',
-                telephone: '+1-989-308-1633',
+                telephone: '+1-916-468-9419',
               },
             }),
           }}

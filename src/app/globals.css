@@ -10,6 +10,19 @@
   --accent-gold: #C9A84C;
   --text-primary: #F5F5F5;
   --text-secondary: #A0A0A0;
+
+  /* Bridal palette, 2026-09 rebuild */
+  --ivory: #FBF7F1;
+  --champagne: #F3EBDF;
+  --ink: #2B211A;
+  --muted: #6B5B4C;
+  --gilt: #8C6A24;
+  --gilt-hover: #5E4615;
+  --gilt-accent: #C9A45C;
+  --night: #120E0A;
+  --night-text: #F4EADA;
+  --night-muted: #CDBFA8;
+  --night-gold: #E2B04A;
 }
 
 * {
@@ -50,3 +63,20 @@ body {
     text-wrap: balance;
   }
 }
+
+/* Blog post body, rendered from markdown in content/blog */
+.post { font-family: var(--font-instrument), system-ui, sans-serif; font-size: 18px; line-height: 1.75; color: var(--ink); }
+.post > * + * { margin-top: 1.25em; }
+.post h2 { font-family: var(--font-cormorant), serif; font-size: 2.1rem; line-height: 1.12; font-weight: 500; margin-top: 2.2em; letter-spacing: -0.01em; }
+.post h3 { font-family: var(--font-cormorant), serif; font-size: 1.55rem; line-height: 1.2; font-weight: 600; margin-top: 1.8em; }
+.post p, .post li { color: var(--ink); }
+.post a { color: var(--gilt); text-decoration: underline; text-underline-offset: 3px; }
+.post a:hover { color: var(--gilt-hover); }
+.post ul, .post ol { padding-left: 1.4em; }
+.post ul { list-style: disc; }
+.post ol { list-style: decimal; }
+.post li + li { margin-top: 0.5em; }
+.post strong { font-weight: 600; }
+.post img { width: 100%; border-radius: 8px; height: auto; }
+.post blockquote { border-left: 3px solid var(--gilt-accent); padding-left: 1.1em; font-family: var(--font-cormorant), serif; font-size: 1.5rem; line-height: 1.35; font-style: italic; }
+.post hr { border: 0; border-top: 1px solid rgba(140, 106, 36, 0.25); margin: 2.5em 0; }

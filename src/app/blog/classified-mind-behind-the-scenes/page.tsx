@@ -12,7 +12,7 @@ export const metadata: Metadata = {
     canonical: 'https://echochambermedia.com/blog/classified-mind-behind-the-scenes',
   },
   keywords:
-    'The Classified Mind, indie horror film Las Vegas, indie feature filmmaking, DJI Ronin 4D, Pete Miceli, Billy Zurisk, Echo Chamber Media, Las Vegas Indie Film Festival, psychological horror short, indie cinematography Las Vegas',
+    'The Classified Mind, indie horror film Las Vegas, indie filmmaking, DJI Ronin 4D, Pete Miceli, Billy Zurisk, Echo Chamber Media, Las Vegas Indie Film Festival, psychological horror short, indie cinematography Las Vegas',
   openGraph: {
     title: 'Behind The Classified Mind — An Echo Chamber Media Production',
     description:

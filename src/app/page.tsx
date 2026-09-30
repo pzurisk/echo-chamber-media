@@ -1,29 +1,33 @@
 import Navbar from "@/sections/Navbar";
 import Hero from "@/sections/Hero";
 import TrustStrip from "@/sections/TrustStrip";
-import Services from "@/sections/Services";
-import Portfolio from "@/sections/Portfolio";
 import FeaturedFilm from "@/sections/FeaturedFilm";
-import About from "@/sections/About";
+import FilmStrip from "@/sections/FilmStrip";
+import HowItWorks from "@/sections/HowItWorks";
+import PackagesTeaser from "@/sections/PackagesTeaser";
 import Reviews from "@/sections/Reviews";
-import Contact from "@/sections/Contact";
+import AfterDark from "@/sections/AfterDark";
+import About from "@/sections/About";
+import CTA from "@/sections/CTA";
 import Footer from "@/sections/Footer";
 
 export default function Home() {
   return (
-    <>
+    <div className="bg-ivory font-sans text-ink">
       <Navbar />
       <main>
         <Hero />
         <TrustStrip />
-        <Services />
-        <Portfolio />
         <FeaturedFilm />
-        <About />
+        <FilmStrip />
+        <HowItWorks />
+        <PackagesTeaser />
         <Reviews />
-        <Contact />
+        <AfterDark />
+        <About />
+        <CTA />
       </main>
       <Footer />
-    </>
+    </div>
   );
 }

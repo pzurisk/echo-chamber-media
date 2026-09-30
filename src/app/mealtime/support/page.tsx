@@ -47,8 +47,8 @@ export default function MealTimeSupportPage() {
             </h2>
             <p className="font-body text-brand-off-white leading-relaxed">
               Email{' '}
-              <a href="mailto:sales@echochambermedia.com" className="text-brand-gold hover:underline">
-                sales@echochambermedia.com
+              <a href="mailto:echochambermediasales@gmail.com" className="text-brand-gold hover:underline">
+                echochambermediasales@gmail.com
               </a>
               . Include what you tapped and what happened. We usually reply within a business day.
             </p>

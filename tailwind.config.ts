@@ -19,10 +19,32 @@ const config: Config = {
           gray: "#A0A0A0",
           red: "#C94C4C",
         },
+        // Bridal palette (2026-09 rebuild). Old brand tokens above stay for
+        // the service, blog, links, and MealTime pages, which are still dark.
+        ivory: "#FBF7F1",
+        champagne: "#F3EBDF",
+        ink: "#2B211A",
+        muted: "#6B5B4C",
+        gilt: {
+          DEFAULT: "#8C6A24",
+          hover: "#5E4615",
+          accent: "#C9A45C",
+        },
+        // After dark section.
+        night: {
+          DEFAULT: "#120E0A",
+          text: "#F4EADA",
+          muted: "#CDBFA8",
+          gold: "#E2B04A",
+        },
       },
       fontFamily: {
         heading: ["var(--font-archivo-black)", "sans-serif"],
         body: ["var(--font-montserrat)", "sans-serif"],
+        display: ["var(--font-cormorant)", "Georgia", "serif"],
+        sans: ["var(--font-instrument)", "system-ui", "sans-serif"],
+        script: ["var(--font-pinyon)", "cursive"],
+        "script-dark": ["var(--font-yellowtail)", "cursive"],
       },
       letterSpacing: {
         editorial: "0.05em",

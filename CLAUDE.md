@@ -11,9 +11,10 @@ Owner: Billy Zurisk, Las Vegas video production company.
 - Avoid the other AI tells too: hollow taglines, dramatic one-word fragments,
   and generic filler. Follow the echo-chamber-voice skill. Keep copy short,
   specific, plain, and confident, the way a working filmmaker actually talks.
-- Blog lives at `src/app/blog/`. Each post is its own folder with a `page.tsx`,
-  plus an entry in the `posts` array in `src/app/blog/page.tsx`. Add BlogPosting
-  and (where relevant) FAQPage JSON-LD. First pricing-guide post is live.
+- Blog: new posts are markdown files in `content/blog/` (see `content/blog/_HOW-TO-WRITE.md`),
+  rendered by `src/app/blog/[slug]/page.tsx` with Article JSON-LD. `draft: true` hides a post
+  from production builds and the sitemap. Older hand-coded posts still live in their own
+  folders under `src/app/blog/` and in the `legacyPosts` array in `src/app/blog/page.tsx`.
 
 ## Security: REQUIRED on every update (added 2026-07-30, Billy's standing order)
 Every change to this site must keep the security setup intact, and every session
@@ -135,7 +136,7 @@ To sync by hand: `git pull --ff-only origin main`.
 - **Booking:** Google Calendar appointment schedule (NOT Cal.com anymore).
   Link: `https://calendar.app.google/V6EFC7Cv3rJHxAdGA`. Used in `src/sections/Contact.tsx`
   and should be the value in Google Business Profile's booking field.
-- **Phone:** (989) 308-1633 · **Sales email:** Echochambermediasales@gmail.com
+- **Phone:** (916) 468-9419 (matches the Google listing, swapped 2026-09-30) · **Sales email:** echochambermediasales@gmail.com
 - **Schema:** use valid schema.org types. `VideoProductionCompany` is NOT a real type, the homepage/service schema must be `LocalBusiness`/`ProfessionalService`, `Service`,
   `FAQPage`, `VideoObject`. NEVER add fake `aggregateRating`/reviews (penalty risk).
 

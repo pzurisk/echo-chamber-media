@@ -1,6 +1,7 @@
 import { MetadataRoute } from "next";
 import fs from "fs";
 import path from "path";
+import { getAllPosts } from "@/lib/blog";
 
 const BASE = "https://echochambermedia.com";
 
@@ -13,6 +14,7 @@ function subRoutes(dir: string): string[] {
       .filter(
         (d) =>
           d.isDirectory() &&
+          !d.name.startsWith("[") &&
           fs.existsSync(path.join(full, d.name, "page.tsx"))
       )
       .map((d) => d.name)
@@ -22,12 +24,19 @@ function subRoutes(dir: string): string[] {
   }
 }
 
+// Blog folders whose URLs redirect (see next.config.mjs). They stay out of the sitemap.
+const REDIRECTED_BLOG = new Set(["what-ai-ad-production-costs", "the-chair-tattoo-documentary"]);
+
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
-  const services = subRoutes("services").map((s) => `/services/${s}`);
-  const posts = subRoutes("blog").map((s) => `/blog/${s}`);
+  const posts = Array.from(
+    new Set([
+      ...subRoutes("blog").filter((s) => !REDIRECTED_BLOG.has(s)).map((s) => `/blog/${s}`),
+      ...getAllPosts().map((p) => `/blog/${p.slug}`),
+    ])
+  );
 
-  const routes = ["", "/blog", "/links", ...services, ...posts];
+  const routes = ["", "/elopements", "/music-videos", "/blog", "/links", ...posts];
 
   return routes.map((route) => ({
     url: `${BASE}${route}`,
@@ -36,7 +45,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority:
       route === ""
         ? 1
-        : route.startsWith("/services")
+        : route === "/elopements" || route === "/music-videos"
         ? 0.9
         : route === "/blog"
         ? 0.8

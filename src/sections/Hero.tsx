@@ -1,175 +1,70 @@
-"use client";
-
-import { useEffect, useRef, useState } from "react";
-import ScrollIndicator from "@/components/ScrollIndicator";
-
-// Scroll-driven day to night timelapse.
-// Desktop with motion allowed: the video is scrubbed by scroll position.
-// Phones and reduced-motion: day still crossfades to night still on scroll.
-// The day still is the first paint on every device, so the hero never waits on the video.
-
-const clamp = (n: number, min = 0, max = 1) => Math.min(max, Math.max(min, n));
+/* eslint-disable @next/next/no-img-element */
+import Link from "next/link";
+import Button from "@/components/Button";
+import { FILMS } from "@/lib/site";
 
 export default function Hero() {
-  const sectionRef = useRef<HTMLElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [useVideo, setUseVideo] = useState(false);
-  const [progress, setProgress] = useState(0);
-
-  // Decide once on the client whether this device gets the scrubbed video.
-  useEffect(() => {
-    const mq = window.matchMedia(
-      "(min-width: 768px) and (prefers-reduced-motion: no-preference)"
-    );
-    setUseVideo(mq.matches);
-    const onChange = () => setUseVideo(mq.matches);
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }, []);
-
-  // Track scroll progress through the hero, eased so the scrub feels smooth.
-  useEffect(() => {
-    let raf = 0;
-    let target = 0;
-    let current = 0;
-
-    const readTarget = () => {
-      const el = sectionRef.current;
-      if (!el) return;
-      const rect = el.getBoundingClientRect();
-      const scrollable = rect.height - window.innerHeight;
-      target = scrollable > 0 ? clamp(-rect.top / scrollable) : 0;
-    };
-
-    const tick = () => {
-      current += (target - current) * 0.14;
-      if (Math.abs(target - current) < 0.0005) current = target;
-      setProgress((prev) => (Math.abs(prev - current) > 0.0005 ? current : prev));
-
-      const video = videoRef.current;
-      if (video && video.duration && Number.isFinite(video.duration)) {
-        const t = current * video.duration;
-        if (Math.abs(video.currentTime - t) > 0.02) video.currentTime = t;
-      }
-      raf = requestAnimationFrame(tick);
-    };
-
-    readTarget();
-    window.addEventListener("scroll", readTarget, { passive: true });
-    window.addEventListener("resize", readTarget);
-    raf = requestAnimationFrame(tick);
-    return () => {
-      window.removeEventListener("scroll", readTarget);
-      window.removeEventListener("resize", readTarget);
-      cancelAnimationFrame(raf);
-    };
-  }, []);
-
   return (
-    <section
-      ref={sectionRef}
-      className="relative w-full h-[190vh] md:h-[260vh]"
-    >
-      <div className="sticky top-0 h-screen w-full overflow-hidden">
-        {/* ── Day still: first paint on every device ── */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/images/hero-day.jpg"
-          srcSet="/images/hero-day-mobile.jpg 1080w, /images/hero-day.jpg 1920w"
-          sizes="100vw"
-          alt=""
-          fetchPriority="high"
-          className="absolute inset-0 h-full w-full object-cover"
-        />
+    <section className="bg-ivory px-4 pb-10 pt-[88px] md:px-16 md:pb-[72px] md:pt-[120px]">
+      <div className="mx-auto grid max-w-[1312px] grid-cols-1 items-center gap-6 lg:grid-cols-12 lg:gap-x-10">
+        <div className="order-2 flex flex-col gap-5 lg:order-1 lg:col-span-5 lg:gap-6">
+          <span className="font-script text-[40px] leading-[1.1] text-gilt md:text-[56px] md:leading-none">
+            Las Vegas elopements
+          </span>
+          <h1 className="font-display text-[54px] font-normal leading-[0.98] tracking-[-0.015em] text-ink sm:text-[72px] lg:leading-[0.95] xl:text-[88px]">
+            Say yes in Vegas. <span className="italic">Keep it forever.</span>
+          </h1>
+          <p className="font-sans text-[17px] leading-[1.55] text-muted md:text-xl md:leading-[1.6]">
+            Cinematic wedding films for couples who want it small, personal, and beautiful.
+            <span className="hidden md:inline"> Shot on cinema cameras by a director who makes movies.</span>
+          </p>
+          <div className="flex flex-col gap-4 md:flex-row lg:mt-1">
+            <Button variant="ink" href="/elopements#date">Check your date</Button>
+            <Button variant="ink-outline" href="/elopements#packages">See packages</Button>
+          </div>
+          <p className="font-sans text-[15px] text-ink">
+            <span className="font-semibold">Elopement films from $500.</span>{" "}
+            <span className="text-muted">Delivered in 3 to 4 weeks.</span>
+          </p>
+          <span className="font-sans text-[15px] text-muted">
+            Artist or band?{" "}
+            <Link href="/music-videos" className="font-semibold text-gilt hover:text-gilt-hover">
+              We make music videos too →
+            </Link>
+          </span>
+        </div>
 
-        {/* ── Night still: crossfades in on phones and reduced-motion ── */}
-        {!useVideo && (
-          // eslint-disable-next-line @next/next/no-img-element
+        <div className="relative order-1 h-[360px] overflow-hidden rounded-lg bg-champagne sm:h-[460px] lg:order-2 lg:col-span-7 lg:h-[560px]">
           <img
-            src="/images/hero-night.jpg"
-            srcSet="/images/hero-night-mobile.jpg 1080w, /images/hero-night.jpg 1920w"
-            sizes="100vw"
+            src="/images/elopements/hero-poster.webp"
             alt=""
-            loading="lazy"
+            fetchPriority="high"
             className="absolute inset-0 h-full w-full object-cover"
-            style={{ opacity: progress }}
           />
-        )}
-
-        {/* ── Scrubbed timelapse: desktop only, loads after first paint ── */}
-        {useVideo && (
           <video
-            ref={videoRef}
+            autoPlay
+            loop
             muted
             playsInline
             preload="auto"
-            poster="/images/hero-day.jpg"
-            aria-hidden="true"
-            className="absolute inset-0 h-full w-full object-cover"
+            poster="/images/elopements/hero-poster.webp"
+            aria-label="Luciano and Muriel laughing and walking down a gold lit arcade in Las Vegas"
+            className="absolute inset-0 h-full w-full object-cover motion-reduce:hidden"
           >
-            <source src="/video/hero-timelapse.mp4" type="video/mp4" />
+            <source src="/video/elopement-hero.mp4" type="video/mp4" />
           </video>
-        )}
-
-        {/* ── Legibility overlays: left shade for text, deepens toward night ── */}
-        <div
-          className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/20 to-transparent"
-          style={{ opacity: 0.75 + progress * 0.25 }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-brand-black/70 via-transparent to-transparent" />
-
-        {/* ── Content ── */}
-        <div className="relative z-10 flex h-full items-center">
-          <div className="w-full px-6 md:px-16 lg:px-24 text-center md:text-left max-w-3xl">
-            <p className="font-body text-[11px] md:text-xs font-semibold tracking-[0.3em] uppercase text-brand-gold mb-6">
-              Las Vegas Video Production
-            </p>
-
-            <h1 className="font-heading text-4xl sm:text-5xl md:text-7xl uppercase tracking-editorial text-brand-off-white leading-[1.05] [text-shadow:0_2px_24px_rgba(0,0,0,0.45)]">
-              Wedding films.
-              <br />
-              <span className="text-brand-gold">Music videos.</span>
-              <span className="sr-only">
-                {" "}
-                by Echo Chamber Media, a Las Vegas video production company
-              </span>
-            </h1>
-
-            <div className="mt-8 h-px w-24 bg-brand-gold mx-auto md:mx-0" />
-
-            <p className="mt-6 text-base md:text-lg text-brand-off-white/90 font-body font-light tracking-wide max-w-xl mx-auto md:mx-0 leading-relaxed [text-shadow:0_1px_12px_rgba(0,0,0,0.5)]">
-              Shot on cinema cameras and edited like a feature. One filmmaker from first call to final cut.
-            </p>
-
-            {/* Two paths, equal weight */}
-            <div className="mt-10 flex flex-col sm:flex-row items-stretch sm:items-center justify-center md:justify-start gap-4">
-              <a
-                href="/services/wedding-videography"
-                className="px-8 py-4 bg-brand-gold text-brand-black font-body font-semibold text-sm uppercase tracking-[0.15em] text-center hover:bg-brand-gold-hover transition-all duration-300 hover:-translate-y-0.5"
-              >
-                Wedding &amp; Elopement Films
-              </a>
-              <a
-                href="/services/music-videos"
-                className="px-8 py-4 border border-brand-gold text-brand-off-white bg-black/25 backdrop-blur-sm font-body font-semibold text-sm uppercase tracking-[0.15em] text-center hover:bg-brand-gold hover:text-brand-black transition-all duration-300 hover:-translate-y-0.5"
-              >
-                Music Videos
-              </a>
-            </div>
-
-            <p className="mt-7 text-sm text-brand-off-white/70 font-body">
-              Prefer to talk? Call our 24/7 booking line:{" "}
-              <a
-                href="tel:+19893081633"
-                className="text-brand-gold font-semibold border-b border-transparent hover:border-brand-gold transition-colors"
-              >
-                (989) 308-1633
-              </a>
-            </p>
-          </div>
+          <a
+            href={FILMS.lucianoMuriel.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="absolute bottom-4 left-4 flex h-11 items-center gap-2.5 rounded-full bg-ivory/95 pl-3 pr-5 font-sans text-[13px] font-semibold text-ink transition-colors hover:bg-white md:bottom-6 md:left-6"
+          >
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-gilt">
+              <svg viewBox="0 0 24 24" className="h-3 w-3 fill-ivory" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
+            </span>
+            Watch Luciano &amp; Muriel · {FILMS.lucianoMuriel.length}
+          </a>
         </div>
-
-        <ScrollIndicator />
       </div>
     </section>
   );

@@ -350,7 +350,7 @@ export default function CorporateVideoPage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a
-                href="mailto:sales@echochambermedia.com"
+                href="mailto:echochambermediasales@gmail.com"
                 className="inline-block bg-brand-gold text-brand-black font-heading font-bold py-4 px-8 rounded-lg hover:bg-opacity-90 transition-all"
               >
                 Request a Quote
@@ -377,7 +377,7 @@ export default function CorporateVideoPage() {
             image: 'https://echochambermedia.com/og-image.jpg',
             description: 'Professional corporate and commercial video production in Las Vegas. Brand films, product videos, event coverage, and more.',
             telephone: '+1-702-555-ECHO',
-            email: 'sales@echochambermedia.com',
+            email: 'echochambermediasales@gmail.com',
             address: {
               '@type': 'PostalAddress',
               addressLocality: 'Las Vegas',

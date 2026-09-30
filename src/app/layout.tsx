@@ -1,5 +1,12 @@
 import type { Metadata } from "next";
-import { Archivo_Black, Montserrat } from "next/font/google";
+import {
+  Archivo_Black,
+  Montserrat,
+  Cormorant_Garamond,
+  Instrument_Sans,
+  Pinyon_Script,
+  Yellowtail,
+} from "next/font/google";
 import "./globals.css";
 
 const archivoBlack = Archivo_Black({
@@ -15,38 +22,57 @@ const montserrat = Montserrat({
   display: "swap",
 });
 
+// Bridal palette faces (homepage, /elopements, music videos). Self-hosted by
+// next/font, so no new CSP host is needed.
+const cormorant = Cormorant_Garamond({
+  weight: ["400", "500"],
+  style: ["normal", "italic"],
+  subsets: ["latin"],
+  variable: "--font-cormorant",
+  display: "swap",
+});
+
+const instrumentSans = Instrument_Sans({
+  weight: ["400", "500", "600"],
+  subsets: ["latin"],
+  variable: "--font-instrument",
+  display: "swap",
+});
+
+const pinyon = Pinyon_Script({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-pinyon",
+  display: "swap",
+});
+
+const yellowtail = Yellowtail({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-yellowtail",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   metadataBase: new URL("https://echochambermedia.com"),
   title: {
-    default: "Las Vegas Video Production Company | Echo Chamber Media",
+    default: "Las Vegas Elopement Films and Music Videos | Echo Chamber Media",
     template: "%s | Echo Chamber Media",
   },
   description:
-    "Las Vegas video production for commercial, documentary, wedding, and political campaign work, plus AI consulting. Free consultation.",
+    "Cinematic Las Vegas elopement films and music videos from a filmmaker who makes movies. Chapel, downtown, or desert. Check your date.",
   keywords: [
-    "video production Las Vegas",
-    "Las Vegas videographer",
-    "cinematic wedding videography Las Vegas",
-    "wedding videographer Las Vegas",
-    "wedding photographer Las Vegas",
-    "Las Vegas wedding photography",
-    "Las Vegas photographer",
-    "Vegas vacation photographer",
-    "tourist photographer Las Vegas",
-    "Las Vegas proposal photographer",
-    "bachelorette party photographer Vegas",
-    "corporate video production Las Vegas",
-    "brand films Las Vegas",
-    "documentary filmmaker Las Vegas",
-    "real estate video tours Las Vegas",
-    "commercial video production Nevada",
+    "Las Vegas elopement videographer",
+    "Las Vegas elopement film",
+    "elopement videographer Las Vegas",
+    "Las Vegas wedding videographer",
+    "cinematic wedding film Las Vegas",
+    "Fremont Street wedding video",
+    "Las Vegas chapel wedding video",
+    "music video production Las Vegas",
+    "Las Vegas music video director",
+    "cinematic music videos",
     "Echo Chamber Media",
-    "Las Vegas film production",
-    "cinematic storytelling",
-    "political campaign video production Las Vegas",
-    "political video production Nevada",
-    "AI consulting Las Vegas",
-    "AI video production consulting",
   ],
   authors: [{ name: "Echo Chamber Media" }],
   creator: "Echo Chamber Media",
@@ -55,9 +81,9 @@ export const metadata: Metadata = {
     canonical: "https://echochambermedia.com",
   },
   openGraph: {
-    title: "Las Vegas Video Production Company | Echo Chamber Media",
+    title: "Las Vegas Elopement Films and Music Videos | Echo Chamber Media",
     description:
-      "Las Vegas video production for commercial, documentary, wedding, and political campaign work, plus AI consulting. Free consultation.",
+      "Cinematic Las Vegas elopement films and music videos from a filmmaker who makes movies. Chapel, downtown, or desert. Check your date.",
     type: "website",
     locale: "en_US",
     url: "https://echochambermedia.com",
@@ -65,9 +91,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Las Vegas Video Production Company | Echo Chamber Media",
+    title: "Las Vegas Elopement Films and Music Videos | Echo Chamber Media",
     description:
-      "Las Vegas video production for commercial, documentary, wedding, and political campaign work, plus AI consulting. Free consultation.",
+      "Cinematic Las Vegas elopement films and music videos from a filmmaker who makes movies. Chapel, downtown, or desert. Check your date.",
   },
   robots: {
     index: true,
@@ -88,10 +114,10 @@ const jsonLd = {
   name: "Echo Chamber Media",
   url: "https://echochambermedia.com",
   image: "https://echochambermedia.com/images/the%20classified%20mind.png",
-  telephone: "+1-989-308-1633",
-  email: "sales@echochambermedia.com",
+  telephone: "+1-916-468-9419",
+  email: "echochambermediasales@gmail.com",
   description:
-    "Cinematic video production company based in Las Vegas specializing in wedding films, brand content, commercials, documentaries, music videos, and property walk-throughs.",
+    "Las Vegas film company making cinematic elopement films and music videos.",
   priceRange: "$$",
   address: {
     "@type": "PostalAddress",
@@ -119,16 +145,10 @@ const jsonLd = {
   },
   hasOfferCatalog: {
     "@type": "OfferCatalog",
-    name: "Video Production Services",
+    name: "Film Services",
     itemListElement: [
-      { "@type": "Offer", itemOffered: { "@type": "Service", name: "Wedding Videography" } },
-      { "@type": "Offer", itemOffered: { "@type": "Service", name: "Wedding Photography" } },
-      { "@type": "Offer", itemOffered: { "@type": "Service", name: "Corporate & Commercial Video" } },
+      { "@type": "Offer", itemOffered: { "@type": "Service", name: "Las Vegas Elopement Videography" } },
       { "@type": "Offer", itemOffered: { "@type": "Service", name: "Music Video Production" } },
-      { "@type": "Offer", itemOffered: { "@type": "Service", name: "Documentary Production" } },
-      { "@type": "Offer", itemOffered: { "@type": "Service", name: "Real Estate Videography" } },
-      { "@type": "Offer", itemOffered: { "@type": "Service", name: "360 Virtual Walkthroughs" } },
-      { "@type": "Offer", itemOffered: { "@type": "Service", name: "Aerial Videography" } },
     ],
   },
 };
@@ -173,7 +193,7 @@ export default function RootLayout({
         )}
       </head>
       <body
-        className={`${archivoBlack.variable} ${montserrat.variable} font-body antialiased bg-brand-black text-brand-off-white`}
+        className={`${archivoBlack.variable} ${montserrat.variable} ${cormorant.variable} ${instrumentSans.variable} ${pinyon.variable} ${yellowtail.variable} font-body antialiased bg-brand-black text-brand-off-white`}
       >
         {children}
       </body>

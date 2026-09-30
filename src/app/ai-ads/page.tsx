@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   },
 };
 
-const CONTACT_EMAIL = 'sales@echochambermedia.com';
+const CONTACT_EMAIL = 'echochambermediasales@gmail.com';
 const BOOKING_LINK = 'https://calendar.app.google/V6EFC7Cv3rJHxAdGA';
 const MAILTO = `mailto:${CONTACT_EMAIL}?subject=AI%20Ad%20Inquiry`;
 
@@ -205,7 +205,7 @@ export default function AIAdsPage() {
               </a>
             </div>
             <p className="font-body text-sm text-brand-gray mt-8">
-              Or call <a href="tel:+19893081633" className="text-brand-gold hover:underline">(989) 308-1633</a>
+              Or call <a href="tel:+19164689419" className="text-brand-gold hover:underline">(916) 468-9419</a>
             </p>
           </div>
         </section>
@@ -231,8 +231,8 @@ export default function AIAdsPage() {
             name: 'Echo Chamber Media - AI Ad Production',
             image: 'https://echochambermedia.com/og-image.jpg',
             description: 'AI-generated commercial and ad production in Las Vegas, directed and finished by a working filmmaker.',
-            telephone: '+1-989-308-1633',
-            email: 'sales@echochambermedia.com',
+            telephone: '+1-916-468-9419',
+            email: 'echochambermediasales@gmail.com',
             address: {
               '@type': 'PostalAddress',
               addressLocality: 'Las Vegas',
