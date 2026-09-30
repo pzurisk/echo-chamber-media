@@ -2,6 +2,8 @@
 export const SITE = {
   phoneDisplay: "(916) 468-9419",
   phoneTel: "tel:+19164689419",
+  // Public by design (Web3Forms access key). Delivers to the verified sales inbox.
+  web3formsKey: "2eaf6a4e-0416-4ed6-95c0-e4b93b7518f5",
   email: "echochambermediasales@gmail.com",
   googleReviews: "https://g.page/r/CeKYhZnRAYC1EBM",
   booking: "https://calendar.app.google/V6EFC7Cv3rJHxAdGA",

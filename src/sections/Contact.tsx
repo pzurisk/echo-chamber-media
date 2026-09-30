@@ -67,22 +67,23 @@ export default function Contact({ kind }: { kind: Kind }) {
     if (form.honey) return; // bots fill the hidden field
     setStatus("sending");
     try {
-      const res = await fetch(`https://formsubmit.co/ajax/${SITE.email}`, {
+      const res = await fetch("https://api.web3forms.com/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify({
-          Name: form.name,
-          Email: form.email,
+          access_key: SITE.web3formsKey,
+          subject: `${c.subject} from ${form.name}`,
+          from_name: form.name,
+          email: form.email,
           Phone: form.phone,
           ...(kind === "elopement"
             ? { "Wedding Date": form.date, Package: form.package }
             : { "Release Date": form.date, "Song Link": form.songLink }),
-          Message: form.message,
-          _subject: `${c.subject} from ${form.name}`,
-          _template: "table",
+          message: form.message,
         }),
       });
-      if (!res.ok) throw new Error("bad response");
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.success) throw new Error("bad response");
       track("generate_lead", kind);
       setStatus("sent");
     } catch {
