@@ -90,6 +90,16 @@ export default function Contact({ kind }: { kind: Kind }) {
     }
   }
 
+  // If FormSubmit is down, this lets the visitor send the same details from their own email app.
+  const mailLines: string[] = [`Name: ${form.name}`, `Email: ${form.email}`];
+  if (form.phone) mailLines.push(`Phone: ${form.phone}`);
+  if (form.date) mailLines.push(`${kind === "elopement" ? "Wedding date" : "Release date"}: ${form.date}`);
+  if (kind === "elopement") mailLines.push(`Package: ${form.package}`);
+  else if (form.songLink) mailLines.push(`Song: ${form.songLink}`);
+  mailLines.push("", form.message);
+  const mailBody = mailLines.join("\n");
+  const mailHref = `mailto:${SITE.email}?subject=${encodeURIComponent(`${c.subject} from ${form.name}`)}&body=${encodeURIComponent(mailBody)}`;
+
   const text = dark ? "text-night-text" : "text-ink";
   const muted = dark ? "text-night-muted" : "text-muted";
   const accent = dark ? "text-night-gold" : "text-gilt";
@@ -224,9 +234,15 @@ export default function Contact({ kind }: { kind: Kind }) {
                 {status === "sending" ? "Sending..." : c.button}
               </button>
               {status === "error" && (
-                <p className="mt-4 text-center font-sans text-sm text-red-600" role="alert">
-                  That didn&apos;t go through. Call or text {SITE.phoneDisplay} or email {SITE.email}.
-                </p>
+                <div className="mt-4 flex flex-col items-center gap-2 text-center font-sans text-sm" role="alert">
+                  <p className="text-red-600">Sorry, that didn&apos;t go through.</p>
+                  <a href={mailHref} className={`font-semibold underline underline-offset-4 ${accent}`}>
+                    Send it from your email app instead
+                  </a>
+                  <p className={muted}>
+                    Or call or text <a href={SITE.phoneTel} className={`font-semibold ${accent}`}>{SITE.phoneDisplay}</a>.
+                  </p>
+                </div>
               )}
               <p className={`mt-4 text-center font-sans text-xs ${muted}`}>
                 No spam. We use your info to answer your inquiry only.
