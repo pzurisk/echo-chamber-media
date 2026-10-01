@@ -1,7 +1,26 @@
-// Kind words. Exactly the three reviews on the Google listing, word for word.
+// Kind words. Every quote is a real Google review, word for word.
+// The two wedding reviews are excerpts: whole sentences only, with "..." where sentences are skipped.
 // Do not add reviews that are not on Google, and do not add rating schema
 // (self-serving review markup is against Google's guidelines and the repo rule).
-const GOOGLE_REVIEWS_URL = "https://g.page/r/CeKYhZnRAYC1EBM";
+// There are two Google listings. This one holds the wedding reviews. The three older
+// reviews sit on the other one (https://g.page/r/CeKYhZnRAYC1EBM) until Google merges them.
+const GOOGLE_REVIEWS_URL = "https://www.google.com/maps?cid=16237565028279391507";
+
+// Luciano and Muriel, the couple in the featured film. Shown first and wider.
+const weddingReviews = [
+  {
+    quote:
+      "We couldn't be happier with our wedding video! ... The final video turned out absolutely beautiful. It captured not only the big moments, but also all the little details, emotions, and memories that made our day so special.",
+    name: "Luciano Pontiroli",
+    source: "Google review",
+  },
+  {
+    quote:
+      "Big thanks to Billy (the videographer) for making me feel comfortable the entire time; he was incredibly kind and professional. ... The final results were even better than expected and I've received so many lovely compliments from my family and friends.",
+    name: "Muriel Parra",
+    source: "Google review",
+  },
+];
 
 const reviews = [
   {
@@ -42,11 +61,14 @@ export default function Reviews() {
           </a>
         </div>
 
-        <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-3">
-          {reviews.map((r) => (
+        <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-6">
+          {[
+            ...weddingReviews.map((r) => ({ ...r, span: "md:col-span-3" })),
+            ...reviews.map((r) => ({ ...r, span: "md:col-span-2" })),
+          ].map((r) => (
             <figure
               key={r.name}
-              className="m-0 flex flex-col gap-5 rounded-lg bg-ivory p-8 md:p-9"
+              className={`m-0 flex flex-col gap-5 rounded-lg bg-ivory p-8 md:p-9 ${r.span}`}
             >
               <span className="text-gilt text-base tracking-[0.2em]" aria-label="5 stars">
                 ★★★★★
