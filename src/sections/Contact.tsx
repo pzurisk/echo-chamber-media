@@ -220,8 +220,8 @@ export default function Contact({ kind }: { kind: Kind }) {
               )}
 
               <div className="mt-5">
-                <label className={label} htmlFor={`${kind}-message`}>Message</label>
-                <textarea id={`${kind}-message`} name="message" rows={5} required value={form.message} onChange={onChange} placeholder={c.messagePlaceholder} className={`${input} h-auto resize-none py-3`} />
+                <label className={label} htmlFor={`${kind}-message`}>{kind === "elopement" ? "Message (optional)" : "Message"}</label>
+                <textarea id={`${kind}-message`} name="message" rows={5} required={kind !== "elopement"} value={form.message} onChange={onChange} placeholder={c.messagePlaceholder} className={`${input} h-auto resize-none py-3`} />
               </div>
 
               {/* Honeypot, hidden from people */}

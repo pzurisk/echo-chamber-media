@@ -3,7 +3,7 @@ import Navbar from "@/sections/Navbar";
 import { MusicHero, MusicWork, MusicWhat } from "@/sections/MusicPage";
 import Contact from "@/sections/Contact";
 import Footer from "@/sections/Footer";
-import { SITE } from "@/lib/site";
+import { SITE, FILMS, ytThumb } from "@/lib/site";
 
 const URL = "https://echochambermedia.com/music-videos";
 const DESCRIPTION =
@@ -21,6 +21,7 @@ export const metadata: Metadata = {
     url: URL,
     type: "website",
     locale: "en_US",
+    images: [{ url: ytThumb(FILMS.nakedCity.id), alt: "The Naked City Underground, Everything's Alright" }],
   },
 };
 

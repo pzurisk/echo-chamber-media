@@ -1,11 +1,12 @@
-/* eslint-disable @next/next/no-img-element */
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import Navbar from "@/sections/Navbar";
 import Footer from "@/sections/Footer";
 import Button from "@/components/Button";
 import { getAllPosts, getPost, formatDate } from "@/lib/blog";
+import { OG_IMAGE } from "@/lib/site";
 
 const BASE = "https://echochambermedia.com";
 
@@ -34,7 +35,7 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
       locale: "en_US",
       publishedTime: post.date,
       modifiedTime: post.updated ?? post.date,
-      images: post.image ? [{ url: `${BASE}${post.image}` }] : undefined,
+      images: post.image ? [{ url: `${BASE}${post.image}` }] : [OG_IMAGE],
     },
   };
 }
@@ -89,11 +90,14 @@ export default function PostPage({ params }: { params: { slug: string } }) {
             </h1>
             <p className="mt-5 font-sans text-lg leading-[1.6] text-muted md:text-xl">{post.description}</p>
             {post.image && (
-              <img
+              <Image
                 src={post.image}
                 alt={post.imageAlt ?? ""}
-                fetchPriority="high"
-                className="mt-8 aspect-[16/9] w-full rounded-lg object-cover"
+                width={1200}
+                height={675}
+                priority
+                sizes="(min-width: 768px) 768px, 100vw"
+                className="mt-8 aspect-[16/9] h-auto w-full rounded-lg object-cover"
               />
             )}
             <div className="post mt-10" dangerouslySetInnerHTML={{ __html: post.html }} />

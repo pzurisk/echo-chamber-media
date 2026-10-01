@@ -2,6 +2,7 @@
 export const SITE = {
   phoneDisplay: "(916) 468-9419",
   phoneTel: "tel:+19164689419",
+  phoneSms: "sms:+19164689419",
   // Public by design (Web3Forms access key). Delivers to the verified sales inbox.
   web3formsKey: "2eaf6a4e-0416-4ed6-95c0-e4b93b7518f5",
   email: "echochambermediasales@gmail.com",
@@ -9,6 +10,14 @@ export const SITE = {
   booking: "https://calendar.app.google/V6EFC7Cv3rJHxAdGA",
   instagram: "https://instagram.com/chunkdude",
   tiktok: "https://www.tiktok.com/@billyzurisk",
+} as const;
+
+// Default share image (1200x630) for link previews. Resolved against metadataBase.
+export const OG_IMAGE = {
+  url: "/images/og/elopements.jpg",
+  width: 1200,
+  height: 630,
+  alt: "Luciano and Muriel laughing under gold marquee lights in Las Vegas",
 } as const;
 
 export const FILMS = {

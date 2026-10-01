@@ -8,25 +8,29 @@ import Reviews from "@/sections/Reviews";
 import FAQ, { FAQS } from "@/sections/FAQ";
 import Contact from "@/sections/Contact";
 import Footer from "@/sections/Footer";
+import MobileCta from "@/sections/MobileCta";
 import { PACKAGES } from "@/lib/packages";
-import { SITE } from "@/lib/site";
+import { SITE, OG_IMAGE } from "@/lib/site";
 
 const URL = "https://echochambermedia.com/elopements";
+// Absolute title: the 2 week delivery is the hook, so it takes the spot the brand name would.
+const TITLE = "Las Vegas Wedding and Elopement Videographer | Films in 2 Weeks";
 const DESCRIPTION =
-  "Las Vegas wedding and elopement videographer. Cinematic films from $500, shot at the chapel, downtown, or in the desert. Check your date.";
+  "Las Vegas wedding and elopement videographer. Cinematic films from $500, delivered in 2 weeks. Chapel, downtown, or desert. Check your date.";
 
 export const metadata: Metadata = {
-  title: "Las Vegas Wedding and Elopement Videographer",
+  title: { absolute: TITLE },
   description: DESCRIPTION,
   keywords:
     "Las Vegas elopement videographer, Las Vegas wedding videographer, Las Vegas elopement film, Las Vegas chapel wedding video, elopement videography packages",
   alternates: { canonical: URL },
   openGraph: {
-    title: "Las Vegas Wedding and Elopement Videographer | Echo Chamber Media",
+    title: TITLE,
     description: DESCRIPTION,
     url: URL,
     type: "website",
     locale: "en_US",
+    images: [OG_IMAGE],
   },
 };
 
@@ -82,6 +86,7 @@ export default function ElopementsPage() {
         <Contact kind="elopement" />
       </main>
       <Footer />
+      <MobileCta dateHref="#date" />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }} />
     </>

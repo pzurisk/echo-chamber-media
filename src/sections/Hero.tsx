@@ -1,4 +1,4 @@
-/* eslint-disable @next/next/no-img-element */
+import Image from "next/image";
 import Link from "next/link";
 import Button from "@/components/Button";
 import { FILMS } from "@/lib/site";
@@ -8,11 +8,15 @@ export default function Hero() {
     <section className="bg-ivory px-4 pb-10 pt-[88px] md:px-16 md:pb-[72px] md:pt-[120px]">
       <div className="mx-auto grid max-w-[1312px] grid-cols-1 items-center gap-6 lg:grid-cols-12 lg:gap-x-10">
         <div className="order-2 flex flex-col gap-5 lg:order-1 lg:col-span-5 lg:gap-6">
-          <span className="font-script text-[40px] leading-[1.1] text-gilt md:text-[56px] md:leading-none">
-            Las Vegas elopements
-          </span>
-          <h1 className="font-display text-[54px] font-normal leading-[0.98] tracking-[-0.015em] text-ink sm:text-[72px] lg:leading-[0.95] xl:text-[88px]">
-            Say yes in Vegas. <span className="italic">Keep it forever.</span>
+          {/* One h1 holding both lines, so the heading carries "Las Vegas elopements". Looks the same as before. */}
+          <h1 className="flex flex-col gap-5 font-normal lg:gap-6">
+            <span className="font-script text-[40px] leading-[1.1] text-gilt md:text-[56px] md:leading-none">
+              Las Vegas elopements
+            </span>
+            {" "}
+            <span className="font-display text-[54px] leading-[0.98] tracking-[-0.015em] text-ink sm:text-[72px] lg:leading-[0.95] xl:text-[88px]">
+              Say yes in Vegas. <span className="italic">Keep it forever.</span>
+            </span>
           </h1>
           <p className="font-sans text-[17px] leading-[1.55] text-muted md:text-xl md:leading-[1.6]">
             Cinematic wedding films for couples who want it small, personal, and beautiful.
@@ -35,11 +39,14 @@ export default function Hero() {
         </div>
 
         <div className="relative order-1 h-[360px] overflow-hidden rounded-lg bg-champagne sm:h-[460px] lg:order-2 lg:col-span-7 lg:h-[560px]">
-          <img
+          {/* The still sits under the video and shows until it plays, so the video needs no poster of its own. */}
+          <Image
             src="/images/elopements/hero-poster.webp"
             alt=""
-            fetchPriority="high"
-            className="absolute inset-0 h-full w-full object-cover"
+            fill
+            priority
+            sizes="(min-width: 1024px) 58vw, 100vw"
+            className="object-cover"
           />
           <video
             autoPlay
@@ -47,16 +54,13 @@ export default function Hero() {
             muted
             playsInline
             preload="auto"
-            poster="/images/elopements/hero-poster.webp"
             aria-label="Luciano and Muriel laughing and walking down a gold lit arcade in Las Vegas"
             className="absolute inset-0 h-full w-full object-cover motion-reduce:hidden"
           >
             <source src="/video/elopement-hero.mp4" type="video/mp4" />
           </video>
           <a
-            href={FILMS.lucianoMuriel.url}
-            target="_blank"
-            rel="noopener noreferrer"
+            href="#work"
             className="absolute bottom-4 left-4 flex h-11 items-center gap-2.5 rounded-full bg-ivory/95 pl-3 pr-5 font-sans text-[13px] font-semibold text-ink transition-colors hover:bg-white md:bottom-6 md:left-6"
           >
             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-gilt">

@@ -1,4 +1,4 @@
-/* eslint-disable @next/next/no-img-element */
+import Image from "next/image";
 import fs from "fs";
 import path from "path";
 
@@ -13,12 +13,13 @@ export default function About() {
       <div className="mx-auto grid max-w-[1312px] grid-cols-1 items-center gap-10 md:grid-cols-12 md:gap-x-10">
         {hasPortrait && (
           <div className="md:col-span-4">
-            <img
+            <Image
               src={PORTRAIT}
               alt="Billy Zurisk, director and founder of Echo Chamber Media"
-              loading="lazy"
-              decoding="async"
-              className="aspect-[4/5] w-full rounded-lg object-cover"
+              width={1000}
+              height={1250}
+              sizes="(min-width: 768px) 33vw, 100vw"
+              className="aspect-[4/5] h-auto w-full rounded-lg object-cover"
               style={{ objectPosition: "50% 30%" }}
             />
           </div>

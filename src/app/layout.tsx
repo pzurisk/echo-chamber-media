@@ -8,6 +8,7 @@ import {
   Yellowtail,
 } from "next/font/google";
 import "./globals.css";
+import { OG_IMAGE } from "@/lib/site";
 
 const archivoBlack = Archivo_Black({
   weight: "400",
@@ -60,7 +61,7 @@ export const metadata: Metadata = {
     template: "%s | Echo Chamber Media",
   },
   description:
-    "Cinematic Las Vegas elopement films and music videos from a filmmaker who makes movies. Chapel, downtown, or desert. Check your date.",
+    "Cinematic Las Vegas elopement films from $500, delivered in 2 weeks. Music videos too, from a filmmaker who makes movies. Check your date.",
   keywords: [
     "Las Vegas elopement videographer",
     "Las Vegas elopement film",
@@ -83,17 +84,16 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Las Vegas Elopement Films and Music Videos | Echo Chamber Media",
     description:
-      "Cinematic Las Vegas elopement films and music videos from a filmmaker who makes movies. Chapel, downtown, or desert. Check your date.",
+      "Cinematic Las Vegas elopement films from $500, delivered in 2 weeks. Music videos too, from a filmmaker who makes movies. Check your date.",
     type: "website",
     locale: "en_US",
     url: "https://echochambermedia.com",
     siteName: "Echo Chamber Media",
+    images: [OG_IMAGE],
   },
+  // Title, description, and image fall back to each page's openGraph values.
   twitter: {
     card: "summary_large_image",
-    title: "Las Vegas Elopement Films and Music Videos | Echo Chamber Media",
-    description:
-      "Cinematic Las Vegas elopement films and music videos from a filmmaker who makes movies. Chapel, downtown, or desert. Check your date.",
   },
   robots: {
     index: true,
@@ -113,7 +113,7 @@ const jsonLd = {
   "@type": ["LocalBusiness", "ProfessionalService"],
   name: "Echo Chamber Media",
   url: "https://echochambermedia.com",
-  image: "https://echochambermedia.com/images/the%20classified%20mind.png",
+  image: "https://echochambermedia.com/images/og/elopements.jpg",
   telephone: "+1-916-468-9419",
   email: "echochambermediasales@gmail.com",
   description:

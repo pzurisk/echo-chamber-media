@@ -8,6 +8,7 @@ export default function PackagesFull() {
     <section id="packages" className="scroll-mt-24 bg-ivory px-4 py-16 md:px-16 md:py-[112px]">
       <div className="mx-auto flex max-w-[1312px] flex-col gap-10 md:gap-14">
         <div className="flex flex-col items-center gap-4 text-center">
+          <span className="font-sans text-xs uppercase tracking-[0.3em] text-gilt">2026 season pricing</span>
           <h2 className="font-display text-5xl font-normal leading-none tracking-[-0.01em] text-ink md:text-[72px]">
             Pick your <span className="italic text-gilt">Vegas.</span>
           </h2>

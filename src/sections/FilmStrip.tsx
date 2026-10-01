@@ -1,4 +1,4 @@
-/* eslint-disable @next/next/no-img-element */
+import Image from "next/image";
 import { IMG } from "@/lib/site";
 
 interface Still {
@@ -26,15 +26,16 @@ export default function FilmStrip({ stills = HOME_STILLS }: { stills?: Still[] }
     <section aria-label="Stills from the film" className="bg-champagne px-4 pb-14 pt-2 md:px-16 md:pb-16 md:pt-4">
       <div className={`mx-auto grid max-w-[1312px] grid-cols-2 gap-3 md:gap-4 ${cols}`}>
         {stills.map((s) => (
-          <img
-            key={s.alt}
-            src={s.src}
-            alt={s.alt}
-            loading="lazy"
-            decoding="async"
-            className="h-[180px] w-full rounded-md object-cover md:h-[360px]"
-            style={{ objectPosition: s.pos }}
-          />
+          <div key={s.alt} className="relative h-[180px] overflow-hidden rounded-md md:h-[360px]">
+            <Image
+              src={s.src}
+              alt={s.alt}
+              fill
+              sizes={stills.length === 6 ? "(min-width: 768px) 33vw, 50vw" : "(min-width: 768px) 25vw, 50vw"}
+              className="object-cover"
+              style={{ objectPosition: s.pos }}
+            />
+          </div>
         ))}
       </div>
     </section>

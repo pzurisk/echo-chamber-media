@@ -48,6 +48,8 @@ const nextConfig = {
     const to = (source, destination) => ({ source, destination, permanent: true });
     return [
       to("/contact", "/elopements#date"),
+      to("/services", "/elopements"),
+      to("/wedding-photography", "/elopements"),
       to("/services/wedding-videography", "/elopements"),
       to("/services/wedding-photography", "/elopements"),
       to("/services/music-videos", "/music-videos"),

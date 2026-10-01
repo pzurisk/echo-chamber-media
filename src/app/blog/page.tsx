@@ -3,6 +3,7 @@ import Link from 'next/link';
 import Navbar from '@/sections/Navbar';
 import Footer from '@/sections/Footer';
 import { getAllPosts, formatDate } from '@/lib/blog';
+import { OG_IMAGE } from '@/lib/site';
 
 export const metadata: Metadata = {
   title: 'Las Vegas Elopement and Music Video Blog',
@@ -15,6 +16,7 @@ export const metadata: Metadata = {
     url: 'https://echochambermedia.com/blog',
     type: 'website',
     locale: 'en_US',
+    images: [OG_IMAGE],
   },
 };
 

@@ -1,16 +1,16 @@
-/* eslint-disable @next/next/no-img-element */
+import Image from "next/image";
 import Button from "@/components/Button";
 import { IMG, SITE } from "@/lib/site";
 
 export default function CTA() {
   return (
     <section className="relative overflow-hidden px-4 py-20 md:px-16 md:py-0">
-      <img
+      <Image
         src={IMG.fremontWalk}
         alt=""
-        loading="lazy"
-        decoding="async"
-        className="absolute inset-0 h-full w-full object-cover"
+        fill
+        sizes="100vw"
+        className="object-cover"
         style={{ objectPosition: "center 35%" }}
       />
       <div className="absolute inset-0 bg-ivory/[0.86]" />

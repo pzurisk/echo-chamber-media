@@ -10,6 +10,7 @@ import AfterDark from "@/sections/AfterDark";
 import About from "@/sections/About";
 import CTA from "@/sections/CTA";
 import Footer from "@/sections/Footer";
+import MobileCta from "@/sections/MobileCta";
 
 export default function Home() {
   return (
@@ -28,6 +29,7 @@ export default function Home() {
         <CTA />
       </main>
       <Footer />
+      <MobileCta />
     </div>
   );
 }

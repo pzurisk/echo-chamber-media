@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 import Navbar from '@/sections/Navbar';
 import Footer from '@/sections/Footer';
+import { OG_IMAGE } from '@/lib/site';
 
 export const metadata: Metadata = {
   title: 'Best Las Vegas Wedding Venues for Cinematic Video (2026)',
@@ -17,6 +18,7 @@ export const metadata: Metadata = {
     url: 'https://echochambermedia.com/blog/best-las-vegas-wedding-venues-for-video',
     type: 'article',
     locale: 'en_US',
+    images: [OG_IMAGE],
   },
 };
 
