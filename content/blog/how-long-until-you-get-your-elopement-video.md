@@ -1,13 +1,13 @@
 ---
 title: "How Long Until You Get Your Las Vegas Elopement Video?"
 description: "What decides how fast a Las Vegas elopement film comes back, what happens between the shoot and the finished film, and how our films arrive in 2 weeks, or sooner if you ask about rush delivery."
-date: 2026-09-30
+date: 2026-10-02
 category: "Elopement Guide"
 image: "/images/elopements/glance-back.webp"
 imageAlt: "A bride glancing back over her shoulder on a downtown Las Vegas street at night"
 keywords: "how long does elopement video take, wedding video turnaround time, Las Vegas elopement videographer turnaround, how long until wedding video is delivered, fast wedding video delivery Las Vegas"
 cta: elopement
-draft: true
+draft: false
 faq:
   - q: "How long does it take to get an elopement video?"
     a: "It varies by videographer. Many quote several weeks to a few months. Our Las Vegas elopement films are delivered in 2 weeks, and you can ask about rush delivery if you need it sooner."
