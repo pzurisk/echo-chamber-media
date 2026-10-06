@@ -1,13 +1,13 @@
 ---
 title: "Do You Need a Permit to Shoot a Music Video in Las Vegas?"
 description: "When a Las Vegas music video needs a film permit, what Clark County requires, and how to plan locations so your shoot does not get shut down."
-date: 2026-09-30
+date: 2026-10-06
 category: "Music Video Guide"
 image: "/images/music/your-way-still.webp"
 imageAlt: "A rapper in black sunglasses looking into the camera from a low angle, with large red and yellow flowers and sky behind him, from the Your Way music video"
 keywords: "Las Vegas music video permit, do I need a permit to film a music video in Las Vegas, Clark County film permit music video, Las Vegas film permit, shooting a music video in Las Vegas"
 cta: music
-draft: true
+draft: false
 faq:
   - q: "Do you need a permit to shoot a music video in Las Vegas?"
     a: "In unincorporated Clark County, which includes most of the Las Vegas Strip area, yes. Clark County's film permit page says any music video needs a permit. Other areas, such as the City of Las Vegas and Henderson, have their own rules."
@@ -21,7 +21,7 @@ faq:
 
 Yes, often you do. If your music video shoots outdoors in unincorporated Clark County, you need a film permit. That includes a lot of the places artists want to film in Las Vegas. Here is what the rules say, where they change, and how to plan so the day does not get shut down.
 
-*Checked against Clark County's official film permit page on September 30, 2026. Rules and fees change, so confirm on the county's [film permit FAQ](https://www.clarkcountynv.gov/business/doing_business_with_clark_county/divisions/film_permits/faq-film-permit) before you apply.*
+*Checked against Clark County's official film permit page on October 6, 2026. Rules and fees change, so confirm on the county's [film permit FAQ](https://www.clarkcountynv.gov/business/doing_business_with_clark_county/divisions/film_permits/faq-film-permit) before you apply.*
 
 ## The short answer
 
