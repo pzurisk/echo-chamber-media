@@ -14,10 +14,10 @@ export const SITE = {
 
 // Default share image (1200x630) for link previews. Resolved against metadataBase.
 export const OG_IMAGE = {
-  url: "/images/og/elopements.jpg",
+  url: "/images/og/elopements-film.jpg",
   width: 1200,
   height: 630,
-  alt: "Luciano and Muriel laughing under gold marquee lights in Las Vegas",
+  alt: "Luciano and Muriel smiling at each other in downtown Las Vegas, with a play button for their elopement film",
 } as const;
 
 export const FILMS = {

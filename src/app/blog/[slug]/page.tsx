@@ -13,6 +13,12 @@ const BASE = "https://echochambermedia.com";
 // Only slugs from markdown files are generated. The older hand-coded posts keep their own folders.
 export const dynamicParams = false;
 
+// Facebook handles webp share images badly, so link previews use a 1200x630 JPG copy
+// kept in public/images/og/blog/ with the same subfolder and name. Add a JPG there for any new post image.
+function shareImage(img: string): string {
+  return img.replace(/^\/images\/(.+)\.webp$/, "/images/og/blog/$1.jpg");
+}
+
 export function generateStaticParams() {
   return getAllPosts().map((p) => ({ slug: p.slug }));
 }
@@ -35,7 +41,7 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
       locale: "en_US",
       publishedTime: post.date,
       modifiedTime: post.updated ?? post.date,
-      images: post.image ? [{ url: `${BASE}${post.image}` }] : [OG_IMAGE],
+      images: post.image ? [{ url: `${BASE}${shareImage(post.image)}`, width: 1200, height: 630, alt: post.imageAlt }] : [OG_IMAGE],
     },
   };
 }
