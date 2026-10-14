@@ -25,7 +25,14 @@
 //
 // Plain variables and bindings live in wrangler.toml:
 //   DAILY_REQUEST_CAP        circuit breaker for the whole relay, per day.
-//   MONTHLY_GENERATION_CAP   how many plans one subscription gets per month.
+//   DAILY_TXN_CAP            how many requests of any kind one subscription
+//                            can make per day. Stops one noisy household from
+//                            using up the relay-wide ceiling above.
+//   MONTHLY_GENERATION_CAP   how many plans and swaps one subscription gets
+//                            per month. This is the number on the paywall.
+//   MONTHLY_SHELF_CAP        how many top-ups, discovery lookups and imports
+//                            one subscription gets per month. Not shown on the
+//                            paywall; it is a backstop against a runaway client.
 //   ALLOW_SANDBOX_SUBSCRIPTIONS  "0" turns off TestFlight and sandbox
 //                            subscriptions. Anything else leaves them on.
 //   SPEND_COUNTER            KV namespace holding the counts and the cached
@@ -41,10 +48,21 @@
 //                anything is spent. A made-up ID is one Apple has never heard
 //                of, so it buys nothing.
 //
-// No request or response bodies are logged anywhere in this file. Keep it
-// that way: bodies contain the household's meal plans. KV holds three kinds of
-// value and nothing else: a count for the day, a count for one subscription in
-// one month, and a short-lived yes or no on whether a transaction ID is a live
+// Body field the app sends besides the Anthropic-shaped ones:
+//   purpose      one of plan, swap, topup, discovery, import. It decides which
+//                monthly counter the request spends from, how many output
+//                tokens it may ask for, and whether web search is allowed. It
+//                is read here and never forwarded to Anthropic. Missing means
+//                plan, so builds that predate the field keep working, except
+//                that a missing purpose with webSearch true means discovery,
+//                which is how those builds send their trending lookup.
+//
+// No request or response bodies are logged anywhere in this file, and neither
+// is any part of Anthropic's error text. Keep it that way: bodies contain the
+// household's meal plans. KV holds counts and nothing else: one for the whole
+// relay per day, one for one subscription per day, one for one subscription per
+// month for plans and swaps, one for one subscription per month for shelf
+// requests, and a short-lived yes or no on whether a transaction ID is a live
 // subscription. No name, no email, no IP, no meal plan. That is what the
 // published privacy policy promises, so keep it true.
 
@@ -62,8 +80,30 @@ const MAX_MESSAGES = 8;
 // what stops someone from pointing the relay at a pricier model or asking for
 // a much longer answer than the app ever needs.
 const PINNED_MODEL = "claude-sonnet-5";
-const MAX_OUTPUT_TOKENS = 16000;
 const ANTHROPIC_VERSION = "2023-06-01";
+
+// What a request is for. The app says; the relay uses it to pick a counter, a
+// token ceiling and whether web search may be attached. It is never forwarded.
+//   plan, swap   a whole week of dinners, or one dinner replaced. Spend the
+//                monthly allowance the subscriber pays for.
+//   topup        a few recipes to refill the shelf.
+//   discovery    a short web-search lookup for what is trending.
+//   import       a short web-search lookup to read a recipe from a page.
+// Leaving it out means plan, which is what every build before this field did.
+const DEFAULT_PURPOSE = "plan";
+const PURPOSES = new Set(["plan", "swap", "topup", "discovery", "import"]);
+const PLAN_PURPOSES = new Set(["plan", "swap"]);
+const SEARCH_PURPOSES = new Set(["discovery", "import"]);
+
+// Output ceiling per purpose. Whatever the caller asks for is clamped to this,
+// and a missing max_tokens becomes this. Asking for more is not an error.
+const MAX_OUTPUT_TOKENS_BY_PURPOSE = {
+  plan: 16000,
+  swap: 16000,
+  topup: 12000,
+  discovery: 4000,
+  import: 4000,
+};
 
 // The only top-level keys the app sends. Anything else, including "stream",
 // is refused rather than quietly dropped.
@@ -74,6 +114,7 @@ const ALLOWED_KEYS = new Set([
   "system",
   "messages",
   "webSearch",
+  "purpose",
 ]);
 const ALLOWED_ROLES = new Set(["user", "assistant"]);
 
@@ -87,13 +128,26 @@ const WEB_SEARCH_TOOL = {
   max_uses: 4,
 };
 
-const DEFAULT_DAILY_CAP = 400;
+// Kept equal to DAILY_REQUEST_CAP in wrangler.toml on purpose, so a missing or
+// unreadable variable cannot quietly turn the circuit breaker into a bigger one.
+const DEFAULT_DAILY_CAP = 120;
 const COUNTER_TTL_SECONDS = 172800; // two days, so old day keys clean themselves up
+
+// One subscription's ceiling across every purpose in one UTC day. The relay-wide
+// cap above is a single integer, so without this one stuck client could use all
+// of it and lock every other household out until midnight.
+const DEFAULT_DAILY_TXN_CAP = 25;
 
 // One subscription's allowance for one calendar month. The app shows this
 // number on the paywall before purchase, so changing it here means changing it
 // there and in the App Store description too.
 const DEFAULT_MONTHLY_CAP = 20;
+
+// One subscription's allowance of shelf requests (topup, discovery, import) for
+// one calendar month. Separate from the plan allowance so refilling the shelf
+// never spends the plans the paywall promises. Not shown to the subscriber, so
+// it can be changed without touching the app or the App Store listing.
+const DEFAULT_MONTHLY_SHELF_CAP = 90;
 
 // Month keys have to outlive the month they count. Forty days covers the
 // longest month plus a week of slack, and then the key deletes itself.
@@ -419,6 +473,43 @@ function monthStamp(now) {
   return now.toISOString().slice(0, 7);
 }
 
+// The day a counter belongs to, as YYYY-MM-DD in UTC.
+function dayStamp(now) {
+  return now.toISOString().slice(0, 10);
+}
+
+// The KV key names for every counter a request can touch. One place, so the
+// tests and the probe table in the rebuild notes read the same names the
+// handler writes.
+function counterKeys(txnId, now) {
+  return {
+    plan: `sub-${txnId}-${monthStamp(now)}`,
+    shelf: `shelf-${txnId}-${monthStamp(now)}`,
+    txnDay: `txn-${txnId}-${dayStamp(now)}`,
+    globalDay: `requests-${dayStamp(now)}`,
+  };
+}
+
+// Read one counter. Null means "could not read it" (no binding, or KV is
+// having a moment), and every caller treats null as fail open.
+async function readCount(env, key) {
+  if (!env.SPEND_COUNTER) return null;
+  try {
+    return Number.parseInt(await env.SPEND_COUNTER.get(key), 10) || 0;
+  } catch {
+    return null;
+  }
+}
+
+// Write one counter. A failed write is never a reason to refuse a customer.
+async function writeCount(env, key, value, ttl) {
+  try {
+    await env.SPEND_COUNTER.put(key, String(value), { expirationTtl: ttl });
+  } catch {
+    // The count stays wherever it was.
+  }
+}
+
 // When the allowance comes back, in words the app can show as-is. Quotas reset
 // on the first of the next month.
 function nextResetLabel(now) {
@@ -437,7 +528,9 @@ function refuse(status, message) {
 }
 
 // Check the parsed body looks like something the app would send, then rebuild
-// it from scratch with the pinned settings. Returns a string on rejection.
+// it from scratch with the pinned settings. Returns a string on rejection, or
+// { payload, purpose } on success. The purpose is for the relay's own
+// bookkeeping and is deliberately not part of the payload.
 function buildUpstreamPayload(parsed) {
   if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
     return "Request body must be a JSON object.";
@@ -447,6 +540,28 @@ function buildUpstreamPayload(parsed) {
     if (!ALLOWED_KEYS.has(key)) {
       return `Unsupported field in request: ${key}`;
     }
+  }
+
+  // Purpose is checked first among the fields so a bad value is named before
+  // anything else about the request is judged. Missing means plan.
+  let purpose = DEFAULT_PURPOSE;
+  if (parsed.purpose !== undefined) {
+    if (typeof parsed.purpose !== "string" || !PURPOSES.has(parsed.purpose)) {
+      // Name the value back, shortened, so a typo is easy to spot. It goes out
+      // as plain text, so there is nothing in it to escape.
+      const shown =
+        typeof parsed.purpose === "string" ? parsed.purpose.slice(0, 32) : "that value";
+      return `Unsupported purpose in request: ${shown}. Use plan, swap, topup, discovery, or import.`;
+    }
+    purpose = parsed.purpose;
+  } else if (parsed.webSearch === true) {
+    // A request with no purpose that asks for web search can only be a build
+    // that predates the field and sends its trending lookup untagged (build 12
+    // does). Treating it as plan would refuse it below and quietly break that
+    // feature, so it is read as discovery: a short, search-only call with the
+    // 4000 token ceiling, counted on the shelf allowance. No purpose and no
+    // search stays plan.
+    purpose = "discovery";
   }
 
   if (parsed.system !== undefined) {
@@ -485,17 +600,26 @@ function buildUpstreamPayload(parsed) {
   }
 
   // max_tokens is clamped, not trusted. A missing or silly value becomes the
-  // app's normal ceiling rather than an error.
-  let maxTokens = MAX_OUTPUT_TOKENS;
+  // ceiling for this purpose rather than an error.
+  const ceiling = MAX_OUTPUT_TOKENS_BY_PURPOSE[purpose];
+  let maxTokens = ceiling;
   if (parsed.max_tokens !== undefined) {
     if (!Number.isInteger(parsed.max_tokens) || parsed.max_tokens < 1) {
       return "max_tokens must be a positive whole number.";
     }
-    maxTokens = Math.min(parsed.max_tokens, MAX_OUTPUT_TOKENS);
+    maxTokens = Math.min(parsed.max_tokens, ceiling);
   }
 
   if (parsed.webSearch !== undefined && typeof parsed.webSearch !== "boolean") {
     return "webSearch must be true or false.";
+  }
+  // Search only rides on its own short request. Cloudflare's relay cuts a
+  // connection at about 126 seconds and answers 524, and a search stacked on a
+  // plan or a top-up pushes a generation that already takes about 70 seconds
+  // past that wall, throwing the whole answer away. Enforcing it here means no
+  // future app change can bring that failure back by accident.
+  if (parsed.webSearch === true && !SEARCH_PURPOSES.has(purpose)) {
+    return `Web search is not available on a ${purpose} request. A search inside a plan, swap, or top-up can run past the two minute limit on the relay and lose the whole answer, so search runs as its own discovery or import request.`;
   }
 
   const payload = {
@@ -512,7 +636,7 @@ function buildUpstreamPayload(parsed) {
   if (parsed.webSearch === true) {
     payload.tools = [WEB_SEARCH_TOOL];
   }
-  return payload;
+  return { payload, purpose };
 }
 
 export default {
@@ -577,10 +701,11 @@ export default {
     }
 
     // 7. Validate the shape and rebuild with pinned model and settings.
-    const payload = buildUpstreamPayload(parsed);
-    if (typeof payload === "string") {
-      return refuse(400, payload);
+    const built = buildUpstreamPayload(parsed);
+    if (typeof built === "string") {
+      return refuse(400, built);
     }
+    const { payload, purpose } = built;
 
     // 8. Ask Apple whether that transaction ID is a live subscription. This is
     // the step that makes the paywall real: everything above only proves the
@@ -629,72 +754,85 @@ export default {
     // purpose: a global trip is an outage for everybody, while this one is a
     // clean, explainable refusal for a single household.
     //
+    // Two allowances, chosen by purpose. Plans and swaps spend the 20 a month
+    // the paywall promises. Top-ups, discovery lookups and imports spend a
+    // separate, larger shelf allowance, so refilling the shelf never eats a
+    // plan.
+    //
     // The status code is 402 and nothing else in this worker uses it. That is
     // the contract with the app: 402 means "out of plans, here is the date
     // they come back," never "your subscription is bad" and never "show the
     // paywall." A lapsed subscription comes back as 401 at step 3 instead.
     // TEMPORARY BYPASS (2026-08-21): same flag as steps 3 and 8. txnId is
-    // null when the bypass is on, so this quota (keyed on txnId) is skipped
-    // rather than writing a "sub-null-..." key into KV. The daily cap in
-    // step 10 still applies and is the real spend guard while this is off.
-    const monthlyCap = capFrom(env.MONTHLY_GENERATION_CAP, DEFAULT_MONTHLY_CAP);
+    // null when the bypass is on, so the quotas here and the per-subscription
+    // daily count in step 10 (all keyed on txnId) are skipped rather than
+    // writing a "sub-null-..." key into KV. The relay-wide daily cap in
+    // step 10 still applies and is the only spend guard while this is off.
+    //
+    // Nothing is counted in this step or the next. Both only read and compare,
+    // and every counter that passed is bumped together just before the
+    // forward. That way a request refused by a later check never leaves an
+    // earlier counter one too high.
     const now = new Date();
-    let monthUsed = null;
-    let monthKey = null;
+    const keys = counterKeys(txnId, now);
+    const counted = []; // { key, used, ttl } for each counter this request bumps
+    const isShelf = !PLAN_PURPOSES.has(purpose);
     if (subscriptionRequired) {
-      monthKey = `sub-${txnId}-${monthStamp(now)}`;
-      if (env.SPEND_COUNTER) {
-        try {
-          monthUsed =
-            Number.parseInt(await env.SPEND_COUNTER.get(monthKey), 10) || 0;
-        } catch {
-          monthUsed = null;
-        }
-      }
+      const quotaCap = isShelf
+        ? capFrom(env.MONTHLY_SHELF_CAP, DEFAULT_MONTHLY_SHELF_CAP)
+        : capFrom(env.MONTHLY_GENERATION_CAP, DEFAULT_MONTHLY_CAP);
+      const quotaKey = isShelf ? keys.shelf : keys.plan;
+      const quotaUsed = await readCount(env, quotaKey);
       // A cap of 0 is the emergency stop, not a spent allowance, so it gets
       // its own sentence. The normal message would read "You have used all 0
       // meal plans included this month," which tells a paying customer
       // nothing true.
-      if (monthlyCap === 0) {
+      if (quotaCap === 0) {
         return refuse(
           402,
-          "MealTime plan generation is paused right now. This is not a problem with your subscription, and you have not been charged for anything you did not get. Try again later."
+          isShelf
+            ? "MealTime recipe refreshing is paused right now. This is not a problem with your subscription, and you have not been charged for anything you did not get. Try again later."
+            : "MealTime plan generation is paused right now. This is not a problem with your subscription, and you have not been charged for anything you did not get. Try again later."
         );
       }
-      if (monthUsed !== null) {
-        if (monthUsed >= monthlyCap) {
+      if (quotaUsed !== null) {
+        if (quotaUsed >= quotaCap) {
           return refuse(
             402,
-            `You have used all ${monthlyCap} meal plans included this month. Your next ${monthlyCap} arrive on ${nextResetLabel(now)}.`
+            isShelf
+              ? `You have used all ${quotaCap} recipe refreshes included this month. Your next ${quotaCap} arrive on ${nextResetLabel(now)}.`
+              : `You have used all ${quotaCap} meal plans included this month. Your next ${quotaCap} arrive on ${nextResetLabel(now)}.`
           );
         }
-        // Count before spending, same as the daily counter, so a burst of
-        // requests cannot slip past the cap while the first is still in flight.
-        try {
-          await env.SPEND_COUNTER.put(monthKey, String(monthUsed + 1), {
-            expirationTtl: MONTH_COUNTER_TTL_SECONDS,
-          });
-        } catch {
-          // A KV write failure is not a reason to refuse a paying subscriber.
-        }
+        counted.push({ key: quotaKey, used: quotaUsed, ttl: MONTH_COUNTER_TTL_SECONDS });
       }
     }
 
-    // 10. Daily ceiling. One integer per calendar day in KV, no other data.
+    // 10. Daily ceilings. One integer per subscription per UTC day, and one
+    // for the whole relay, in KV, no other data. The subscription's own is
+    // checked first for the same reason as step 9: a refusal that names one
+    // household is better than an outage for all of them.
+    //
     // If KV itself is unavailable the request is allowed through: the burst
     // limit above and the monthly spend cap set at Anthropic are the other two
     // lines of defence, and failing closed would take the app down for a
-    // Cloudflare storage blip.
-    const cap = capFrom(env.DAILY_REQUEST_CAP, DEFAULT_DAILY_CAP);
-    const counterKey = `requests-${new Date().toISOString().slice(0, 10)}`;
-    let used = null;
-    if (env.SPEND_COUNTER) {
-      try {
-        used = Number.parseInt(await env.SPEND_COUNTER.get(counterKey), 10) || 0;
-      } catch {
-        used = null;
+    // Cloudflare storage blip. That holds for both counters here.
+    if (subscriptionRequired) {
+      const txnCap = capFrom(env.DAILY_TXN_CAP, DEFAULT_DAILY_TXN_CAP);
+      const txnUsed = await readCount(env, keys.txnDay);
+      if (txnUsed !== null) {
+        if (txnUsed >= txnCap) {
+          return refuse(
+            429,
+            "This household has hit its daily MealTime limit. Try again tomorrow."
+          );
+        }
+        counted.push({ key: keys.txnDay, used: txnUsed, ttl: COUNTER_TTL_SECONDS });
       }
     }
+
+    const cap = capFrom(env.DAILY_REQUEST_CAP, DEFAULT_DAILY_CAP);
+    const used = await readCount(env, keys.globalDay);
     if (used !== null) {
       if (used >= cap) {
         return refuse(
@@ -702,16 +840,12 @@ export default {
           "MealTime has hit its daily planning limit. Try again tomorrow."
         );
       }
-      // Count it before spending it, so a rush of requests cannot slip past
-      // the cap while the first one is still in flight.
-      try {
-        await env.SPEND_COUNTER.put(counterKey, String(used + 1), {
-          expirationTtl: COUNTER_TTL_SECONDS,
-        });
-      } catch {
-        // Counting failed. Carry on for the same reason as above.
-      }
+      counted.push({ key: keys.globalDay, used, ttl: COUNTER_TTL_SECONDS });
     }
+
+    // Count it before spending it, so a rush of requests cannot slip past a
+    // cap while the first one is still in flight.
+    await Promise.all(counted.map((c) => writeCount(env, c.key, c.used + 1, c.ttl)));
 
     // 11. Forward. The version header is pinned here rather than taken from the
     // caller, and the body is the rebuilt payload, not whatever arrived.
@@ -725,30 +859,15 @@ export default {
       body: JSON.stringify(payload),
     });
 
-    // A failed upstream call costs nothing, so hand the day's allowance back.
-    // Otherwise a bad afternoon at Anthropic would burn the whole cap on
-    // retries and leave the app dead until midnight.
-    if (!upstream.ok && used !== null) {
-      try {
-        await env.SPEND_COUNTER.put(counterKey, String(used), {
-          expirationTtl: COUNTER_TTL_SECONDS,
-        });
-      } catch {
-        // Nothing to do. The count stays one high for the day.
-      }
-    }
-
-    // Same for the subscriber's own allowance. A failed plan is not a plan, and
-    // charging someone a generation for Anthropic having a bad minute is the
-    // kind of thing that gets a subscription cancelled.
-    if (!upstream.ok && monthUsed !== null) {
-      try {
-        await env.SPEND_COUNTER.put(monthKey, String(monthUsed), {
-          expirationTtl: MONTH_COUNTER_TTL_SECONDS,
-        });
-      } catch {
-        // Nothing to do. The count stays one high for the month.
-      }
+    // A failed upstream call costs nothing, so hand every allowance back: the
+    // relay-wide day, the subscription's day, and its month. Otherwise a bad
+    // afternoon at Anthropic would burn the whole cap on retries and leave the
+    // app dead until midnight, and a subscriber would be charged a plan or a
+    // refresh for Anthropic having a bad minute, which is the kind of thing
+    // that gets a subscription cancelled. Each counter goes back to the value
+    // it had before this request counted itself.
+    if (!upstream.ok) {
+      await Promise.all(counted.map((c) => writeCount(env, c.key, c.used, c.ttl)));
     }
 
     // Anthropic's own auth and billing failures arrive as 401, 402, and 403,
@@ -763,12 +882,16 @@ export default {
     // message suggests is cancelling. 502 lands in the app's transient
     // bucket instead, which is the truth: try again later.
     if (upstream.status === 401 || upstream.status === 402 || upstream.status === 403) {
-      // TEMPORARY DEBUG (2026-08-21): log Anthropic's real status and the
-      // start of its error body so the actual cause is visible in
-      // `wrangler tail`, without ever logging the key itself or any request
-      // content. Remove this block once the key issue is diagnosed.
-      const debugSnippet = await upstream.clone().text();
-      console.log(`[debug] Anthropic upstream status ${upstream.status}: ${debugSnippet.slice(0, 300)}`);
+      // Log the status and nothing else, so the cause class is visible in
+      // `wrangler tail`. The error body is not logged: the privacy policy says
+      // the relay keeps no copy, and Anthropic's error text can echo request
+      // content back. The body is dropped unread.
+      console.log(`[upstream] Anthropic returned status ${upstream.status}`);
+      try {
+        await upstream.body?.cancel();
+      } catch {
+        // Nothing to do. The response is being discarded either way.
+      }
       return refuse(
         502,
         "MealTime's planning service is not answering right now. This is not a problem with your subscription. Try again in a few minutes."

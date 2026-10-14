@@ -110,6 +110,10 @@ struct PastDinner: Codable, Hashable {
     var title: String
     var cuisine: String
     var date: Date
+    /// nil = not from the shelf or unknown (counts as cooked); false = planned, not cooked yet; true = cooked.
+    var cooked: Bool?
+    /// ShelfRecipe.id when this dinner came from the shelf.
+    var shelfID: UUID?
 }
 
 // MARK: - Helpers

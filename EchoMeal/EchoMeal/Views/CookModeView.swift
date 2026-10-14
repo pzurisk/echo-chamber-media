@@ -24,6 +24,10 @@ struct CookModeView: View {
     /// out on the counter, not the shared grocery list.
     @State private var checkedIngredients: Set<Int> = []
 
+    /// The rating page can come back into view by paging back and forth;
+    /// the dinner only counts as cooked once.
+    @State private var markedCooked = false
+
     private var stepCount: Int { recipe.steps.count }
     private var lastPage: Int { stepCount + 1 }
 
@@ -228,6 +232,11 @@ struct CookModeView: View {
         }
         .padding(.horizontal, 28)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .onAppear {
+            guard !markedCooked else { return }
+            markedCooked = true
+            appState.markCooked(title: recipe.title)
+        }
     }
 
     // MARK: - Footer

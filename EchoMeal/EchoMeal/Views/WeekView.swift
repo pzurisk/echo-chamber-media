@@ -33,6 +33,20 @@ struct WeekView: View {
                     // separators, and clear row backgrounds keep it looking
                     // exactly like the old card stack.
                     List {
+                        if case .overBudget(let offenderIndex, let total, let ceiling) = appState.budgetStatus {
+                            OverBudgetBanner(
+                                over: max(0, total - ceiling),
+                                day: plan.week.indices.contains(offenderIndex) ? plan.week[offenderIndex].day : nil
+                            ) {
+                                if plan.week.indices.contains(offenderIndex) {
+                                    swapTarget = plan.week[offenderIndex]
+                                }
+                            }
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
+                            .listRowInsets(EdgeInsets(top: 7, leading: 16, bottom: 7, trailing: 16))
+                        }
+
                         if let nudge = appState.unratedRecent,
                            !dismissedNudgeTitles.contains(nudge.title) {
                             RatingNudgeCard(recipe: nudge) {
@@ -171,7 +185,7 @@ struct WeekView: View {
             }
             .sheet(item: $swapTarget) { entry in
                 SwapNightSheet(entry: entry)
-                    .presentationDetents([.medium])
+                    .presentationDetents([.large])
             }
         }
     }
@@ -320,6 +334,12 @@ private struct SwapNightSheet: View {
     @StateObject private var recorder = SpeechRecorder()
     let entry: WeekEntry
     @State private var typedText = ""
+    /// True while swapFromShelf is running, so the button cannot be
+    /// tapped twice and shows progress.
+    @State private var pullingFromShelf = false
+    /// Set when the shelf had nothing that fits tonight. Cleared on the
+    /// next try.
+    @State private var shelfCameUpEmpty = false
 
     private var trimmedTyped: String {
         typedText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -334,6 +354,8 @@ private struct SwapNightSheet: View {
                         .font(.subheadline)
                         .foregroundStyle(Color.echoTextSecondary)
                         .multilineTextAlignment(.center)
+
+                    shelfSection
 
                     if !appState.aiNoticeAccepted {
                         // Same gate as SpeakView: nothing goes to Claude
@@ -387,6 +409,60 @@ private struct SwapNightSheet: View {
                 if recorder.isRecording {
                     recorder.stop()
                 }
+            }
+        }
+    }
+
+    /// The first thing to try: the next recipe from the shelf that fits
+    /// the week. No model call, so it needs no AI notice and is fast. When
+    /// nothing fits, the voice and text paths below stay as the fallback.
+    private var shelfSection: some View {
+        VStack(spacing: 8) {
+            Button {
+                pullFromShelf()
+            } label: {
+                if pullingFromShelf {
+                    HStack(spacing: 10) {
+                        ProgressView()
+                        Text("Checking the shelf")
+                    }
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 6)
+                } else {
+                    Label("Next from the shelf", systemImage: "books.vertical")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 6)
+                }
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(.echoRed)
+            .disabled(pullingFromShelf || appState.phase == .planning)
+
+            Text("\(appState.shelf.count) ready on the shelf")
+                .font(.footnote)
+                .foregroundStyle(Color.echoTextSecondary)
+
+            if shelfCameUpEmpty {
+                Text("Nothing on the shelf fits tonight, ask for one below")
+                    .font(.footnote)
+                    .foregroundStyle(Color.echoWarning)
+                    .multilineTextAlignment(.center)
+            }
+        }
+    }
+
+    private func pullFromShelf() {
+        shelfCameUpEmpty = false
+        pullingFromShelf = true
+        Task {
+            let swapped = await appState.swapFromShelf(day: entry.day)
+            pullingFromShelf = false
+            if swapped {
+                dismiss()
+            } else {
+                shelfCameUpEmpty = true
             }
         }
     }
@@ -456,6 +532,45 @@ private struct SwapNightSheet: View {
         guard appState.aiNoticeAccepted else { return }
         appState.swapNight(day: entry.day, transcript: transcript)
         dismiss()
+    }
+}
+
+/// Shown above the dinner list when the week's shelf picks add up to more
+/// than the household's ceiling. Names the night to change, and the Swap
+/// button opens the same swap sheet that night's swipe action does.
+private struct OverBudgetBanner: View {
+    let over: Double
+    let day: String?
+    let onSwap: () -> Void
+
+    private var message: String {
+        let amount = String(format: "$%.0f", over)
+        if let day {
+            return "Over budget by \(amount). Swap \(day) to fix it"
+        }
+        return "Over budget by \(amount)"
+    }
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundStyle(Color.echoWarning)
+            Text(message)
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(Color.echoText)
+                .multilineTextAlignment(.leading)
+            Spacer(minLength: 8)
+            if day != nil {
+                Button("Swap", action: onSwap)
+                    .buttonStyle(.borderedProminent)
+                    .tint(.echoRed)
+                    .controlSize(.small)
+            }
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .echoCardStyle()
+        .accessibilityElement(children: .contain)
     }
 }
 

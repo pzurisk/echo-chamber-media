@@ -356,7 +356,7 @@ struct SpeakView: View {
                             .foregroundStyle(Color.echoText)
                             .padding(.top, 26)
 
-                        Text("MealTime sends the words you speak (as text), along with your budget, taste notes, and meal history, to Anthropic's Claude AI to build your dinner plan and grocery list. Nothing you give MealTime is used for ads or tracking.")
+                        Text("MealTime sends the words you speak (as text), your budget, taste notes, pantry and leftover notes, and meal history to Anthropic's Claude to plan dinners. It also stocks a shelf of recipes ahead of time in the background using that same taste data, and uses web search to find trending dishes. No household data is sent with those searches. Nothing you give MealTime is used for ads or tracking.")
                             .font(.subheadline)
                             .foregroundStyle(Color.echoText)
                             .fixedSize(horizontal: false, vertical: true)

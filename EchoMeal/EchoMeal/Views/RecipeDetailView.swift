@@ -37,10 +37,13 @@ struct RecipeDetailView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text(recipe.day.uppercased())
-                            .font(.caption.weight(.bold))
-                            .tracking(1.2)
-                            .foregroundStyle(Color.echoAccentText)
+                        // Shelf recipes have no day until they are picked.
+                        if !recipe.day.isEmpty {
+                            Text(recipe.day.uppercased())
+                                .font(.caption.weight(.bold))
+                                .tracking(1.2)
+                                .foregroundStyle(Color.echoAccentText)
+                        }
                         Text(recipe.title)
                             .font(.largeTitle.weight(.bold))
                             .foregroundStyle(Color.echoText)

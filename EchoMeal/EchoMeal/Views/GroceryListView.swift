@@ -70,7 +70,7 @@ struct GroceryListView: View {
 
                     VStack(spacing: 0) {
                         if let plan = appState.plan {
-                            BudgetBar(grocery: plan.grocery)
+                            BudgetBar(grocery: plan.grocery, target: appState.budgetTarget)
                                 .padding(.horizontal)
                                 .padding(.top, 4)
                                 .padding(.bottom, 10)
@@ -458,16 +458,19 @@ private struct GroceryRow: View {
 /// Estimated total against the target, and how far under or over.
 struct BudgetBar: View {
     let grocery: Grocery
+    /// The household's Settings budget, not the target the model echoed
+    /// back into the plan, so the bar always matches what Settings says.
+    let target: Double
 
     private var fraction: Double {
-        guard grocery.budgetTarget > 0 else { return 0 }
-        return min(grocery.estimatedTotal / grocery.budgetTarget, 1.0)
+        guard target > 0 else { return 0 }
+        return min(grocery.estimatedTotal / target, 1.0)
     }
 
-    private var isOver: Bool { grocery.estimatedTotal > grocery.budgetTarget }
+    private var isOver: Bool { grocery.estimatedTotal > target }
 
     private var deltaText: String {
-        let delta = abs(grocery.budgetTarget - grocery.estimatedTotal)
+        let delta = abs(target - grocery.estimatedTotal)
         let amount = String(format: "$%.0f", delta)
         return isOver ? "\(amount) over" : "\(amount) under"
     }
@@ -475,7 +478,7 @@ struct BudgetBar: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text(String(format: "Estimated $%.0f of $%.0f", grocery.estimatedTotal, grocery.budgetTarget))
+                Text(String(format: "Estimated $%.0f of $%.0f", grocery.estimatedTotal, target))
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(Color.echoText)
                 Spacer()

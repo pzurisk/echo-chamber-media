@@ -7,8 +7,32 @@ struct SettingsView: View {
     @EnvironmentObject private var subscriptions: SubscriptionStore
     @Environment(\.dismiss) private var dismiss
 
-    @AppStorage(HouseholdConfig.Keys.budgetTarget) private var budgetTarget = 100.0
-    @AppStorage(HouseholdConfig.Keys.dinnersPerWeek) private var dinnersPerWeek = 5
+    /// Budget and dinners per week live in the household's synced
+    /// Preferences now, so both phones agree. Reads fall back to this
+    /// phone's stored value until a preference has been set; writes go
+    /// through updatePreferences with the whole struct.
+    private var budgetTarget: Binding<Double> {
+        Binding(
+            get: { appState.preferences.effectiveBudget(fallback: appState.budgetTarget) },
+            set: { value in
+                var next = appState.preferences
+                next.budgetTarget = value
+                appState.updatePreferences(next)
+            }
+        )
+    }
+
+    private var dinnersPerWeek: Binding<Int> {
+        Binding(
+            get: { appState.preferences.effectiveDinners(fallback: appState.dinnersPerWeek) },
+            set: { value in
+                var next = appState.preferences
+                next.dinnersPerWeek = value
+                appState.updatePreferences(next)
+            }
+        )
+    }
+
     /// Per-phone, not per-household. The two phones can disagree, on purpose.
     @AppStorage(HouseholdConfig.Keys.themeChoice) private var theme: AppTheme = .hearth
 
@@ -64,22 +88,35 @@ struct SettingsView: View {
                     }
                 }
 
+                Section("Taste") {
+                    NavigationLink {
+                        PreferencesView()
+                    } label: {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Taste preferences")
+                            Text("Cuisines, proteins, ingredients to avoid, and how long before a repeat.")
+                                .font(.caption)
+                                .foregroundStyle(Color.echoTextSecondary)
+                        }
+                    }
+                }
+
                 Section("Weekly budget") {
                     HStack {
                         Text("Target")
                         Spacer()
-                        Text(String(format: "$%.0f", budgetTarget))
+                        Text(String(format: "$%.0f", budgetTarget.wrappedValue))
                             .foregroundStyle(Color.echoTextSecondary)
                     }
-                    Slider(value: $budgetTarget, in: 40...300, step: 5) {
+                    Slider(value: budgetTarget, in: 40...300, step: 5) {
                         Text("Budget target")
                     }
                     .tint(.echoAccent)
                 }
 
                 Section("Dinners per week") {
-                    Stepper(value: $dinnersPerWeek, in: 3...7) {
-                        Text("\(dinnersPerWeek) dinners")
+                    Stepper(value: dinnersPerWeek, in: 3...7) {
+                        Text("\(dinnersPerWeek.wrappedValue) dinners")
                     }
                     Text("Applies to the next plan you speak.")
                         .font(.caption)

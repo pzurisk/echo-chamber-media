@@ -15,16 +15,19 @@ import os
 ///   failure rather than a silent fallback that reships the key.
 enum ClaudeService {
 
-    /// Request and response logging for every relay call. Statuses, errors,
-    /// and the outgoing prompt are marked public so Console shows them
-    /// instead of <private>: this is a two-person household app and the
-    /// content is their own dinner plan. If Console proves unreliable again,
-    /// the devicectl stdout method in the vault's 524 writeup still applies.
+    /// Request and response logging for every relay call. Statuses, labels,
+    /// and sizes are marked public so Console shows them. The prompt text
+    /// itself carries the household's taste notes, pantry, and history, so
+    /// it is logged as private: it redacts in the unified log on a device
+    /// that is not attached to a debugger. If Console proves unreliable
+    /// again, the devicectl stdout method in the vault's 524 writeup still
+    /// applies.
     static let logger = Logger(subsystem: "com.echochambermedia.echomeal", category: "claude")
 
     /// Console truncates one interpolated string near 1 KB, which would cut
     /// the outgoing prompt mid-sentence and defeat the point of logging it.
-    /// Chunked lines survive intact; filter on the label to reassemble.
+    /// Chunked lines survive intact; filter on the label to reassemble. The
+    /// label stays public; the chunk is private (see the logger note).
     private static func logLongText(_ label: String, _ text: String) {
         let chunkSize = 800
         var start = text.startIndex
@@ -32,7 +35,7 @@ enum ClaudeService {
         while start < text.endIndex {
             let end = text.index(start, offsetBy: chunkSize, limitedBy: text.endIndex) ?? text.endIndex
             let chunk = String(text[start..<end])
-            logger.info("\(label, privacy: .public) [\(part, privacy: .public)]: \(chunk, privacy: .public)")
+            logger.info("\(label, privacy: .public) [\(part, privacy: .public)]: \(chunk, privacy: .private)")
             start = end
             part += 1
         }
@@ -66,12 +69,19 @@ enum ClaudeService {
                 return message
             case .subscriptionRefused:
                 return "MealTime could not confirm your subscription. Open Settings and tap Restore Purchases."
-            case .badStatus(let code, _):
+            case .badStatus(let code, let body):
                 switch code {
                 case 401, 403:
                     return "The planning service rejected the key. Check the app's setup."
                 case 429:
-                    return "The planning service is busy. Wait a minute and try again."
+                    // The relay sends two different 429s. The burst limiter
+                    // really does clear in a minute; the household and
+                    // service-wide caps clear at the next UTC day, so
+                    // "busy, wait a minute" would send people in circles.
+                    if body.lowercased().contains("too many") {
+                        return "The planning service is busy. Wait a minute and try again."
+                    }
+                    return "MealTime has hit its daily limit. It clears tomorrow, so try again then."
                 case 500...599:
                     return "The planning service had a hiccup. Try again."
                 default:
@@ -195,7 +205,13 @@ week and recipes each have exactly \(count) entries, one per day, \(span), in or
     /// useWebSearch asks the Worker to attach its pinned web_search tool and
     /// switches in the search paragraph of the system prompt; the Worker,
     /// not this flag, is what actually authorizes the tool.
-    static func planWeek(transcript: String, budget: Double, dinners: Int, subscriptionID: String, tasteNotes: String = "", lockedRecipes: [Recipe] = [], useWebSearch: Bool = false) async throws -> MealPlan {
+    /// purpose is the relay's billing tag: "plan" counts against the monthly
+    /// plan allowance together with "swap". Left nil, it is read from the
+    /// request: locked dinners plus the "Swap request:" text AppState writes
+    /// for Swap One Night mean "swap", anything else means "plan". A caller
+    /// that knows better can pass it explicitly.
+    static func planWeek(transcript: String, budget: Double, dinners: Int, subscriptionID: String, tasteNotes: String = "", lockedRecipes: [Recipe] = [], useWebSearch: Bool = false, purpose: String? = nil) async throws -> MealPlan {
+        let purpose = purpose ?? ((!lockedRecipes.isEmpty && transcript.hasPrefix("Swap request:")) ? "swap" : "plan")
         // The request leads the message and is labeled as the instruction to
         // follow. It used to sit mid-context as "Cravings:", after a wall of
         // taste notes, and a detailed typed brief got treated as loose
@@ -231,15 +247,15 @@ week and recipes each have exactly \(count) entries, one per day, \(span), in or
         }
         context += "Coverage rule: every single ingredient used by any recipe in the plan must appear on the grocery list, either as its own item or as a clearly matching combined item. The household shops from this list alone, so nothing may be missing."
         do {
-            return try await requestPlan(userText: context, dinners: dinners, subscriptionID: subscriptionID, useWebSearch: planUsesSearchTool)
+            return try await requestPlan(userText: context, dinners: dinners, subscriptionID: subscriptionID, useWebSearch: planUsesSearchTool, purpose: purpose)
         } catch ClaudeError.parseFailed {
             logger.warning("Plan reply failed to parse. Retrying once with the JSON reminder appended.")
             let reminder = context + "\n\nReminder: return only valid JSON matching the schema. No prose, no markdown, no backticks. The \"recipes\" array is required and must contain one full recipe object for every day in \"week\" (same count, matching \"day\" values), each with its ingredients and numbered steps. Do not return an empty or partial recipes array."
-            return try await requestPlan(userText: reminder, dinners: dinners, subscriptionID: subscriptionID, useWebSearch: planUsesSearchTool)
+            return try await requestPlan(userText: reminder, dinners: dinners, subscriptionID: subscriptionID, useWebSearch: planUsesSearchTool, purpose: purpose)
         } catch let error as URLError where Self.transientURLErrorCodes.contains(error.code) {
             logger.warning("Transport failure (\(error.code.rawValue, privacy: .public)). Retrying once after 2s.")
             try await Task.sleep(nanoseconds: 2_000_000_000)
-            return try await requestPlan(userText: context, dinners: dinners, subscriptionID: subscriptionID, useWebSearch: planUsesSearchTool)
+            return try await requestPlan(userText: context, dinners: dinners, subscriptionID: subscriptionID, useWebSearch: planUsesSearchTool, purpose: purpose)
         } catch ClaudeError.badStatus(let code, _) where (500...599).contains(code) && code != 524 {
             // 524 is excluded deliberately. It is Cloudflare cutting the
             // connection after about 126 seconds, which is a deadline, not a
@@ -249,7 +265,7 @@ week and recipes each have exactly \(count) entries, one per day, \(span), in or
             // connection is bad. Failing once and fast is the honest answer.
             logger.warning("Relay answered \(code, privacy: .public). Retrying once after 2s.")
             try await Task.sleep(nanoseconds: 2_000_000_000)
-            return try await requestPlan(userText: context, dinners: dinners, subscriptionID: subscriptionID, useWebSearch: planUsesSearchTool)
+            return try await requestPlan(userText: context, dinners: dinners, subscriptionID: subscriptionID, useWebSearch: planUsesSearchTool, purpose: purpose)
         }
     }
 
@@ -320,6 +336,34 @@ week and recipes each have exactly \(count) entries, one per day, \(span), in or
     /// household their dinner plan, so every failure path returns an empty
     /// list and the week gets planned the ordinary way.
     static func trendingDishes(subscriptionID: String) async -> [String] {
+        await searchDishes(subscriptionID: subscriptionID, userText: "What dinners are trending right now?")
+    }
+
+    /// The shelf's own version of trendingDishes: same prompt shape, same
+    /// 75 second wall, same "never throws, [] on any failure" contract,
+    /// tagged purpose "discovery" so the relay bills it to the shelf
+    /// allowance rather than a plan.
+    ///
+    /// `signals` is accepted so the shelf code has one call shape, but none of
+    /// it is sent. The privacy notice says no household data goes out with a
+    /// web search, and a taste profile in the query would make that false. The
+    /// household's taste meets the names later, inside the top-up prompt,
+    /// which has no search tool. Only the month rides along, so "this
+    /// season" means something.
+    static func discoverDishes(signals: ShelfSignals, subscriptionID: String?) async -> [String] {
+        _ = signals
+        guard let subscriptionID, !subscriptionID.isEmpty else { return [] }
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "MMMM yyyy"
+        let month = formatter.string(from: Date())
+        return await searchDishes(subscriptionID: subscriptionID, userText: "What dinners are trending right now, in \(month)?")
+    }
+
+    /// One web-search call for dish names. Shared by trendingDishes and
+    /// discoverDishes. Every failure, including a 402 shelf allowance
+    /// refusal, is an empty list: a bonus lookup never shows an error.
+    private static func searchDishes(subscriptionID: String, userText: String) async -> [String] {
         let system = """
         You find dishes that are genuinely trending or widely praised online right now.
 
@@ -339,9 +383,10 @@ week and recipes each have exactly \(count) entries, one per day, \(span), in or
                 // a large budget would only buy a longer wait against the
                 // same Cloudflare ceiling this split exists to stay under.
                 "max_tokens": 1500,
+                "purpose": "discovery",
                 "thinking": ["type": "disabled"],
                 "system": system,
-                "messages": [["role": "user", "content": "What dinners are trending right now?"]],
+                "messages": [["role": "user", "content": userText]],
                 "webSearch": true
             ]
             request.httpBody = try JSONSerialization.data(withJSONObject: body)
@@ -375,7 +420,276 @@ week and recipes each have exactly \(count) entries, one per day, \(span), in or
         }
     }
 
-    private static func requestPlan(userText: String, dinners: Int, subscriptionID: String, useWebSearch: Bool = false) async throws -> MealPlan {
+    // MARK: - Shelf calls
+
+    /// Joins a list for a prompt line; an empty list reads as "none".
+    private static func promptList(_ items: [String]) -> String {
+        let cleaned = items.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
+        return cleaned.isEmpty ? "none" : cleaned.joined(separator: ", ")
+    }
+
+    /// How many of `count` recipes are the discovery slice. Same rounding as
+    /// the contract: round(count * discoveryFraction).
+    static func discoverySlice(count: Int, fraction: Double) -> Int {
+        min(count, max(0, Int((Double(count) * fraction).rounded())))
+    }
+
+    /// What each protein hides in. Prompt wording only; the code-side ban is
+    /// ShelfRules.offTerms, which ShelfFiller.validate applies to every recipe.
+    private static let proteinDerivatives: [(protein: String, examples: String)] = [
+        ("fish", "fish sauce, anchovy, dashi, bonito, and worcestershire sauce"),
+        ("shellfish", "oyster sauce, shrimp paste, dried shrimp, and curry pastes made with shrimp"),
+        ("pork", "bacon, pancetta, ham, lard, and sausage"),
+        ("beef", "beef stock, beef broth, tallow, and demi-glace"),
+        ("chicken", "chicken stock, chicken broth, and schmaltz"),
+        ("lamb", "lamb stock and lamb fat"),
+        ("turkey", "turkey stock and turkey bacon"),
+        ("eggs", "mayonnaise, aioli, and egg noodles")
+    ]
+
+    /// The derivative ban for the household's off proteins, or nil when none
+    /// are off. Names the common derivatives of each off protein it knows.
+    static func offProteinDerivativeSentence(_ proteinsOff: [String]) -> String? {
+        let off = proteinsOff.map { $0.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() }.filter { !$0.isEmpty }
+        guard !off.isEmpty else { return nil }
+        let parts = proteinDerivatives.filter { off.contains($0.protein) }.map { "for \($0.protein) that means \($0.examples)" }
+        var sentence = "An off protein also bans every sauce, paste, stock, or seasoning made from it"
+        if !parts.isEmpty { sentence += ": " + parts.joined(separator: "; ") }
+        return sentence + "."
+    }
+
+    /// System prompt for the shelf top-up and the fallback dinner. Built per
+    /// call because the household's hard rules are restated inside it every
+    /// time, in the rules and again right before the schema.
+    static func topUpSystemPrompt(signals: ShelfSignals, count: Int, hasTrendingHints: Bool) -> String {
+        let discovery = discoverySlice(count: count, fraction: signals.discoveryFraction)
+        let taste = count - discovery
+        let offProteins = promptList(signals.proteinsOff)
+        let offIngredients = promptList(signals.ingredientsOff)
+        var hard = "HARD CONSTRAINTS. Never use these proteins: \(offProteins). Never use these ingredients in any form: \(offIngredients). Any recipe that breaks them is discarded."
+        // A protein that is off is off in its derivatives too. Without this a
+        // fish-off household got fish sauce and oyster sauce in live runs;
+        // with it the same prompt came back clean.
+        if let derivatives = offProteinDerivativeSentence(signals.proteinsOff) {
+            hard += " " + derivatives
+        }
+        let budget = String(format: "%.2f", signals.perDinnerBudget)
+        let ceiling = String(format: "%.2f", signals.perDinnerBudget * ShelfVocab.costCeilingFactor)
+        let mix: String
+        if discovery == 0 {
+            mix = "All \(count) of these should play to the household's known likes."
+        } else {
+            mix = "About \(discovery) of these should be dishes people are talking about this season, the rest should play to the household's known likes. Mark each recipe's \"slice\" as \"discovery\" for the first kind and \"taste\" for the second."
+        }
+        let hintsLine = hasTrendingHints
+            ? "\n- signals.trendingHints lists dishes found online right now. Build the discovery recipes on those dishes, adapted to the weeknight limits below."
+            : ""
+        return """
+You stock a shelf of dinner recipes for a two-person household. Each recipe will be cooked later, on a weeknight, by a home cook. You will receive a JSON request. Reply with exactly \(count) new recipes.
+
+\(hard)
+
+Rules:
+- Every recipe is a real dinner for 2 people, "servings": 2, with a cook time of 30 to 60 minutes.
+- \(mix)
+- For the discovery recipes, name the trending or viral style dish plainly in the title, then adapt it to a 30 to 60 minute weeknight for two. Never sand it down into a generic version of itself.
+- Lean toward what signals.likedCuisines, likedProteins, and likedMethods show the household enjoys. Stay away from signals.dislikedCuisines, dislikedProteins, and dislikedMethods.
+- Never repeat or closely rework any title in signals.doNotRepeat, and never repeat a title inside this batch.
+- No two recipes in this batch share a cuisine. At most one recipe in this batch has any given primary protein ("none" is exempt). Vary the cooking method across the batch.
+- Each recipe's "cuisine" is one of vocab.cuisines, "primaryProtein" is one of vocab.proteins, "method" is one of vocab.methods (the main cooking method), written exactly as listed. Use "none" for protein only when the dish has no meat, fish, egg, tofu, or beans.
+- The hard constraints above apply to every field of every recipe: title, ingredients, steps, and grocery lines.
+- If the JSON has a "request", it is what the household asked for this dinner. Follow it, unless it breaks a hard constraint.\(hintsLine)
+- Every dinner is a complete plate: a protein, a carb or starch side (rice, pasta, potatoes, tortillas, bread, or grains), and a vegetable. The sides are part of the recipe, with their ingredients in the ingredient list, their prep in the steps, and their items on the grocery lines.
+
+Craft. This is what separates a real dinner from filler:
+- Build flavor with technique. Sear proteins hard for a crust, build fond in the pan, deglaze it, and finish the sauce in that same pan. Do not boil or steam what should be browned.
+- Season in layers as you cook, not once at the end.
+- Every plate needs fat and acid balanced against each other. Name the acid explicitly in the ingredients: citrus, vinegar, yogurt, or something pickled.
+- Texture contrast is required in every dinner. Something crisp against something soft.
+- Respect the ingredient. A simple preparation of something good beats a complicated preparation of something mediocre.
+- Regional honesty. If a dish is Vietnamese, use the real aromatics. Never sand a cuisine down into a generic weeknight version of itself.
+- Every step states why it matters in one short clause, so the cook learns instead of just obeying. Write "Sear undisturbed 4 minutes so a crust can form" rather than "sear the chicken."
+- At least 4 steps and at least 3 ingredients per recipe.
+
+Money:
+- The household spends about $\(budget) per dinner. Price each recipe's grocery lines with realistic US supermarket prices for the amount that recipe needs. Keep the sum of the non-pantry lines at or under $\(budget) where a good dinner allows, and never above $\(ceiling).
+- Mark "pantry": true on staples a household likely already owns (oil, salt, pepper, dried spices, flour, sugar, common vinegars, soy sauce). Pantry lines still carry the price of buying the item.
+- Coverage rule: every ingredient in a recipe's "ingredients" must appear in that same recipe's "groceryItems", as its own line or a clearly matching one (same item, any wording). The household shops from the grocery lines alone, so nothing may be missing. Each grocery "section" is exactly one of vocab.sections.
+- "ingredientKeys" is 3 to 8 short lowercase singular names of the main ingredients (for example "pork chop", "apple", "cider vinegar").
+
+\(hard)
+
+Return JSON only. No prose, no markdown, no backticks. Match this schema exactly, with exactly \(count) recipes (\(taste) taste, \(discovery) discovery):
+
+{
+  "recipes": [
+    { "title": "", "cookTimeMin": 0, "servings": 2,
+      "cuisine": "", "primaryProtein": "", "method": "",
+      "ingredientKeys": [""],
+      "ingredients": [ { "item": "", "qty": "" } ],
+      "steps": [ "" ],
+      "leftoverYield": false,
+      "groceryItems": [ { "section": "Proteins", "name": "", "qty": "", "estPrice": 0.0, "pantry": false } ],
+      "slice": "taste" }
+  ]
+}
+"""
+    }
+
+    /// The user message for a shelf call: the contract's JSON, with the
+    /// optional trendingHints line added to the signals. `request` carries
+    /// free text for a fallback dinner.
+    private static func topUpUserText(signals: ShelfSignals, count: Int, trendingHints: [String], request: String?) -> String {
+        let discovery = discoverySlice(count: count, fraction: signals.discoveryFraction)
+        var signalsObject = (try? JSONSerialization.jsonObject(with: JSONEncoder().encode(signals))) as? [String: Any] ?? [:]
+        // Doubles encode with their binary tail (0.3 becomes 0.29999999999999999).
+        // Round to what means something and send exact decimals.
+        signalsObject["discoveryFraction"] = NSDecimalNumber(string: String(format: "%.1f", signals.discoveryFraction))
+        signalsObject["perDinnerBudget"] = NSDecimalNumber(string: String(format: "%.2f", signals.perDinnerBudget))
+        let hints = trendingHints.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
+        if !hints.isEmpty {
+            signalsObject["trendingHints"] = hints
+        }
+        var object: [String: Any] = [
+            "task": "shelf_topup",
+            "count": count,
+            "slices": ["taste": count - discovery, "discovery": discovery],
+            "servings": 2,
+            "vocab": [
+                "cuisines": ShelfVocab.cuisines,
+                "proteins": ShelfVocab.proteins,
+                "methods": ShelfVocab.methods,
+                "sections": ShelfVocab.sections
+            ],
+            "signals": signalsObject
+        ]
+        if let request = request?.trimmingCharacters(in: .whitespacesAndNewlines), !request.isEmpty {
+            object["request"] = request
+        }
+        let data = (try? JSONSerialization.data(withJSONObject: object, options: [.sortedKeys])) ?? Data("{}".utf8)
+        return String(data: data, encoding: .utf8) ?? "{}"
+    }
+
+    /// One shelf request through the relay with the given purpose. Returns
+    /// the last text block of the reply. 402 throws outOfPlans, 401 throws
+    /// subscriptionRefused, everything else non-200 throws badStatus; the
+    /// callers decide which of those the household ever sees.
+    private static func shelfCall(purpose: String, system: String, userText: String, maxTokens: Int, timeout: TimeInterval, subscriptionID: String?) async throws -> String {
+        guard let subscriptionID, !subscriptionID.isEmpty else {
+            throw ClaudeError.subscriptionRefused
+        }
+        var request = try relayRequest(subscriptionID: subscriptionID, timeout: timeout)
+        let body: [String: Any] = [
+            "model": "claude-sonnet-5",
+            "max_tokens": maxTokens,
+            "purpose": purpose,
+            "thinking": ["type": "disabled"],
+            "system": system,
+            "messages": [["role": "user", "content": userText]]
+        ]
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+        logLongText("outgoing \(purpose) system prompt", system)
+        logLongText("outgoing \(purpose) user text", userText)
+        logger.info("Shelf request out: purpose \(purpose, privacy: .public), \(userText.count, privacy: .public) chars of user text, timeout \(Int(timeout), privacy: .public)s.")
+
+        let started = Date()
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await URLSession.shared.data(for: request)
+        } catch {
+            let elapsed = Int(Date().timeIntervalSince(started))
+            logger.error("Shelf \(purpose, privacy: .public) transport failure after \(elapsed, privacy: .public)s: \(String(describing: error), privacy: .public)")
+            throw error
+        }
+        let elapsed = Int(Date().timeIntervalSince(started))
+        guard let http = response as? HTTPURLResponse else {
+            throw ClaudeError.badStatus(0, "No HTTP response.")
+        }
+        logger.info("Relay answered \(http.statusCode, privacy: .public) to a \(purpose, privacy: .public) request in \(elapsed, privacy: .public)s with \(data.count, privacy: .public) bytes.")
+        guard http.statusCode == 200 else {
+            let snippet = String(String(data: data, encoding: .utf8)?.prefix(300) ?? "")
+            switch http.statusCode {
+            case 402: throw ClaudeError.outOfPlans(snippet)
+            case 401: throw ClaudeError.subscriptionRefused
+            default: throw ClaudeError.badStatus(http.statusCode, snippet)
+            }
+        }
+        guard
+            let envelope = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+            let content = envelope["content"] as? [[String: Any]],
+            let textBlock = content.last(where: { ($0["type"] as? String) == "text" }),
+            let text = textBlock["text"] as? String,
+            !text.isEmpty
+        else {
+            throw ClaudeError.emptyReply
+        }
+        return text
+    }
+
+    /// Asks for `count` new shelf recipes (purpose "topup", no web search).
+    /// Returns the recipes that decoded; one malformed recipe is skipped, not
+    /// the batch. The caller validates content against the household's rules.
+    ///
+    /// A 402 means the monthly shelf allowance is used up. That is not
+    /// something to tell anyone about, so it returns an empty list instead
+    /// of throwing. Other failures throw.
+    ///
+    /// trendingHints (dish names from discoverDishes) and retryNotes
+    /// (rejection reasons from a failed first pass) extend the prompt; the
+    /// frozen ShelfSignals type is left alone.
+    static func topUp(signals: ShelfSignals, count: Int, subscriptionID: String?, trendingHints: [String] = [], retryNotes: [String] = []) async throws -> [ShelfTopUpRecipe] {
+        let n = min(max(count, 1), 5)
+        let hints = trendingHints.filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        let system = topUpSystemPrompt(signals: signals, count: n, hasTrendingHints: !hints.isEmpty)
+        var userText = topUpUserText(signals: signals, count: n, trendingHints: hints, request: nil)
+        if !retryNotes.isEmpty {
+            userText += "\n\nThe previous batch was thrown out for these reasons. Fix every one of them and return a fresh batch: \(retryNotes.joined(separator: " "))"
+        }
+        do {
+            let text = try await shelfCall(purpose: "topup", system: system, userText: userText, maxTokens: 12000, timeout: 120, subscriptionID: subscriptionID)
+            guard
+                let json = stripFences(from: text).data(using: .utf8),
+                let decoded = try? JSONDecoder().decode(ShelfTopUpResponse.self, from: json)
+            else {
+                logger.error("Top-up JSON failed to decode. Reply starts: \(String(text.prefix(300)), privacy: .private)")
+                throw ClaudeError.parseFailed
+            }
+            let good = decoded.recipes.compactMap { $0 }
+            if good.count < decoded.recipes.count {
+                logger.warning("Top-up: \(decoded.recipes.count - good.count, privacy: .public) of \(decoded.recipes.count, privacy: .public) recipes did not decode and were skipped.")
+            }
+            return good
+        } catch ClaudeError.outOfPlans {
+            logger.info("Top-up refused with 402 (shelf allowance used). Staying silent.")
+            return []
+        }
+    }
+
+    /// One replacement dinner in top-up shape, for a night the shelf cannot
+    /// fill (purpose "swap", so it counts with plans and swaps). `request` is
+    /// the household's own words for the swap, if they said any. The caller
+    /// validates it like any other top-up recipe. Throws on failure,
+    /// parseFailed when no recipe decoded.
+    static func fallbackDinner(signals: ShelfSignals, request: String?, subscriptionID: String?) async throws -> ShelfTopUpRecipe {
+        var oneOff = signals
+        oneOff.discoveryFraction = 0
+        let system = topUpSystemPrompt(signals: oneOff, count: 1, hasTrendingHints: false)
+        let userText = topUpUserText(signals: oneOff, count: 1, trendingHints: [], request: request)
+        let text = try await shelfCall(purpose: "swap", system: system, userText: userText, maxTokens: 2500, timeout: 90, subscriptionID: subscriptionID)
+        guard
+            let json = stripFences(from: text).data(using: .utf8),
+            let decoded = try? JSONDecoder().decode(ShelfTopUpResponse.self, from: json),
+            let first = decoded.recipes.compactMap({ $0 }).first
+        else {
+            logger.error("Fallback dinner JSON failed to decode. Reply starts: \(String(text.prefix(300)), privacy: .private)")
+            throw ClaudeError.parseFailed
+        }
+        return first
+    }
+
+    private static func requestPlan(userText: String, dinners: Int, subscriptionID: String, useWebSearch: Bool = false, purpose: String = "plan") async throws -> MealPlan {
         var request: URLRequest
         if let proxyString = configValue("CLAUDE_PROXY_URL"),
            let proxyURL = URL(string: proxyString) {
@@ -425,6 +739,10 @@ week and recipes each have exactly \(count) entries, one per day, \(span), in or
             // steps, plus the grocery list. 8000 could clip a verbose plan
             // mid-JSON.
             "max_tokens": 16000,
+            // Which relay counter and token ceiling this request belongs to.
+            // The Worker refuses unknown values by name, so only the five it
+            // lists are ever sent: plan, swap, topup, discovery, import.
+            "purpose": purpose,
             // claude-sonnet-5 runs adaptive (extended) thinking by DEFAULT when
             // the thinking field is omitted, and max_tokens caps thinking +
             // output combined. On a rich request (taste-history notes + the
@@ -452,7 +770,7 @@ week and recipes each have exactly \(count) entries, one per day, \(span), in or
         // send. Chunked because Console truncates long single lines.
         logLongText("outgoing system prompt", system)
         logLongText("outgoing user text", userText)
-        logger.info("Plan request out: \(userText.count, privacy: .public) chars of user text, \(dinners, privacy: .public) dinners, webSearch \(useWebSearch, privacy: .public), timeout \(Int(request.timeoutInterval), privacy: .public)s.")
+        logger.info("Plan request out: purpose \(purpose, privacy: .public), \(userText.count, privacy: .public) chars of user text, \(dinners, privacy: .public) dinners, webSearch \(useWebSearch, privacy: .public), timeout \(Int(request.timeoutInterval), privacy: .public)s.")
 
         let started = Date()
         let data: Data
@@ -512,7 +830,7 @@ week and recipes each have exactly \(count) entries, one per day, \(span), in or
             let planData = cleaned.data(using: .utf8),
             let plan = try? JSONDecoder().decode(MealPlan.self, from: planData)
         else {
-            logger.error("Plan JSON failed to decode. Reply starts: \(String(cleaned.prefix(300)), privacy: .public)")
+            logger.error("Plan JSON failed to decode. Reply starts: \(String(cleaned.prefix(300)), privacy: .private)")
             throw ClaudeError.parseFailed
         }
         // The model occasionally returns a well-formed plan with the week and

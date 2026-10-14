@@ -48,6 +48,18 @@ final class AppState: ObservableObject {
     @Published var leftoverStatus: [String: Bool] = [:]
     @Published var pastDinners: [PastDinner] = []
     @Published var ratings: [String: Int] = [:]
+    /// The dinner shelf: vetted recipes with picker metadata (cuisine,
+    /// protein, method, cost). Planning a week picks from here in code.
+    @Published var shelf: [ShelfRecipe] = []
+    /// Household-wide taste and safety preferences (cuisine weights, off
+    /// proteins and ingredients, cooldowns, budget, dinners per week).
+    /// Synced as one record, newest updatedAt wins.
+    @Published var preferences: Preferences = Preferences.defaults(now: .distantPast)
+    /// When the shelf was last topped up by any phone in the household.
+    @Published var shelfLastTopUpAt: Date?
+    /// Budget result of the last shelf pick or swap. Views read it to show
+    /// the costliest dinner when the week is over budget.
+    @Published var budgetStatus: ShelfBudgetStatus = .withinBudget
     @Published var phase: Phase = .idle
     /// Short transient notice shown near the Speak tab's status area, for
     /// example when a tap lands while the last plan is still building.
@@ -98,7 +110,7 @@ final class AppState: ObservableObject {
 
     /// When each collection was last edited on this device, keyed by
     /// "plan", "checked", "favorites", "history", "ratings", "recipeBox",
-    /// "pantry", "freeformItems", "leftoverStatus".
+    /// "pantry", "freeformItems", "leftoverStatus", "shelf", "preferences".
     /// Newest wins: a cloud copy older than the local edit is never applied,
     /// so a stale fetch cannot roll back fresh local data.
     private var localEditDates: [String: Date] = [:]
@@ -331,10 +343,16 @@ final class AppState: ObservableObject {
         leftoverStatus = [:]
         pastDinners = []
         ratings = [:]
+        shelf = []
+        shelfLastTopUpAt = nil
+        preferences = Self.seededPreferences()
+        budgetStatus = .withinBudget
         localEditDates = [:]
         // Failed saves from the old household must not be retried into the
         // new one, so pending retries are dropped with the data.
         dirtyKinds = []
+        preferencesSaveTask?.cancel()
+        preferencesSaveTask = nil
         let defaults = UserDefaults.standard
         defaults.removeObject(forKey: HouseholdConfig.Keys.cachedPlan)
         defaults.removeObject(forKey: HouseholdConfig.Keys.cachedChecked)
@@ -346,17 +364,89 @@ final class AppState: ObservableObject {
         defaults.removeObject(forKey: HouseholdConfig.Keys.cachedPantry)
         defaults.removeObject(forKey: HouseholdConfig.Keys.cachedFreeformItems)
         defaults.removeObject(forKey: HouseholdConfig.Keys.cachedLeftoverStatus)
+        defaults.removeObject(forKey: HouseholdConfig.Keys.cachedShelf)
+        defaults.removeObject(forKey: HouseholdConfig.Keys.cachedPreferences)
+        defaults.removeObject(forKey: HouseholdConfig.Keys.lastShelfTopUpAt)
         defaults.removeObject(forKey: HouseholdConfig.Keys.cachedEditDates)
     }
 
     // MARK: - Settings
 
+    /// Weekly budget. Reads the household preference so both phones and the
+    /// plan agree; the per-phone UserDefaults value is only the fallback
+    /// for a preference that was never set.
     var budgetTarget: Double {
-        UserDefaults.standard.double(forKey: HouseholdConfig.Keys.budgetTarget)
+        preferences.effectiveBudget(fallback: UserDefaults.standard.double(forKey: HouseholdConfig.Keys.budgetTarget))
     }
 
     var dinnersPerWeek: Int {
-        UserDefaults.standard.integer(forKey: HouseholdConfig.Keys.dinnersPerWeek)
+        preferences.effectiveDinners(fallback: UserDefaults.standard.integer(forKey: HouseholdConfig.Keys.dinnersPerWeek))
+    }
+
+    /// Settings slider entry points. They go through updatePreferences so
+    /// the value syncs to the other phone.
+    func setBudgetTarget(_ value: Double) {
+        var p = preferences
+        p.budgetTarget = value
+        updatePreferences(p)
+    }
+
+    func setDinnersPerWeek(_ value: Int) {
+        var p = preferences
+        p.dinnersPerWeek = value
+        updatePreferences(p)
+    }
+
+    /// Preferences for a household with nothing stored: defaults, with the
+    /// budget and dinner count taken from this phone's existing settings so
+    /// nothing changes for the household on upgrade. updatedAt is
+    /// distantPast so any stored cloud copy wins.
+    private static func seededPreferences() -> Preferences {
+        var p = Preferences.defaults(now: .distantPast)
+        let defaults = UserDefaults.standard
+        let budget = defaults.double(forKey: HouseholdConfig.Keys.budgetTarget)
+        let dinners = defaults.integer(forKey: HouseholdConfig.Keys.dinnersPerWeek)
+        p.budgetTarget = budget > 0 ? budget : nil
+        p.dinnersPerWeek = dinners > 0 ? dinners : nil
+        return p
+    }
+
+    /// Replaces the household preferences. Stamps updatedAt and writes the
+    /// offline cache at once; the CloudKit save is debounced by 1.5 seconds
+    /// so a slider drag sends one record, not one per tick. The kind is
+    /// marked dirty until the push succeeds, so retryDirtySaves still
+    /// flushes it if the app is suspended first. The only way the
+    /// Preferences UI writes.
+    func updatePreferences(_ prefs: Preferences) {
+        var p = prefs
+        p.updatedAt = Date()
+        preferences = p
+        mirrorPreferencesToDefaults()
+        markEdited("preferences")
+        dirtyKinds.insert("preferences")
+        preferencesSaveTask?.cancel()
+        preferencesSaveTask = Task {
+            try? await Task.sleep(nanoseconds: 1_500_000_000)
+            guard !Task.isCancelled else { return }
+            self.dirtyKinds.remove("preferences")
+            let latest = self.preferences
+            self.backgroundSave("preferences") { try await self.store.savePreferences(latest) }
+        }
+    }
+
+    /// Debounce timer for the Preferences CloudKit save.
+    private var preferencesSaveTask: Task<Void, Never>?
+
+    /// Keeps the per-phone UserDefaults copies equal to the household
+    /// values, so a screen still bound to them shows the shared number.
+    private func mirrorPreferencesToDefaults() {
+        let defaults = UserDefaults.standard
+        if let budget = preferences.budgetTarget {
+            defaults.set(budget, forKey: HouseholdConfig.Keys.budgetTarget)
+        }
+        if let dinners = preferences.dinnersPerWeek {
+            defaults.set(dinners, forKey: HouseholdConfig.Keys.dinnersPerWeek)
+        }
     }
 
     /// 1 through 5, Familiar through Wild card. Reads 0 (unset) as 3, the
@@ -496,12 +586,48 @@ final class AppState: ObservableObject {
 
     // MARK: - Planning
 
+    /// The sentence surpriseMe sends. A request that is empty or exactly
+    /// this means "no cravings", which the shelf can answer on its own.
+    private static let surpriseRequest = "No specific cravings this time. Build a week you are confident this household will love based on the taste notes, and include one new dish worth trying that fits their pattern."
+
+    /// Day names in plan order. N dinners use the first N.
+    private static let planDays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+
+    /// At most this many missing dinners are filled by single fallback
+    /// calls; a bigger gap goes to the full live plan instead.
+    private static let maxFallbackDinners = 2
+
     func generatePlan(from transcript: String) {
-        // Full week generation: pinned dinners ride along as the locked
-        // set, and the grocery check-offs reset for the new shopping trip.
+        guard phase != .planning else {
+            flashStatus("Hold on, still building your last plan.")
+            return
+        }
+        let said = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
+        let pure = said.isEmpty || said == Self.surpriseRequest
+        // Shelf first: picked in code, no model call. Non-subscribers keep
+        // the old path so the paywall still guards planning.
+        var reuse: [ShelfRecipe] = []
+        if subscriptions.status != .notSubscribed, planFromShelf(transcript: said, pure: pure, reuse: &reuse) {
+            return
+        }
+        runLivePlan(transcript: transcript, reuse: reuse)
+    }
+
+    /// The pre-shelf behavior: a full live week. Pinned dinners ride along
+    /// as the locked set, and the grocery check-offs reset for the new
+    /// shopping trip. `reuse` holds shelf recipes the request matched; they
+    /// ride along as locked dinners too, so the reuse is guaranteed by the
+    /// same mechanism pins use. The prompt text itself is not touched.
+    private func runLivePlan(transcript: String, reuse: [ShelfRecipe] = []) {
+        var locked = keptRecipes
+        for pick in reuse {
+            guard !locked.contains(where: { Self.titleKey($0.title) == Self.titleKey(pick.recipe.title) }) else { continue }
+            let day = Self.planDays[min(locked.count, Self.planDays.count - 1)]
+            locked.append(pick.recipe(onDay: day))
+        }
         runPlanGeneration(
             userText: transcript,
-            lockedRecipes: keptRecipes,
+            lockedRecipes: locked,
             preserveChecks: false,
             dinners: dinnersPerWeek,
             useWebSearch: webSearchEnabled
@@ -637,67 +763,9 @@ final class AppState: ObservableObject {
                 // this" and pre-checked, on top of whatever Claude's own
                 // staple-guessing already flagged.
                 let newPlan = rawPlan.reconciledWithRecipes().reconciledWithPantryInventory(stockedItems)
-                // Archive before replacing so nothing is ever lost. The old
-                // plan covers weeks generated before the Recipe Box existed;
-                // the new plan is archived right away so it survives the
-                // next replacement too.
-                let replacedTitles = Set(self.plan?.week.map(\.title) ?? [])
-                let oldPlan = self.plan
-                if let oldPlan {
-                    self.archiveIntoRecipeBox(oldPlan.recipes)
-                }
-                self.archiveIntoRecipeBox(newPlan.recipes)
-                self.plan = newPlan
-                // Leftover check-in only makes sense for a day whose dinner
-                // did not change: a swap keeps the untouched nights' status,
-                // a full regeneration (no oldPlan day matches) drops all of
-                // it for the fresh week.
-                self.leftoverStatus = self.leftoverStatus.filter { day, _ in
-                    oldPlan?.week.first(where: { $0.day == day })?.title
-                        == newPlan.week.first(where: { $0.day == day })?.title
-                }
-                self.markEdited("leftoverStatus")
-                let leftoverSnapshot = self.leftoverStatus
-                self.backgroundSave("leftoverStatus") { try await self.store.saveLeftoverStatus(leftoverSnapshot) }
-                if preserveChecks {
-                    // Swap: the shopping week is already in motion, so
-                    // check-offs for items still on the new list carry
-                    // over, plus the new plan's pantry staples.
-                    self.checkedItemIDs = self.checkedItemIDs
-                        .intersection(newPlan.allItemIDs)
-                        .union(newPlan.pantryItemIDs)
-                } else {
-                    // A new week means a fresh shopping trip: only the new
-                    // plan's pantry staples start checked. Carrying over old
-                    // check-offs would pre-check groceries that have been
-                    // eaten and must be bought again.
-                    self.checkedItemIDs = newPlan.pantryItemIDs
-                }
-                // A swap logs only the genuinely new dinner(s); re-logging
-                // the unchanged nights would bloat the taste history and
-                // the do-not-repeat notes on every mid-week swap.
-                self.recordHistory(
-                    from: newPlan,
-                    replacingTitles: replacedTitles,
-                    onlyNewDinners: preserveChecks
-                )
-                Self.logger.info("Plan generation succeeded: \(newPlan.week.count, privacy: .public) days.")
-                self.phase = .idle
-                self.selectedTab = .week
-                self.markEdited("plan")
-                self.markEdited("checked")
-                self.markEdited("history")
-                self.markEdited("recipeBox")
-
-                // Push to CloudKit so the other phone picks it up.
-                let checked = self.checkedItemIDs
-                let history = self.pastDinners
-                let box = self.recipeBox
-                let kept = self.keptRecipes
-                self.backgroundSave("plan") { try await self.store.savePlan(newPlan) }
-                self.backgroundSave("checked") { try await self.store.saveChecked(checked) }
-                self.backgroundSave("history") { try await self.store.saveHistory(history) }
-                self.backgroundSave("recipeBox") { try await self.store.saveRecipeBox(box, kept: kept) }
+                self.land(newPlan, preserveChecks: preserveChecks)
+                // The model's totals are only trusted after a code check.
+                self.budgetStatus = self.planBudgetStatus(newPlan)
             } catch is CancellationError {
                 // cancelPlanning already reset the phase. Nothing to show.
                 Self.logger.info("Plan generation cancelled.")
@@ -736,6 +804,78 @@ final class AppState: ObservableObject {
                 self.phase = .error(error.localizedDescription)
             }
         }
+    }
+
+    /// Everything that happens when a finished plan replaces the current
+    /// one, shared by the live path and the shelf path: archive, leftover
+    /// check-in, grocery check-offs, history, shelf served stamps, and the
+    /// CloudKit push.
+    private func land(_ newPlan: MealPlan, preserveChecks: Bool) {
+        // Archive before replacing so nothing is ever lost. The old
+        // plan covers weeks generated before the Recipe Box existed;
+        // the new plan is archived right away so it survives the
+        // next replacement too.
+        let replacedTitles = Set(self.plan?.week.map(\.title) ?? [])
+        let oldPlan = self.plan
+        if let oldPlan {
+            self.archiveIntoRecipeBox(oldPlan.recipes)
+        }
+        self.archiveIntoRecipeBox(newPlan.recipes)
+        self.plan = newPlan
+        // Leftover check-in only makes sense for a day whose dinner
+        // did not change: a swap keeps the untouched nights' status,
+        // a full regeneration (no oldPlan day matches) drops all of
+        // it for the fresh week.
+        self.leftoverStatus = self.leftoverStatus.filter { day, _ in
+            oldPlan?.week.first(where: { $0.day == day })?.title
+                == newPlan.week.first(where: { $0.day == day })?.title
+        }
+        self.markEdited("leftoverStatus")
+        let leftoverSnapshot = self.leftoverStatus
+        self.backgroundSave("leftoverStatus") { try await self.store.saveLeftoverStatus(leftoverSnapshot) }
+        if preserveChecks {
+            // Swap: the shopping week is already in motion, so
+            // check-offs for items still on the new list carry
+            // over, plus the new plan's pantry staples.
+            self.checkedItemIDs = self.checkedItemIDs
+                .intersection(newPlan.allItemIDs)
+                .union(newPlan.pantryItemIDs)
+        } else {
+            // A new week means a fresh shopping trip: only the new
+            // plan's pantry staples start checked. Carrying over old
+            // check-offs would pre-check groceries that have been
+            // eaten and must be bought again.
+            self.checkedItemIDs = newPlan.pantryItemIDs
+        }
+        // A swap logs only the genuinely new dinner(s); re-logging
+        // the unchanged nights would bloat the taste history and
+        // the do-not-repeat notes on every mid-week swap.
+        self.recordHistory(
+            from: newPlan,
+            replacingTitles: replacedTitles,
+            onlyNewDinners: preserveChecks
+        )
+        // Stamp the shelf recipes that just got served, so the picker
+        // rotates them to the back and pruning keeps them last.
+        let newTitles = Set(newPlan.week.map(\.title)).subtracting(preserveChecks ? replacedTitles : [])
+        self.markShelfServed(titles: newTitles)
+        self.phase = .idle
+        self.selectedTab = .week
+        self.markEdited("plan")
+        self.markEdited("checked")
+        self.markEdited("history")
+        self.markEdited("recipeBox")
+
+        // Push to CloudKit so the other phone picks it up.
+        let checked = self.checkedItemIDs
+        let history = self.pastDinners
+        let box = self.recipeBox
+        let kept = self.keptRecipes
+        self.backgroundSave("plan") { try await self.store.savePlan(newPlan) }
+        self.backgroundSave("checked") { try await self.store.saveChecked(checked) }
+        self.backgroundSave("history") { try await self.store.saveHistory(history) }
+        self.backgroundSave("recipeBox") { try await self.store.saveRecipeBox(box, kept: kept) }
+        Self.logger.info("Plan generation succeeded: \(newPlan.week.count, privacy: .public) days.")
     }
 
     // MARK: - Subscription gate
@@ -874,7 +1014,7 @@ final class AppState: ObservableObject {
     /// Plans a week with no spoken input at all: Claude picks based on what
     /// the app has learned about the household so far.
     func surpriseMe() {
-        generatePlan(from: "No specific cravings this time. Build a week you are confident this household will love based on the taste notes, and include one new dish worth trying that fits their pattern.")
+        generatePlan(from: Self.surpriseRequest)
     }
 
     /// Appends the new plan's dinners to the rolling history. A same-day
@@ -903,8 +1043,13 @@ final class AppState: ObservableObject {
         let entries = onlyNewDinners
             ? newPlan.week.filter { !replaced.contains($0.title.lowercased()) }
             : newPlan.week
-        let dinners = entries.map {
-            PastDinner(title: $0.title, cuisine: $0.cuisine, date: now)
+        // A dinner that is on the shelf is logged as planned, not cooked:
+        // it only blocks repeats for a week unless someone marks it cooked
+        // or rates it. Anything else keeps cooked nil (counts as cooked).
+        let dinners = entries.map { entry -> PastDinner in
+            let match = shelfRecipe(matchingTitle: entry.title)
+            return PastDinner(title: entry.title, cuisine: entry.cuisine, date: now,
+                              cooked: match == nil ? nil : false, shelfID: match?.id)
         }
         pastDinners.append(contentsOf: dinners)
         if pastDinners.count > Self.historyLimit {
@@ -1002,14 +1147,20 @@ final class AppState: ObservableObject {
     /// the rating. Low ratings (1 or 2) are excluded from future suggestions.
     func rate(_ recipe: Recipe, stars: Int) {
         let key = recipe.title.lowercased()
+        var landed = false
         if ratings[key] == stars {
             ratings.removeValue(forKey: key)
         } else {
             ratings[key] = stars
+            landed = true
         }
         markEdited("ratings")
         let snapshot = ratings
         backgroundSave("ratings") { try await self.store.saveRatings(snapshot) }
+        // A rating is proof the dinner was cooked.
+        if landed {
+            markCooked(title: recipe.title, score: Double(stars))
+        }
     }
 
     /// Lowercases every ratings key so lookups are case-insensitive.
@@ -1291,6 +1442,603 @@ final class AppState: ObservableObject {
         backgroundSave("leftoverStatus") { try await self.store.saveLeftoverStatus(snapshot) }
     }
 
+    // MARK: - Shelf
+
+    private static func titleKey(_ title: String) -> String {
+        title.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private func shelfRecipe(matchingTitle title: String) -> ShelfRecipe? {
+        let key = Self.titleKey(title)
+        return shelf.first { Self.titleKey($0.recipe.title) == key }
+    }
+
+    private var favoriteTitleSet: Set<String> {
+        Set(favorites.map { Self.titleKey($0.title) })
+    }
+
+    /// Persists the shelf: offline cache, then CloudKit.
+    private func persistShelf() {
+        markEdited("shelf")
+        let payload = ShelfPayload(recipes: shelf, lastTopUpAt: shelfLastTopUpAt)
+        backgroundSave("shelf") { try await self.store.saveShelf(payload) }
+    }
+
+    /// Adds recipes to the shelf. A title already on the shelf, in the
+    /// recipe box, in the last 60 history titles, or repeated inside the
+    /// batch (lowercased) is skipped. Over the cap, the shelf prunes rated
+    /// 1-2 first, then the oldest served, then the oldest created.
+    func addToShelf(_ recipes: [ShelfRecipe]) {
+        var taken = Set(shelf.map { Self.titleKey($0.recipe.title) })
+        taken.formUnion(recipeBox.map { Self.titleKey($0.title) })
+        taken.formUnion(pastDinners.suffix(Self.historyLimit).map { Self.titleKey($0.title) })
+        var added: [ShelfRecipe] = []
+        for recipe in recipes {
+            let key = Self.titleKey(recipe.recipe.title)
+            guard !key.isEmpty, taken.insert(key).inserted else { continue }
+            added.append(recipe)
+        }
+        guard !added.isEmpty else { return }
+        shelf.append(contentsOf: added)
+        pruneShelf(protecting: Set(added.map(\.id)))
+        persistShelf()
+    }
+
+    private func pruneShelf(protecting fresh: Set<UUID>) {
+        let inPlan = Set(plan?.week.map { Self.titleKey($0.title) } ?? [])
+        while shelf.count > ShelfVocab.shelfCap {
+            func tier(_ s: ShelfRecipe) -> (Int, Date) {
+                if let r = ratings[s.recipe.title.lowercased()], r <= 2 { return (0, s.createdAt) }
+                if let served = s.servedAt { return (1, served) }
+                return (2, s.createdAt)
+            }
+            // Fresh arrivals and this week's dinners go last.
+            let pool = shelf.indices.filter { !fresh.contains(shelf[$0].id) && !inPlan.contains(Self.titleKey(shelf[$0].recipe.title)) }
+            let candidates = pool.isEmpty ? Array(shelf.indices) : pool
+            let victim = candidates.min { a, b in
+                let ta = tier(shelf[a]), tb = tier(shelf[b])
+                return ta.0 != tb.0 ? ta.0 < tb.0 : ta.1 < tb.1
+            }
+            guard let v = victim else { break }
+            shelf.remove(at: v)
+        }
+    }
+
+    /// Records a top-up. Set by the top-up flow after addToShelf.
+    func setShelfLastTopUp(_ date: Date) {
+        shelfLastTopUpAt = date
+        UserDefaults.standard.set(date.timeIntervalSince1970, forKey: HouseholdConfig.Keys.lastShelfTopUpAt)
+        persistShelf()
+    }
+
+    private func markShelfServed(titles: Set<String>) {
+        guard !titles.isEmpty else { return }
+        let keys = Set(titles.map(Self.titleKey))
+        let now = Date()
+        var changed = false
+        for i in shelf.indices where keys.contains(Self.titleKey(shelf[i].recipe.title)) {
+            shelf[i].servedAt = now
+            changed = true
+        }
+        if changed { persistShelf() }
+    }
+
+    /// Marks a dinner as cooked: the matching history entry (latest) gets
+    /// cooked = true and the matching shelf recipe gets cookedAt. Rating a
+    /// dinner calls this too.
+    func markCooked(title: String) {
+        markCooked(title: title, score: nil)
+    }
+
+    private func markCooked(title: String, score: Double?) {
+        let key = Self.titleKey(title)
+        var historyChanged = false
+        if let i = pastDinners.lastIndex(where: { Self.titleKey($0.title) == key }), pastDinners[i].cooked != true {
+            pastDinners[i].cooked = true
+            historyChanged = true
+        }
+        var shelfChanged = false
+        if let j = shelf.firstIndex(where: { Self.titleKey($0.recipe.title) == key }) {
+            shelf[j].cookedAt = shelf[j].cookedAt ?? Date()
+            if let score { shelf[j].score = score }
+            shelfChanged = true
+        }
+        if historyChanged {
+            markEdited("history")
+            let snapshot = pastDinners
+            backgroundSave("history") { try await self.store.saveHistory(snapshot) }
+        }
+        if shelfChanged { persistShelf() }
+    }
+
+    /// Taste and safety signals for the top-up and fallback calls.
+    var shelfSignals: ShelfSignals {
+        let now = Date()
+        func resolve(_ title: String) -> (cuisine: String?, protein: String?, method: String?) {
+            let key = Self.titleKey(title)
+            if let s = shelf.first(where: { Self.titleKey($0.recipe.title) == key }) {
+                return (s.cuisine, s.primaryProtein, s.method)
+            }
+            if let d = pastDinners.last(where: { Self.titleKey($0.title) == key }), !d.cuisine.isEmpty {
+                return (d.cuisine, nil, nil)
+            }
+            return (nil, nil, nil)
+        }
+        func top(_ values: [String]) -> [String] {
+            var counts: [String: Int] = [:]
+            for v in values where !v.isEmpty && v.lowercased() != "none" { counts[v, default: 0] += 1 }
+            return counts.sorted { $0.value != $1.value ? $0.value > $1.value : $0.key < $1.key }.prefix(6).map(\.key)
+        }
+        let likedTitles = ratings.filter { $0.value >= 4 }.keys.sorted() + favorites.map(\.title)
+        let dislikedTitles = ratings.filter { $0.value <= 2 }.keys.sorted()
+        let liked = likedTitles.map(resolve)
+        let disliked = dislikedTitles.map(resolve)
+
+        var seen = Set<String>()
+        var doNotRepeat: [String] = []
+        let ordered = shelf.map(\.recipe.title) + recipeBox.prefix(80).map(\.title) + keptRecipes.map(\.title)
+            + pastDinners.suffix(Self.historyLimit).map(\.title)
+        for title in ordered where seen.insert(Self.titleKey(title)).inserted {
+            doNotRepeat.append(title)
+        }
+
+        let dinners = max(dinnersPerWeek, 1)
+        return ShelfSignals(
+            likedCuisines: top(liked.compactMap(\.cuisine)),
+            likedProteins: top(liked.compactMap(\.protein)),
+            likedMethods: top(liked.compactMap(\.method)),
+            dislikedCuisines: top(disliked.compactMap(\.cuisine)),
+            dislikedProteins: top(disliked.compactMap(\.protein)),
+            dislikedMethods: top(disliked.compactMap(\.method)),
+            doNotRepeat: doNotRepeat,
+            proteinsOff: preferences.offProteins(at: now),
+            ingredientsOff: preferences.offIngredients(at: now),
+            perDinnerBudget: budgetTarget / Double(dinners),
+            discoveryFraction: ShelfVocab.discoveryFraction
+        )
+    }
+
+    // MARK: - Shelf-first planning
+
+    /// Tries to plan the week from the shelf. Returns true when the shelf
+    /// took the request: a plan landed, or fallback fills are in flight.
+    /// False means nothing happened and the caller runs the live path.
+    private func planFromShelf(transcript: String, pure: Bool, reuse: inout [ShelfRecipe]) -> Bool {
+        guard !shelf.isEmpty else { return false }
+        let count = min(max(dinnersPerWeek, 1), 7)
+
+        // Pinned dinners ride in as locked shelf entries. A pin that is not
+        // on the shelf has no picker metadata, so the live path (which
+        // locks real Recipes) handles that week.
+        var locked: [ShelfRecipe] = []
+        for kept in keptRecipes {
+            guard let match = shelfRecipe(matchingTitle: kept.title) else { return false }
+            if !locked.contains(where: { $0.id == match.id }) { locked.append(match) }
+        }
+        let lockedIDs = Set(locked.map(\.id))
+
+        let now = Date()
+        let calendar = Calendar.current
+        let favs = favoriteTitleSet
+        var allowed: Set<UUID>?
+        if !pure {
+            let matched = shelf.filter { s in
+                !lockedIDs.contains(s.id)
+                    && ShelfRules.keywordScore(transcript: transcript, recipe: s) > 0
+                    && ShelfRules.eligibility(of: s, shelf: shelf, history: pastDinners, ratings: ratings, favoriteTitles: favs,
+                                              prefs: preferences, today: now, calendar: calendar) == .eligible
+            }
+            guard matched.count >= count - locked.count else {
+                // Too few matches to fill the week from the shelf. The best
+                // two ride into the live plan as locked dinners, leaving the
+                // model at least one new dinner to write.
+                let room = max(0, min(2, count - 1 - keptRecipes.count))
+                reuse = Array(matched
+                    .map { ($0, ShelfRules.keywordScore(transcript: transcript, recipe: $0)) }
+                    .sorted { $0.1 != $1.1 ? $0.1 > $1.1 : $0.0.recipe.title < $1.0.recipe.title }
+                    .prefix(room).map(\.0))
+                return false
+            }
+            allowed = Set(matched.map(\.id))
+        }
+
+        let result = ShelfRules.pickWeek(
+            count: count, shelf: shelf, locked: locked, history: pastDinners, ratings: ratings, favoriteTitles: favs,
+            prefs: preferences, budgetTarget: budgetTarget, today: now, calendar: calendar,
+            seed: UInt64(now.timeIntervalSince1970), allowed: allowed
+        )
+        Self.logger.info("Shelf pick: \(result.picks.count, privacy: .public) of \(count, privacy: .public), shortfall \(result.shortfall, privacy: .public).")
+
+        if result.shortfall == 0 {
+            landShelfPicks(result.picks, status: result.budget)
+            return true
+        }
+        guard pure, result.shortfall <= Self.maxFallbackDinners else { return false }
+
+        let picks = result.picks
+        let missing = result.shortfall
+        let signals = shelfSignals
+        phase = .planning
+        planTask = Task {
+            do {
+                guard let entitlement = await Self.raceAgainstClock(seconds: 15, {
+                    await self.subscriptions.activeTransactionID()
+                }), let subscriptionID = entitlement else {
+                    // No answer or no subscription: the live path owns both
+                    // the error text and the paywall.
+                    self.phase = .idle
+                    self.runLivePlan(transcript: transcript)
+                    return
+                }
+                var avoid = signals
+                avoid.doNotRepeat.append(contentsOf: picks.map(\.recipe.title))
+                var filled: [ShelfRecipe] = []
+                for _ in 0..<missing {
+                    let request = avoid
+                    let raw = try await Self.withPlanningDeadline {
+                        try await ClaudeService.fallbackDinner(signals: request, request: nil, subscriptionID: subscriptionID)
+                    }
+                    guard let made = self.shelfRecipe(fromFallback: raw, extraTitles: (picks + filled).map(\.recipe.title)) else {
+                        throw ShelfFallbackError()
+                    }
+                    filled.append(made)
+                    avoid.doNotRepeat.append(made.recipe.title)
+                }
+                let all = picks + filled
+                let status = ShelfRules.enforceBudget(picks: all, locked: lockedIDs, pool: [], ceiling: self.budgetTarget).budget
+                self.landShelfPicks(all, status: status)
+            } catch is CancellationError {
+                Self.logger.info("Shelf fallback cancelled.")
+            } catch {
+                guard !Task.isCancelled else { return }
+                Self.logger.error("Shelf fallback failed, using the live plan: \(String(describing: error), privacy: .public)")
+                self.phase = .idle
+                self.runLivePlan(transcript: transcript)
+            }
+        }
+        return true
+    }
+
+    private struct ShelfFallbackError: Error {}
+
+    /// Lowercased titles a new dinner must not repeat: shelf, box, pins,
+    /// history, the current week, plus any extras.
+    private func knownTitleSet(extra: [String]) -> Set<String> {
+        var out = Set<String>()
+        let all = shelf.map(\.recipe.title) + recipeBox.map(\.title) + keptRecipes.map(\.title)
+            + pastDinners.map(\.title) + (plan?.week.map(\.title) ?? []) + extra
+        for t in all { out.insert(ShelfFiller.normalizedTitle(t)) }
+        return out
+    }
+
+    /// Turns a fallback dinner into a shelf recipe through the same
+    /// validation as a top-up (vocab, cost ceiling, 3 ingredients, 4 steps,
+    /// off lists, duplicate titles), then re-checks off-protein derivatives
+    /// in code. Nil means unusable.
+    private func shelfRecipe(fromFallback raw: ShelfTopUpRecipe, extraTitles: [String]) -> ShelfRecipe? {
+        let now = Date()
+        let perDinner = budgetTarget / Double(max(dinnersPerWeek, 1))
+        switch ShelfFiller.validate(raw, prefs: preferences, perDinnerBudget: perDinner,
+                                    knownTitles: knownTitleSet(extra: extraTitles), now: now, source: "fallback") {
+        case .failure(let rejection):
+            Self.logger.error("Fallback dinner rejected: \(rejection.reason, privacy: .private)")
+            return nil
+        case .success(let made):
+            let texts = made.ingredientKeys + made.recipe.ingredients.map(\.item) + made.groceryItems.map(\.name)
+            if ShelfRules.offProteinHit(protein: made.primaryProtein, texts: texts, prefs: preferences, now: now) != nil {
+                Self.logger.error("Fallback dinner rejected: off-protein derivative.")
+                return nil
+            }
+            return made
+        }
+    }
+
+    /// Builds the MealPlan from shelf picks in code (no model call) and
+    /// lands it through the shared pipeline.
+    private func landShelfPicks(_ picks: [ShelfRecipe], status: ShelfBudgetStatus) {
+        let now = Date()
+        let days = Array(Self.planDays.prefix(min(max(picks.count, 1), 7)))
+        var served = Array(picks.prefix(days.count))
+        for i in served.indices { served[i].servedAt = now }
+        // Fallback dinners join the shelf (stamped served) before the plan
+        // archives them into the recipe box, which would block the dedupe.
+        let newcomers = served.filter { pick in !shelf.contains { $0.id == pick.id } }
+        if !newcomers.isEmpty { addToShelf(newcomers) }
+
+        let week = zip(days, served).map { $1.weekEntry(onDay: $0) }
+        let recipes = zip(days, served).map { $1.recipe(onDay: $0) }
+        let grocery = ShelfRules.buildGrocery(picks: served, budgetTarget: budgetTarget)
+        let built = MealPlan(week: week, recipes: recipes, grocery: grocery)
+            .reconciledWithRecipes()
+            .reconciledWithPantryInventory(pantryItems)
+        land(built, preserveChecks: false)
+        budgetStatus = status
+    }
+
+    // MARK: - Shelf swaps
+
+    /// Swaps the dinner at `index` of the current week (plan.week order).
+    /// Shelf candidate first, then one fallback dinner; the live one-night
+    /// swap runs only when both fail. Never regenerates the week.
+    func swapPick(at index: Int) {
+        guard let plan, plan.week.indices.contains(index) else { return }
+        guard phase != .planning else {
+            flashStatus("Hold on, still building your last plan.")
+            return
+        }
+        let day = plan.week[index].day
+        Task {
+            if await swapFromShelf(day: day) { return }
+            swapNight(day: day, transcript: "")
+        }
+    }
+
+    /// Replaces only `day`'s dinner, no matter how the week was built.
+    /// 1. A shelf candidate that keeps the variety rules. 2. Otherwise one
+    /// `ClaudeService.fallbackDinner`, validated through ShelfFiller.validate
+    /// with source "fallback". The grocery list is patched in code and
+    /// check-offs survive by itemID. Returns false (nothing changed) only
+    /// when neither source can supply a dinner, so the caller can use the
+    /// live swapNight as the last resort. A cancel mid-call returns true
+    /// with nothing applied.
+    func swapFromShelf(day: String) async -> Bool {
+        guard phase != .planning, let plan,
+              let index = plan.week.firstIndex(where: { $0.day == day }) else { return false }
+        if let replacement = shelfSwapCandidate(for: index, in: plan) {
+            applySwap(day: day, replacement: replacement)
+            return true
+        }
+
+        // No shelf candidate: one small fallback call.
+        phase = .planning
+        defer { if phase == .planning { phase = .idle } }
+        guard let entitlement = await Self.raceAgainstClock(seconds: 15, {
+            await self.subscriptions.activeTransactionID()
+        }), let subscriptionID = entitlement else { return false }
+        var signals = shelfSignals
+        signals.doNotRepeat.append(contentsOf: plan.week.map(\.title))
+        let request = signals
+        let raw: ShelfTopUpRecipe
+        do {
+            raw = try await Self.withPlanningDeadline {
+                try await ClaudeService.fallbackDinner(signals: request, request: nil, subscriptionID: subscriptionID)
+            }
+        } catch {
+            guard !Task.isCancelled, phase == .planning else { return true }
+            Self.logger.error("Swap fallback failed: \(String(describing: error), privacy: .public)")
+            return false
+        }
+        // Cancelled, or the plan moved while the call was out.
+        guard phase == .planning, !Task.isCancelled else { return true }
+        guard let current = self.plan, current.week.first(where: { $0.day == day })?.title == plan.week[index].title else { return false }
+        guard let made = shelfRecipe(fromFallback: raw, extraTitles: current.week.map(\.title)) else { return false }
+        phase = .idle
+        applySwap(day: day, replacement: made)
+        return true
+    }
+
+    /// Shelf picks for every night of the plan, or nil when any night is not
+    /// a shelf recipe.
+    private func shelfPicks(for plan: MealPlan) -> [ShelfRecipe]? {
+        var picks: [ShelfRecipe] = []
+        for entry in plan.week {
+            guard let match = shelfRecipe(matchingTitle: entry.title) else { return nil }
+            picks.append(match)
+        }
+        return picks
+    }
+
+    /// Stand-in for a night that is not on the shelf, enough for the
+    /// cuisine rule in the variety check. Never stored or shown.
+    private func placeholderPick(for entry: WeekEntry, in plan: MealPlan) -> ShelfRecipe {
+        let recipe = plan.recipe(forDay: entry.day)
+            ?? Recipe(day: "", title: entry.title, cookTimeMin: entry.cookTimeMin, servings: entry.servings, ingredients: [], steps: [])
+        return ShelfRecipe(recipe: recipe, cuisine: entry.cuisine, primaryProtein: "none", method: "other",
+                           ingredientKeys: [], groceryItems: [], source: "import")
+    }
+
+    /// Best shelf replacement for one night: eligible, not already in the
+    /// week, variety-safe against the other nights. Prefers one that keeps
+    /// the week inside the budget, else the best-ranked.
+    private func shelfSwapCandidate(for index: Int, in plan: MealPlan) -> ShelfRecipe? {
+        let known = shelfPicks(for: plan)
+        let picks = known ?? plan.week.map { entry in shelfRecipe(matchingTitle: entry.title) ?? placeholderPick(for: entry, in: plan) }
+        let now = Date()
+        let calendar = Calendar.current
+        let favs = favoriteTitleSet
+        let seed = UInt64(now.timeIntervalSince1970)
+        let weekTitles = Set(plan.week.map { Self.titleKey($0.title) })
+        let pool = shelf
+            .filter { !weekTitles.contains(Self.titleKey($0.recipe.title)) }
+            .filter {
+                ShelfRules.eligibility(of: $0, shelf: shelf, history: pastDinners, ratings: ratings, favoriteTitles: favs,
+                                       prefs: preferences, today: now, calendar: calendar) == .eligible
+            }
+            .sorted {
+                ShelfRules.rank($0, ratings: ratings, favoriteTitles: favs, prefs: preferences, seed: seed)
+                    > ShelfRules.rank($1, ratings: ratings, favoriteTitles: favs, prefs: preferences, seed: seed)
+            }
+        let candidates = ShelfRules.swapCandidates(for: index, picks: picks, pool: pool)
+        guard !candidates.isEmpty else { return nil }
+
+        let ceilingCents = Int((budgetTarget * 100).rounded())
+        func cents(_ x: Double) -> Int { Int((x * 100).rounded()) }
+        if known != nil {
+            for candidate in candidates {
+                var trial = picks
+                trial[index] = candidate
+                if cents(trial.reduce(0.0) { $0 + $1.estCost }) <= ceilingCents { return candidate }
+            }
+        } else {
+            let others = cents(plan.grocery.estimatedTotal) - cents(nightCosts(of: plan)[index])
+            for candidate in candidates where others + cents(candidate.estCost) <= ceilingCents { return candidate }
+        }
+        return candidates[0]
+    }
+
+    /// Puts `replacement` on `day` and nothing else: the other nights stay
+    /// byte-identical, the grocery list is rebuilt (all-shelf week) or
+    /// patched (any other week) in code, check-offs survive by itemID.
+    private func applySwap(day: String, replacement: ShelfRecipe) {
+        guard let plan, let index = plan.week.firstIndex(where: { $0.day == day }) else { return }
+        let now = Date()
+        var swapped = replacement
+        swapped.servedAt = now
+        if !shelf.contains(where: { $0.id == swapped.id }) {
+            addToShelf([swapped])
+        } else if let s = shelf.firstIndex(where: { $0.id == swapped.id }) {
+            shelf[s].servedAt = now
+        }
+
+        let old = plan.week[index]
+        let oldRecipe = plan.recipes.first { $0.day == day }
+        // Swapping away a pinned dinner also unpins it, same as swapNight.
+        if let oldRecipe, isKept(oldRecipe) { toggleKeep(oldRecipe) }
+        // The dropped dinner was planned, never cooked.
+        let oldKey = Self.titleKey(old.title)
+        if let h = pastDinners.lastIndex(where: { Self.titleKey($0.title) == oldKey }), pastDinners[h].cooked != true {
+            pastDinners[h].cooked = false
+        }
+
+        let allShelf = shelfPicks(for: plan)
+        var newPlan = plan
+        newPlan.week[index] = swapped.weekEntry(onDay: day)
+        if let r = newPlan.recipes.firstIndex(where: { $0.day == day }) {
+            newPlan.recipes[r] = swapped.recipe(onDay: day)
+        }
+        var newPicks: [ShelfRecipe]?
+        if var picks = allShelf {
+            picks[index] = swapped
+            newPicks = picks
+            newPlan.grocery = ShelfRules.buildGrocery(picks: picks, budgetTarget: budgetTarget)
+        } else {
+            newPlan.grocery = Self.patchedGrocery(plan.grocery, in: plan, removing: old.title, adding: swapped, budgetTarget: budgetTarget)
+        }
+        newPlan = newPlan.reconciledWithRecipes().reconciledWithPantryInventory(pantryItems)
+        land(newPlan, preserveChecks: true)
+        if let newPicks {
+            budgetStatus = shelfBudgetStatus(picks: newPicks)
+        } else {
+            budgetStatus = planBudgetStatus(newPlan)
+        }
+    }
+
+    /// The grocery list after one dinner changes, without a model call.
+    /// Items only the old dinner needs are removed, shared items lose the
+    /// old title from their tags, and the new dinner's lines merge into the
+    /// matching section by lowercased name (price summed, quantities joined
+    /// with " + ", tag added) or are appended. Totals are recomputed from
+    /// the lines.
+    nonisolated static func patchedGrocery(_ grocery: Grocery, in plan: MealPlan, removing oldTitle: String,
+                                            adding new: ShelfRecipe, budgetTarget: Double) -> Grocery {
+        let oldKey = oldTitle.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+        func key(_ s: String) -> String { s.lowercased().trimmingCharacters(in: .whitespacesAndNewlines) }
+        func cents(_ x: Double) -> Double { (x * 100).rounded() / 100 }
+
+        var sections: [GrocerySection] = []
+        for section in grocery.sections {
+            var kept: [GroceryItem] = []
+            for var item in section.items {
+                let tags = plan.recipeTitles(for: item)
+                if tags.contains(where: { key($0) == oldKey }) {
+                    let remaining = tags.filter { key($0) != oldKey }
+                    if remaining.isEmpty { continue }
+                    item.recipes = remaining
+                }
+                kept.append(item)
+            }
+            sections.append(GrocerySection(name: section.name, items: kept))
+        }
+
+        let newTitle = new.recipe.title
+        for line in new.groceryItems {
+            let si: Int
+            if let found = sections.firstIndex(where: { $0.name == line.section }) {
+                si = found
+            } else {
+                sections.append(GrocerySection(name: line.section, items: []))
+                si = sections.count - 1
+            }
+            if let ii = sections[si].items.firstIndex(where: { key($0.name) == key(line.name) }) {
+                var item = sections[si].items[ii]
+                item.estPrice = cents(item.estPrice + line.estPrice)
+                let parts = item.qty.components(separatedBy: " + ").map { $0.trimmingCharacters(in: .whitespaces) }
+                let q = line.qty.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !q.isEmpty, !parts.contains(where: { $0.caseInsensitiveCompare(q) == .orderedSame }) {
+                    item.qty = item.qty.isEmpty ? q : item.qty + " + " + q
+                }
+                item.pantry = item.pantry && line.pantry
+                var tags = item.recipes ?? plan.recipeTitles(for: item)
+                if !tags.contains(newTitle) { tags.append(newTitle) }
+                item.recipes = tags
+                sections[si].items[ii] = item
+            } else {
+                sections[si].items.append(GroceryItem(name: line.name, qty: line.qty, estPrice: cents(line.estPrice),
+                                                      pantry: line.pantry, recipes: [newTitle]))
+            }
+        }
+        sections.removeAll { $0.items.isEmpty }
+
+        var spend = 0.0
+        var credit = 0.0
+        for item in sections.flatMap(\.items) {
+            if item.pantry { credit += item.estPrice } else { spend += item.estPrice }
+        }
+        return Grocery(budgetTarget: budgetTarget, estimatedTotal: cents(spend), pantryCredit: cents(credit),
+                       notes: grocery.notes, sections: sections)
+    }
+
+    // MARK: - Budget status
+
+    /// Each night's share of the non-pantry spend: an item's price is split
+    /// evenly across the dinners its tags name. Items that tag no dinner
+    /// (general items) belong to no night. Indexed like plan.week.
+    func nightCosts(of plan: MealPlan) -> [Double] {
+        var costs = Array(repeating: 0.0, count: plan.week.count)
+        for item in plan.grocery.sections.flatMap(\.items) where !item.pantry {
+            let owners = plan.week.indices.filter { i in
+                plan.recipeTitles(for: item).contains { $0.caseInsensitiveCompare(plan.week[i].title) == .orderedSame }
+            }
+            guard !owners.isEmpty else { continue }
+            let share = item.estPrice / Double(owners.count)
+            for i in owners { costs[i] += share }
+        }
+        return costs
+    }
+
+    /// Code-side budget check for any plan, live or shelf. Over means the
+    /// grocery estimate beats the budget in cents. The offender is the
+    /// costliest night, preferring dinners that are not pinned.
+    func planBudgetStatus(_ plan: MealPlan) -> ShelfBudgetStatus {
+        let ceiling = budgetTarget
+        let total = (plan.grocery.estimatedTotal * 100).rounded() / 100
+        guard Int((total * 100).rounded()) > Int((ceiling * 100).rounded()), !plan.week.isEmpty else { return .withinBudget }
+        let costs = nightCosts(of: plan)
+        let unpinned = plan.week.indices.filter { i in
+            !keptRecipes.contains { $0.title.caseInsensitiveCompare(plan.week[i].title) == .orderedSame }
+        }
+        let field = unpinned.isEmpty ? Array(plan.week.indices) : unpinned
+        var offender = field[0]
+        for i in field where costs[i] >= costs[offender] { offender = i }
+        return .overBudget(offenderIndex: offender, total: total, ceiling: ceiling)
+    }
+
+    /// Shelf-week budget status from pick costs. Pinned dinners are locked,
+    /// so the offender is never one the household asked to keep (unless
+    /// every dinner is pinned).
+    private func shelfBudgetStatus(picks: [ShelfRecipe]) -> ShelfBudgetStatus {
+        let lockedIDs = Set(picks.filter { p in
+            keptRecipes.contains { $0.title.caseInsensitiveCompare(p.recipe.title) == .orderedSame }
+        }.map(\.id))
+        let status = ShelfRules.enforceBudget(picks: picks, locked: lockedIDs, pool: [], ceiling: budgetTarget).budget
+        if case .overBudget(_, let total, let ceiling) = status, lockedIDs.count == picks.count, !picks.isEmpty {
+            var offender = 0
+            for i in picks.indices where picks[i].estCost >= picks[offender].estCost { offender = i }
+            return .overBudget(offenderIndex: offender, total: total, ceiling: ceiling)
+        }
+        return status
+    }
+
     // MARK: - Sync
 
     /// Records that a collection was just edited on this device, then
@@ -1360,6 +2108,13 @@ final class AppState: ObservableObject {
             case "leftoverStatus":
                 let snapshot = leftoverStatus
                 backgroundSave("leftoverStatus") { try await self.store.saveLeftoverStatus(snapshot) }
+            case "shelf":
+                let payload = ShelfPayload(recipes: shelf, lastTopUpAt: shelfLastTopUpAt)
+                backgroundSave("shelf") { try await self.store.saveShelf(payload) }
+            case "preferences":
+                preferencesSaveTask?.cancel()
+                let snapshot = preferences
+                backgroundSave("preferences") { try await self.store.savePreferences(snapshot) }
             default:
                 break
             }
@@ -1478,6 +2233,27 @@ final class AppState: ObservableObject {
             }
             localEditDates["leftoverStatus"] = remote.updatedAt
         }
+        if let remote = await store.fetchShelf(), stillCurrent(),
+           remote.updatedAt > localEditDate(for: "shelf") {
+            if remote.payload.recipes != shelf {
+                shelf = remote.payload.recipes
+            }
+            if let remoteTop = remote.payload.lastTopUpAt, remoteTop > (shelfLastTopUpAt ?? .distantPast) {
+                shelfLastTopUpAt = remoteTop
+                UserDefaults.standard.set(remoteTop.timeIntervalSince1970, forKey: HouseholdConfig.Keys.lastShelfTopUpAt)
+            }
+            localEditDates["shelf"] = remote.updatedAt
+        }
+        // Preferences compare the payload's own updatedAt: the later writer
+        // wins as a whole, so two phones never merge half of each.
+        if let remote = await store.fetchPreferences(), stillCurrent(),
+           remote.prefs.updatedAt > preferences.updatedAt {
+            if remote.prefs != preferences {
+                preferences = remote.prefs
+                mirrorPreferencesToDefaults()
+            }
+            localEditDates["preferences"] = remote.updatedAt
+        }
         guard stillCurrent() else { return }
         saveLocalCache()
     }
@@ -1541,6 +2317,28 @@ final class AppState: ObservableObject {
            let cached = try? JSONDecoder().decode([String: Bool].self, from: data) {
             leftoverStatus = cached
         }
+        if let json = defaults.string(forKey: HouseholdConfig.Keys.cachedShelf),
+           let data = json.data(using: .utf8),
+           let cached = try? JSONDecoder().decode(ShelfPayload.self, from: data) {
+            shelf = cached.recipes
+            shelfLastTopUpAt = cached.lastTopUpAt
+        }
+        let storedTopUp = defaults.double(forKey: HouseholdConfig.Keys.lastShelfTopUpAt)
+        if storedTopUp > 0 {
+            let date = Date(timeIntervalSince1970: storedTopUp)
+            if date > (shelfLastTopUpAt ?? .distantPast) { shelfLastTopUpAt = date }
+        }
+        if let json = defaults.string(forKey: HouseholdConfig.Keys.cachedPreferences),
+           let data = json.data(using: .utf8),
+           let cached = try? JSONDecoder().decode(Preferences.self, from: data) {
+            preferences = cached
+        } else {
+            // First launch with the shelf: carry this phone's budget and
+            // dinner count in, in memory only. Not stamped and not pushed,
+            // so a household that already has preferences in the cloud
+            // takes those instead.
+            preferences = Self.seededPreferences()
+        }
         if let stamps = defaults.dictionary(forKey: HouseholdConfig.Keys.cachedEditDates) as? [String: Double] {
             localEditDates = stamps.mapValues { Date(timeIntervalSince1970: $0) }
         }
@@ -1585,6 +2383,17 @@ final class AppState: ObservableObject {
         if let data = try? JSONEncoder().encode(leftoverStatus),
            let json = String(data: data, encoding: .utf8) {
             defaults.set(json, forKey: HouseholdConfig.Keys.cachedLeftoverStatus)
+        }
+        if let data = try? JSONEncoder().encode(ShelfPayload(recipes: shelf, lastTopUpAt: shelfLastTopUpAt)),
+           let json = String(data: data, encoding: .utf8) {
+            defaults.set(json, forKey: HouseholdConfig.Keys.cachedShelf)
+        }
+        // The seeded default (updatedAt distantPast) is never cached, so a
+        // relaunch seeds again instead of freezing the first-launch values.
+        if preferences.updatedAt > .distantPast,
+           let data = try? JSONEncoder().encode(preferences),
+           let json = String(data: data, encoding: .utf8) {
+            defaults.set(json, forKey: HouseholdConfig.Keys.cachedPreferences)
         }
         let stamps = localEditDates.mapValues { $0.timeIntervalSince1970 }
         defaults.set(stamps, forKey: HouseholdConfig.Keys.cachedEditDates)

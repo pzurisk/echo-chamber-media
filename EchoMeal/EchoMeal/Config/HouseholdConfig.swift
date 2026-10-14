@@ -85,6 +85,12 @@ enum HouseholdConfig {
         static let cachedPantry = "cachedPantryJSON"
         static let cachedFreeformItems = "cachedFreeformItemsJSON"
         static let cachedLeftoverStatus = "cachedLeftoverStatusJSON"
+        static let cachedShelf = "cachedShelfJSON"
+        static let cachedPreferences = "cachedPreferencesJSON"
+        /// When this phone last topped up the shelf, as a TimeInterval since
+        /// the 1970 reference date. Per-phone throttle, not synced; the
+        /// household-wide date lives in ShelfPayload.lastTopUpAt.
+        static let lastShelfTopUpAt = "lastShelfTopUpAt"
         static let cachedEditDates = "cachedEditDates"
 
         /// Where the code used to live. Read only by purgeLegacyStorageIfNeeded.

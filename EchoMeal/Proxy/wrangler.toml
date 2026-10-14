@@ -3,24 +3,27 @@ main = "worker.js"
 compatibility_date = "2026-01-01"
 
 # Global daily ceiling across every subscriber combined. This is a circuit
-# breaker against a runaway bill, not a per-user budget, so it sits far above
-# what normal use produces. The per-subscription cap below is what an individual
-# household actually feels. Raise this number and redeploy to loosen it.
-# Both are plain variables, not secrets, so they are safe to read in the dashboard.
+# breaker against a runaway bill, not a per-user budget. Both are plain
+# variables, not secrets, so they are safe to read in the dashboard.
 #
-# Sized for the real subscriber count, not an imagined one. At two phones plus a
-# handful of TestFlight testers, 60 is roughly ten times normal use and caps a
-# runaway day at about five dollars. The previous value of 400 was around $36 a
-# day at typical cost and $115 at the worst case the token ceiling allows, which
-# is a circuit breaker for a business that does not exist yet. Raise it when the
-# subscriber count justifies it.
+# Sized in the recipe engine recon (section 11): four households at a peak day
+# of about 15 calls is 60, doubled for retries and one bad day is 120. Steady
+# use is about 9 calls a day, so 120 is roughly thirteen times normal. It caps a
+# runaway day at about $11 at typical cost and about $35 at the worst case the
+# token ceilings allow. worker.js carries the same number as its code default,
+# so a missing variable cannot quietly become a bigger cap. Change both together.
 #
-# This matters more than it looks: both quota checks in worker.js are skipped
-# entirely if the KV read fails, so during a Cloudflare outage this cap is not
+# This matters more than it looks: every quota check in worker.js is skipped
+# if its KV read fails, so during a Cloudflare outage these caps are not
 # enforced either. The only limit that always holds is the monthly spend cap set
 # on the Anthropic account itself. Keep that one set.
 [vars]
-DAILY_REQUEST_CAP = "60"
+DAILY_REQUEST_CAP = "120"
+
+# One subscription's ceiling across every purpose in one UTC day. The global cap
+# above is a single integer, so this stops one stuck client from locking every
+# other household out. Roughly ten times a household's steady day.
+DAILY_TXN_CAP = "25"
 
 # TEMPORARY (2026-08-21): no build on any phone sends x-txn-id yet, the
 # subscription code landed in git after the last archived build (see
@@ -28,12 +31,24 @@ DAILY_REQUEST_CAP = "60"
 # entirely so plans can generate while a build with the subscription flow
 # gets made and installed. Set back to "1", or delete this line, once that
 # build is on the phone and tested end to end.
+#
+# While this is "0", every counter keyed on the transaction ID is skipped: the
+# monthly plan count, the monthly shelf count and the per-subscription daily
+# count. Only DAILY_REQUEST_CAP above is enforced.
 REQUIRE_SUBSCRIPTION = "0"
 
-# One subscription's included meal plans per calendar month. This number is
-# quoted on the paywall, in the App Store description, and in the refusal message
-# the app shows at the cap. Changing it here means changing it in all three.
+# One subscription's included meal plans and swaps per calendar month, counted
+# for purpose "plan" and "swap" only. This number is quoted on the paywall, in
+# the App Store description, and in the refusal message the app shows at the
+# cap. Changing it here means changing it in all three.
 MONTHLY_GENERATION_CAP = "20"
+
+# One subscription's shelf requests per calendar month, counted for purpose
+# "topup", "discovery" and "import". Separate from the 20 above so refilling the
+# shelf never spends a plan. A household at about 2.3 calls a day uses about 70
+# a month, so 90 leaves room without being open-ended. Not quoted anywhere the
+# subscriber sees, so it can change without an app update.
+MONTHLY_SHELF_CAP = "90"
 
 # Whether TestFlight and sandbox subscriptions count as real ones. Leave this
 # on while testing a build through TestFlight, because TestFlight purchases live
@@ -45,11 +60,12 @@ MONTHLY_GENERATION_CAP = "20"
 # tester account, and both of those only exist if Billy created them.
 ALLOW_SANDBOX_SUBSCRIPTIONS = "1"
 
-# Counter storage. Holds three kinds of value and nothing else: a count for the
-# day, a count for one subscription in one month, and a short-lived yes or no on
-# whether a transaction ID is a live subscription. Those keys include the
-# subscription's Apple transaction ID, which is a purchase identifier and is
-# declared as such in App Privacy. No name, no email, no IP address, no request
+# Counter storage. Holds counts and nothing else: one for the whole relay per
+# day, one for one subscription per day, one for one subscription per month for
+# plans and swaps, one for one subscription per month for shelf requests, and a
+# short-lived yes or no on whether a transaction ID is a live subscription. The
+# per-subscription keys include the subscription's Apple transaction ID, which
+# is a purchase identifier and is declared as such in App Privacy. No name, no email, no IP address, no request
 # bodies, no meal plans.
 [[kv_namespaces]]
 binding = "SPEND_COUNTER"

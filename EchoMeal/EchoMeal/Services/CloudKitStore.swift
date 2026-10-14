@@ -23,6 +23,8 @@ import Foundation
 ///   Pantry         "pantry-<lookupID>"     payload, householdID, updatedAt
 ///   FreeformItems  "freeform-<lookupID>"   payload, householdID, updatedAt
 ///   LeftoverStatus "leftover-<lookupID>"   payload, householdID, updatedAt
+///   Shelf          "shelf-<lookupID>"      payload, householdID, updatedAt
+///   Preferences    "prefs-<lookupID>"      payload, householdID, updatedAt
 ///
 /// `payload` is Bytes and holds an AES-GCM sealed box. `householdID` holds
 /// the lookup ID, not the code, and stays QUERYABLE because
@@ -46,6 +48,8 @@ final class CloudKitStore {
     static let pantryRecordType = "Pantry"
     static let freeformRecordType = "FreeformItems"
     static let leftoverStatusRecordType = "LeftoverStatus"
+    static let shelfRecordType = "Shelf"
+    static let preferencesRecordType = "Preferences"
 
     /// The single encrypted field on every record type.
     private static let payloadKey = "payload"
@@ -95,9 +99,12 @@ final class CloudKitStore {
         static let pantry = Kind(prefix: "pantry", type: CloudKitStore.pantryRecordType)
         static let freeform = Kind(prefix: "freeform", type: CloudKitStore.freeformRecordType)
         static let leftoverStatus = Kind(prefix: "leftover", type: CloudKitStore.leftoverStatusRecordType)
+        static let shelf = Kind(prefix: "shelf", type: CloudKitStore.shelfRecordType)
+        static let preferences = Kind(prefix: "prefs", type: CloudKitStore.preferencesRecordType)
 
         static let all: [Kind] = [
-            plan, grocery, favorites, history, ratings, recipeBox, pantry, freeform, leftoverStatus
+            plan, grocery, favorites, history, ratings, recipeBox, pantry, freeform, leftoverStatus,
+            shelf, preferences
         ]
     }
 
@@ -303,6 +310,37 @@ final class CloudKitStore {
     /// caller can skip applying a cloud copy that is older than local edits.
     func fetchLeftoverStatus() async -> (status: [String: Bool], updatedAt: Date)? {
         guard let read = await readValue([String: Bool].self, .leftoverStatus) else { return nil }
+        return (read.value, read.updatedAt)
+    }
+
+    // MARK: - Recipe shelf
+
+    /// The household's shelf of ready recipes plus the last top-up date, as
+    /// one sealed payload. Whole payload, last writer wins.
+    func saveShelf(_ shelf: ShelfPayload) async throws {
+        try await writeValue(shelf, .shelf)
+    }
+
+    /// Returns the shelf plus the record's freshness date so the caller can
+    /// skip applying a cloud copy that is older than local edits.
+    func fetchShelf() async -> (payload: ShelfPayload, updatedAt: Date)? {
+        guard let read = await readValue(ShelfPayload.self, .shelf) else { return nil }
+        return (read.value, read.updatedAt)
+    }
+
+    // MARK: - Preferences
+
+    /// Household cuisine weights, off lists, cooldowns, and budget. Whole
+    /// payload, last writer wins; the payload carries its own `updatedAt`
+    /// for the caller to compare.
+    func savePreferences(_ prefs: Preferences) async throws {
+        try await writeValue(prefs, .preferences)
+    }
+
+    /// Returns the preferences plus the record's freshness date so the
+    /// caller can skip applying a cloud copy that is older than local edits.
+    func fetchPreferences() async -> (prefs: Preferences, updatedAt: Date)? {
+        guard let read = await readValue(Preferences.self, .preferences) else { return nil }
         return (read.value, read.updatedAt)
     }
 
