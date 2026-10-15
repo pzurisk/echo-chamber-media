@@ -16,6 +16,49 @@ const VIEWS = [
 
 let toastSeq = 0;
 
+// Temporary diagnostic. jweb is an embedded CEF webview, and when its browser
+// viewport does not match the object's size in the patcher the page renders
+// small in a corner and looks like a scaling bug in the app. This reports what
+// the page is actually being handed, so the two cases can be told apart.
+// Remove once the sizing is confirmed correct in Live.
+function ViewportBadge() {
+  const [dims, setDims] = useState(() => ({
+    w: window.innerWidth,
+    h: window.innerHeight,
+    dpr: window.devicePixelRatio,
+  }));
+
+  useEffect(() => {
+    const onResize = () =>
+      setDims({
+        w: window.innerWidth,
+        h: window.innerHeight,
+        dpr: window.devicePixelRatio,
+      });
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        right: 6,
+        bottom: 6,
+        zIndex: 9999,
+        background: "#e0a343",
+        color: "#000",
+        font: "600 12px/1.35 ui-monospace, Menlo, monospace",
+        padding: "4px 7px",
+        borderRadius: 4,
+        pointerEvents: "none",
+      }}
+    >
+      viewport {dims.w} x {dims.h} @{dims.dpr}x
+    </div>
+  );
+}
+
 export default function App() {
   const [mode, setMode] = useState("connecting");
   const [view, setView] = useState("stuck");
@@ -92,7 +135,8 @@ export default function App() {
   }, [mode, request]);
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="h-full min-h-full flex flex-col">
+      <ViewportBadge />
       <header className="sticky top-0 z-40 border-b border-edge bg-bg/95 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center gap-6 px-5 py-3">
           <div className="flex items-center gap-2">

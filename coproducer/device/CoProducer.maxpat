@@ -231,8 +231,8 @@
 						"toolbars_unpinned_last_save": 0,
 						"tallnewobj": 0,
 						"boxanimatetime": 200,
-						"enablehscroll": 1,
-						"enablevscroll": 1,
+						"enablehscroll": 0,
+						"enablevscroll": 0,
 						"devicewidth": 0.0,
 						"description": "",
 						"digest": "",
@@ -250,7 +250,7 @@
 									"numinlets": 0,
 									"numoutlets": 1,
 									"outlettype": [""],
-									"patching_rect": [20.0, 20.0, 30.0, 30.0]
+									"patching_rect": [20.0, 660.0, 30.0, 30.0]
 								}
 							},
 							{
@@ -260,7 +260,7 @@
 									"numinlets": 1,
 									"numoutlets": 1,
 									"outlettype": ["bang"],
-									"patching_rect": [80.0, 20.0, 70.0, 22.0],
+									"patching_rect": [80.0, 660.0, 70.0, 22.0],
 									"text": "loadbang"
 								}
 							},
@@ -271,7 +271,7 @@
 									"numinlets": 2,
 									"numoutlets": 1,
 									"outlettype": ["bang"],
-									"patching_rect": [80.0, 55.0, 80.0, 22.0],
+									"patching_rect": [80.0, 695.0, 80.0, 22.0],
 									"text": "del 2000"
 								}
 							},
@@ -282,21 +282,24 @@
 									"numinlets": 2,
 									"numoutlets": 1,
 									"outlettype": [""],
-									"patching_rect": [80.0, 55.0, 200.0, 22.0],
+									"patching_rect": [80.0, 730.0, 300.0, 22.0],
 									"text": "url ../ui/dist/index.html"
 								}
 							},
 							{
 								"box": {
+									"disablefind": 0,
 									"id": "sub-4",
-									"maxclass": "newobj",
+									"maxclass": "jweb",
 									"numinlets": 1,
-									"numoutlets": 2,
-									"outlettype": ["", ""],
-									"patching_rect": [80.0, 95.0, 900.0, 620.0],
+									"numoutlets": 1,
+									"outlettype": [""],
+									"patching_rect": [0.0, 0.0, 900.0, 620.0],
 									"presentation": 1,
 									"presentation_rect": [0.0, 0.0, 900.0, 620.0],
-									"text": "jweb"
+									"rendermode": 2,
+									"url": "",
+									"varname": "ui"
 								}
 							}
 						],

@@ -161,11 +161,36 @@ const uiPort = process.env.COPRODUCER_WS_PORT || '7400';
 const uiUrl = 'http://127.0.0.1:' + uiPort + '/index.html';
 
 let uiRewrote = 0;
+let jwebSeen = 0;
 eachBox(patcher.patcher, (box) => {
+  // A real jweb is maxclass "jweb" with url as an attribute, NOT a newobj whose
+  // text is "jweb". Declared as a newobj, Max builds it at its default 320x240
+  // and ignores patching_rect, which renders the page tiny in the corner.
+  if (box.maxclass === 'jweb') {
+    box.url = uiUrl;
+    jwebSeen++;
+    return;
+  }
   if (box.maxclass !== 'message') return;
   if (/^url\s+/.test(box.text || '')) {
     box.text = 'url ' + uiUrl;
     uiRewrote++;
+  }
+});
+
+if (jwebSeen !== 1) {
+  console.error('expected exactly one jweb object, found ' + jwebSeen);
+  process.exit(1);
+}
+
+// Guard against the newobj mistake coming back.
+eachBox(patcher.patcher, (box) => {
+  if (box.maxclass === 'newobj' && /^jweb\b/.test(box.text || '')) {
+    console.error(
+      'jweb is declared as a newobj. It must be {"maxclass":"jweb"} with a url ' +
+        'attribute, or Max builds it at its default 320x240 and ignores its rect.'
+    );
+    process.exit(1);
   }
 });
 

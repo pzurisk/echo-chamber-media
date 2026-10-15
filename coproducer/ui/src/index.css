@@ -3,6 +3,17 @@
 @tailwind utilities;
 
 @layer base {
+  /* Full height chain. Without this the app has nothing to stretch to and
+     collapses to its content height inside jweb. Percentage heights are used
+     rather than 100vh because viewport units are not reliable in an embedded
+     CEF webview, where the visual viewport can differ from the object size. */
+  html,
+  body,
+  #root {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
   html {
     background-color: theme(colors.bg);
   }
