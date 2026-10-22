@@ -1,7 +1,7 @@
 # LightLink Pi Bridge: Feasibility Draft (Phase 1, partial)
 
 Written: Oct 22, 2026, from a cloud session with no access to the Pi, the Mac, or the lights.
-Status: DRAFT. Covers only the web research half of Phase 1. Light inventory, Pi range test, and the final OS decision still need Billy at the Mac.
+Status: DRAFT, with two decisions locked by Billy on Oct 22 (see section 10). Covers only the web research half of Phase 1. Light inventory, Pi range test, and the final OS decision still need Billy at the Mac.
 Source: three Haiku probes (web search and repo pages only). Anything marked "unverified" was not confirmed at a readable source. Nothing below has been tested on hardware.
 
 ## 1. The short version
@@ -78,7 +78,22 @@ One brand per capture session. Order: GVM (if not 800D), Aputure Sidus, Nanlite,
 
 ## 8. Progress Log entry (paste into the vault note)
 
-- Oct 22, 2026: Phase 1 web research done from a cloud session. Neewer easy, Amaran hard but has reference code, four brands need captures, HA has no integrations for any of them. Recommended Neewer first, then Amaran, and Raspberry Pi OS on the 3B+ instead of building inside HAOS. Draft saved to the echo-chamber-media repo, branch claude/lightlink-pi-bridge-dq5f2e, lightlink/Feasibility-Draft.md. Phase 0 still not confirmed. Blocked on: Billy at the Mac for Phase 0, inventory, and OS decision. Next step: Billy approves brand order and OS option, then Phase 0.
+- Oct 22, 2026: Phase 1 web research done from a cloud session. Neewer easy, Amaran hard but has reference code, four brands need captures, HA has no integrations for any of them. Recommended Neewer first, then Amaran, and Raspberry Pi OS on the 3B+ instead of building inside HAOS. Draft saved to the echo-chamber-media repo, branch claude/lightlink-pi-bridge-dq5f2e, lightlink/Feasibility-Draft.md. Billy approved Neewer first and option C (3B+ on a fresh card with Raspberry Pi OS, HAOS untouched). Phase 0 rewritten for option C in section 11. Blocked on: Billy at the Mac for Phase 0 and the light inventory. Next step: Phase 0, then inventory, then Phase 2 starts with the Neewer adapter.
+
+## 10. Decisions locked by Billy (Oct 22, 2026)
+
+- Brand order: Neewer first, then Amaran, then the rest as listed in section 3. Overrides the handoff's "Amaran adapter first."
+- Hub: option C. LightLink runs on the Pi 3B+ on a fresh microSD card with Raspberry Pi OS Lite (64-bit). The existing HAOS install on the Pi 3 stays untouched.
+
+## 11. Phase 0, rewritten for option C (Billy at the Mac, no agent spend)
+
+1. Get a spare microSD card, 16GB or larger, class 10 or A1. The current HAOS card is not reused.
+2. On the Mac, install Raspberry Pi Imager. Choose Raspberry Pi OS Lite (64-bit). In the settings gear before writing: hostname `lightlink`, enable SSH with a password or the Mac's public key, set the home Wi-Fi so it can also be reached wirelessly, set locale and timezone.
+3. Write the card, put it in the 3B+, connect Ethernet to the router, power on, wait two minutes.
+4. On the Mac, confirm `ssh <user>@lightlink.local` works. That is the gate.
+5. Keep the HAOS Pi 3 running as it is. Nothing changes there.
+
+No long-lived token is needed anymore. Store the Pi login in the password manager, not in notes.
 
 ## 9. Source URLs
 
