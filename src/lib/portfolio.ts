@@ -44,3 +44,15 @@ export const HOME_PHOTOS: Photo[] = [
   "red-rock-bouquet-gaze",
   "corvette-smile",
 ].map((f) => PHOTOS.find((p) => p.file === f)!);
+
+// Eight strongest photos for the homepage carousel, in display order.
+export const CAROUSEL_PHOTOS: Photo[] = [
+  "high-roller-sunset-kiss",
+  "high-roller-smile",
+  "venetian-gold-fountain",
+  "venetian-door-dance",
+  "doges-palace-embrace",
+  "red-rock-forehead",
+  "red-rock-bouquet-gaze",
+  "corvette-moonrise",
+].map((f) => PHOTOS.find((p) => p.file === f)!);

@@ -4,6 +4,7 @@ import {
   Montserrat,
   Cormorant_Garamond,
   Instrument_Sans,
+  Jost,
   Pinyon_Script,
   Yellowtail,
 } from "next/font/google";
@@ -26,10 +27,17 @@ const montserrat = Montserrat({
 // Bridal palette faces (homepage, /elopements, music videos). Self-hosted by
 // next/font, so no new CSP host is needed.
 const cormorant = Cormorant_Garamond({
-  weight: ["400", "500"],
+  weight: ["300", "400", "500", "600"],
   style: ["normal", "italic"],
   subsets: ["latin"],
   variable: "--font-cormorant",
+  display: "swap",
+});
+
+const jost = Jost({
+  weight: ["300", "400", "500"],
+  subsets: ["latin"],
+  variable: "--font-jost",
   display: "swap",
 });
 
@@ -197,7 +205,7 @@ export default function RootLayout({
         )}
       </head>
       <body
-        className={`${archivoBlack.variable} ${montserrat.variable} ${cormorant.variable} ${instrumentSans.variable} ${pinyon.variable} ${yellowtail.variable} font-body antialiased bg-brand-black text-brand-off-white`}
+        className={`${archivoBlack.variable} ${montserrat.variable} ${cormorant.variable} ${instrumentSans.variable} ${jost.variable} ${pinyon.variable} ${yellowtail.variable} font-body antialiased bg-brand-black text-brand-off-white`}
       >
         {children}
       </body>

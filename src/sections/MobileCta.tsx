@@ -42,7 +42,7 @@ export default function MobileCta({ dateHref = "/#date" }: { dateHref?: string }
           <a
             href={dateHref}
             tabIndex={show ? 0 : -1}
-            className="flex h-[52px] flex-[1.4] items-center justify-center rounded-full bg-gilt font-sans text-[15px] font-semibold text-ivory"
+            className="flex h-[52px] flex-[1.4] items-center justify-center bg-ink font-sans text-xs uppercase tracking-[0.2em] text-ivory"
           >
             Check your date
           </a>
@@ -50,7 +50,7 @@ export default function MobileCta({ dateHref = "/#date" }: { dateHref?: string }
             href={SITE.phoneSms}
             tabIndex={show ? 0 : -1}
             onClick={() => (window as GtagWindow).gtag?.("event", "text_click", { event_category: "engagement", event_label: "mobile_bar", value: 1 })}
-            className="flex h-[52px] flex-1 items-center justify-center rounded-full border border-ink/40 font-sans text-[15px] font-semibold text-ink"
+            className="flex h-[52px] flex-1 items-center justify-center border border-ink/40 font-sans text-xs uppercase tracking-[0.2em] text-ink"
           >
             Text us
           </a>

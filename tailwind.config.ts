@@ -19,32 +19,32 @@ const config: Config = {
           gray: "#A0A0A0",
           red: "#C94C4C",
         },
-        // 2026-11 redesign: the former bridal token names now carry the dark gold
-        // palette (ECM brand system), so every page that used them goes dark at once.
+        // 2026-11 redesign: refined ivory and ink palette (elegant, high-end). The token
+        // names are shared by every page that used the bridal palette.
         // ivory = page background, champagne = raised surface, ink = main text,
         // muted = secondary text, gilt = gold accent.
-        ivory: "#1A1A1A",
-        champagne: "#242424",
-        ink: "#F5F5F5",
-        muted: "#A8A8A8",
+        ivory: "#F4EFE6",
+        champagne: "#EBE4D6",
+        ink: "#1C1815",
+        muted: "#6B5F52",
         gilt: {
-          DEFAULT: "#C9A84C",
-          hover: "#D4B85C",
-          accent: "#C9A84C",
+          DEFAULT: "#6E5B3F",
+          hover: "#1C1815",
+          accent: "#B8A88A",
         },
         // After dark section.
         night: {
           DEFAULT: "#120E0A",
           text: "#F4EADA",
           muted: "#CDBFA8",
-          gold: "#E2B04A",
+          gold: "#D8C3A0",
         },
       },
       fontFamily: {
         heading: ["var(--font-archivo-black)", "sans-serif"],
         body: ["var(--font-montserrat)", "sans-serif"],
-        display: ["var(--font-archivo-black)", "sans-serif"],
-        sans: ["var(--font-montserrat)", "system-ui", "sans-serif"],
+        display: ["var(--font-cormorant)", "Georgia", "serif"],
+        sans: ["var(--font-jost)", "system-ui", "sans-serif"],
         script: ["var(--font-pinyon)", "cursive"],
         "script-dark": ["var(--font-yellowtail)", "cursive"],
       },

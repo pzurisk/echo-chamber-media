@@ -17,7 +17,7 @@ import MobileCta from "@/sections/MobileCta";
 export default function Home() {
   return (
     <div className="bg-ivory font-sans text-ink">
-      <Navbar />
+      <Navbar overlay />
       <main>
         <Hero />
         <TrustStrip />

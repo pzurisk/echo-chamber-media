@@ -1,39 +1,49 @@
 import Image from "next/image";
 import Button from "@/components/Button";
 
+// Video-led hero. The poster sits under the video, so phones that block autoplay and
+// visitors who prefer reduced motion still see a still frame, never a blank box.
 export default function Hero() {
   return (
-    <section className="relative flex min-h-[640px] items-end overflow-hidden bg-ivory text-white md:h-screen">
+    <section className="relative flex min-h-[640px] items-end justify-center overflow-hidden bg-[#14110F] text-ivory md:h-screen">
       <Image
-        src="/images/portfolio/high-roller-sunset-kiss.webp"
-        alt="Couple kissing at sunset in front of the High Roller observation wheel in Las Vegas"
+        src="/images/redrock-reel-poster.jpg"
+        alt=""
         fill
         priority
         sizes="100vw"
-        className="object-cover object-[50%_35%]"
+        className="object-cover"
       />
-      <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-black/45" />
-      <div className="relative mx-auto w-full max-w-[1312px] px-4 pb-14 pt-32 md:px-16 md:pb-24">
-        <p className="mb-4 font-sans text-xs font-semibold uppercase tracking-[0.28em] text-gilt">
-          Las Vegas photography and film
+      <video
+        className="absolute inset-0 h-full w-full object-cover motion-reduce:hidden"
+        src="/video/redrock-reel.mp4"
+        poster="/images/redrock-reel-poster.jpg"
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="auto"
+        aria-hidden="true"
+      />
+      <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/10 to-black/60" />
+      <div className="relative mx-auto flex w-full max-w-[1100px] flex-col items-center px-4 pb-14 pt-32 text-center md:pb-16">
+        <p className="mb-5 font-sans text-[11px] uppercase tracking-[0.3em] text-[#E3D5BE] md:text-xs md:tracking-[0.34em]">
+          Las Vegas weddings, elopements and engagements
         </p>
-        <h1 className="max-w-[900px] font-display text-[40px] leading-[1.05] sm:text-6xl lg:text-7xl">
-          Las Vegas photos and films that feel like your best night.
+        <h1 className="font-display text-[52px] leading-[1.02] sm:text-7xl lg:text-[84px]">
+          Films made to be <em className="italic">felt</em>.
         </h1>
-        <p className="mt-5 max-w-[560px] font-sans text-[17px] leading-[1.6] text-white/90 md:text-xl">
-          Engagements, elopements and weddings. Choose photos, film, or both. I run every shoot myself, and you get everything within 10 days.
-        </p>
-        <div className="mt-8 flex flex-col gap-4 sm:flex-row">
-          <Button variant="ink" href="#date">Check your date</Button>
+        <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row">
+          <Button variant="light-outline" href="#date">Check your date</Button>
           <a
             href="#work"
-            className="inline-flex h-14 items-center justify-center rounded-full border border-white/70 px-8 font-sans text-base font-semibold text-white transition-colors hover:bg-white hover:text-black"
+            className="font-sans text-xs uppercase tracking-[0.24em] text-ivory/90 underline-offset-8 transition-colors hover:text-white hover:underline"
           >
             See the work
           </a>
         </div>
-        <p className="mt-6 font-sans text-[15px] text-white/80">
-          <span className="font-semibold text-white">Film from $1,000.</span> Photos add on for $500. A $500 deposit holds your date.
+        <p className="mt-6 font-sans text-sm font-light text-ivory/85">
+          Film from $1,000. Photos add on for $500. Everything delivered within 10 days.
         </p>
       </div>
     </section>

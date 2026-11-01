@@ -45,7 +45,7 @@ function track(event: string, label: string) {
 
 export default function Contact({ kind }: { kind: Kind }) {
   const c = COPY[kind];
-  const dark = true; // dark gold redesign: both forms use the night styling
+  const dark = false; // light ivory form, matches the refined redesign
   const [form, setForm] = useState({
     name: "",
     email: "",

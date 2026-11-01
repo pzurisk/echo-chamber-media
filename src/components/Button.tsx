@@ -1,7 +1,7 @@
 import React from "react";
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "gold" | "outline" | "dark" | "ink" | "ink-outline" | "night-gold";
+  variant?: "gold" | "outline" | "dark" | "ink" | "ink-outline" | "night-gold" | "light" | "light-outline";
   href?: string;
   children: React.ReactNode;
 }
@@ -16,8 +16,11 @@ export default function Button({
   // Legacy square variants (gold, outline, dark) serve the dark pages.
   // Pill variants (ink, ink-outline, night-gold) serve the bridal pages.
   const isPill = variant === "ink" || variant === "ink-outline" || variant === "night-gold";
+  const isRefined = variant === "ink" || variant === "ink-outline" || variant === "light" || variant === "light-outline";
 
-  const base = isPill
+  const base = isRefined
+    ? "inline-flex items-center justify-center h-14 px-10 font-sans text-xs font-normal uppercase tracking-[0.26em] transition-colors duration-300 cursor-pointer"
+    : isPill
     ? "inline-flex items-center justify-center h-14 px-8 rounded-full font-sans font-semibold text-base transition-colors duration-300 cursor-pointer"
     : "inline-flex items-center justify-center px-8 py-3 text-sm font-body font-semibold uppercase tracking-editorial transition-all duration-300 cursor-pointer";
 
@@ -26,9 +29,11 @@ export default function Button({
     outline:
       "border border-brand-gold text-brand-gold hover:bg-brand-gold hover:text-brand-black",
     dark: "bg-brand-charcoal text-brand-off-white hover:bg-brand-gold hover:text-brand-black",
-    ink: "bg-gilt text-ivory hover:bg-gilt-hover",
-    "ink-outline": "border border-gilt text-gilt hover:bg-gilt hover:text-ivory",
-    "night-gold": "bg-night-gold text-night hover:bg-[#F0C25C]",
+    ink: "bg-ink text-ivory hover:bg-gilt",
+    "ink-outline": "border border-ink text-ink hover:bg-ink hover:text-ivory",
+    light: "bg-ivory text-ink hover:bg-white",
+    "light-outline": "border border-ivory text-ivory hover:bg-ivory hover:text-ink",
+    "night-gold": "bg-night-gold text-night hover:bg-[#E8D8BC]",
   };
 
   const classes = `${base} ${variants[variant]} ${className}`;
