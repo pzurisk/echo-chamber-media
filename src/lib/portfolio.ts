@@ -35,7 +35,6 @@ export const PHOTOS: Photo[] = [
   L("red-rock-roses-raised", "Bride in a black dress holding a bouquet of roses high in the desert at Red Rock Canyon", "Red Rock"),
   P("moon-heart-rooftop", "Couple in a suit and a blue gown making a heart with their hands around the full moon on a rooftop at dusk", "Downtown"),
   P("moon-heart-hands", "Two hands forming a heart around the full moon against a purple dusk sky", "Downtown"),
-  P("venetian-plaza-embrace", "Couple embracing in front of the pink and white patterned facade at the Venetian", "Venetian"),
   L("venetian-arches-portrait", "Couple standing in front of white arches and tall wooden doors at the Venetian", "Venetian"),
   P("high-roller-fountain", "Couple posing at a fountain with the High Roller observation wheel rising behind them at dusk", "High Roller"),
 ];
