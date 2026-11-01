@@ -53,7 +53,7 @@ enum ShelfFiller {
         running = true
         defer { running = false }
 
-        guard state.isOnboarded else { return }
+        guard state.isOnboarded else { NSLog("SHELFTRACE skip(%@): not onboarded", reason); return }
         let now = Date()
         let defaults = UserDefaults.standard
 
@@ -74,18 +74,25 @@ enum ShelfFiller {
         let gap = ready < coldStartReadyFloor ? coldStartGap : minimumGap
         if let last = [phoneLast, householdLast].compactMap({ $0 }).max(),
            now.timeIntervalSince(last) < gap {
+            NSLog("SHELFTRACE skip(%@): spacing, ready=%d shelf=%d gap=%ds sinceLast=%ds", reason, ready, state.shelf.count, Int(gap), Int(now.timeIntervalSince(last)))
             return
         }
 
         // Need.
         let stale = householdLast.map { now.timeIntervalSince($0) > staleAfter } ?? true
-        guard ready < targetShelfSize || stale else { return }
+        guard ready < targetShelfSize || stale else {
+            NSLog("SHELFTRACE skip(%@): no need, ready=%d shelf=%d", reason, ready, state.shelf.count)
+            return
+        }
 
         // A stale but full shelf still gets the smallest batch, so the stock
         // keeps turning over. Never past the shelf cap, never under the
         // contract's three-recipe floor.
         let slots = ShelfVocab.shelfCap - state.shelf.count
-        guard slots >= batchMin else { return }
+        guard slots >= batchMin else {
+            NSLog("SHELFTRACE skip(%@): shelf full, shelf=%d", reason, state.shelf.count)
+            return
+        }
         let wanted = max(batchMin, min(batchMax, targetShelfSize - ready))
         let count = min(wanted, slots)
 
@@ -94,6 +101,7 @@ enum ShelfFiller {
         // StoreKit entitlements.
         guard let subscriptionID = await state.subscriptions.activeTransactionID(), !subscriptionID.isEmpty else {
             logger.info("Top-up skipped (\(reason, privacy: .public)): no subscription id.")
+            NSLog("SHELFTRACE skip(%@): no subscription id, ready=%d shelf=%d", reason, ready, state.shelf.count)
             return
         }
         guard !Task.isCancelled else { return }
@@ -109,6 +117,7 @@ enum ShelfFiller {
         let prefs = state.preferences
         logger.info("Top-up starting (\(reason, privacy: .public)): \(ready, privacy: .public) ready, \(state.shelf.count, privacy: .public) on the shelf, asking for \(count, privacy: .public), discovery \(discoveryDue, privacy: .public).")
 
+        NSLog("SHELFTRACE start(%@): ready=%d shelf=%d asking=%d discovery=%@", reason, ready, state.shelf.count, count, discoveryDue ? "yes" : "no")
         var hints: [String] = []
         if discoveryDue {
             hints = await ClaudeService.discoverDishes(signals: signals, subscriptionID: subscriptionID)
@@ -129,6 +138,7 @@ enum ShelfFiller {
                 )
             } catch {
                 logger.error("Top-up call failed: \(String(describing: error), privacy: .public)")
+                NSLog("SHELFTRACE call failed (attempt %d): %@", attempt, String(describing: error))
                 break
             }
             guard !Task.isCancelled else { return }
@@ -166,6 +176,7 @@ enum ShelfFiller {
 
         guard !accepted.isEmpty else {
             logger.info("Top-up finished with nothing to add.")
+            NSLog("SHELFTRACE done(%@): nothing added, shelf=%d", reason, state.shelf.count)
             return
         }
         let room = max(0, ShelfVocab.shelfCap - state.shelf.count)
@@ -174,6 +185,7 @@ enum ShelfFiller {
         state.addToShelf(toAdd)
         state.setShelfLastTopUp(Date())
         logger.info("Top-up added \(toAdd.count, privacy: .public) recipes.")
+        NSLog("SHELFTRACE done(%@): added=%d shelf=%d", reason, toAdd.count, state.shelf.count)
     }
 
     // MARK: - Variety

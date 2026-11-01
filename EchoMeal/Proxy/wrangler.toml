@@ -18,7 +18,7 @@ compatibility_date = "2026-01-01"
 # enforced either. The only limit that always holds is the monthly spend cap set
 # on the Anthropic account itself. Keep that one set.
 [vars]
-DAILY_REQUEST_CAP = "120"
+DAILY_REQUEST_CAP = "60"
 
 # One subscription's ceiling across every purpose in one UTC day. The global cap
 # above is a single integer, so this stops one stuck client from locking every
