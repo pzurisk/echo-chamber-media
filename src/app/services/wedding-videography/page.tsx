@@ -26,8 +26,8 @@ export default function WeddingVideographyPage() {
         {/* Hero Section with Background Image */}
         <section className="relative min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 overflow-hidden">
           <Image
-            src="/images/wedding/zia%20wedding-6.jpg"
-            alt="Bride and groom kissing inside Zia Records at an alternative Las Vegas wedding"
+            src="/images/portfolio/corvette-wide-lean.webp"
+            alt="Couple with a red Corvette convertible on a desert road at Red Rock Canyon"
             fill
             className="object-cover"
             priority

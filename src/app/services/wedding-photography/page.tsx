@@ -3,8 +3,6 @@ import Image from 'next/image';
 import Navbar from '@/sections/Navbar';
 import Footer from '@/sections/Footer';
 import Link from 'next/link';
-import fs from 'fs';
-import path from 'path';
 
 // This must be exported for Next.js metadata
 export const metadata: Metadata = {
@@ -21,24 +19,17 @@ export const metadata: Metadata = {
   },
 };
 
-function getWeddingPhotos(): string[] {
-  try {
-    const dir = path.join(process.cwd(), 'public/images/wedding');
-    return fs
-      .readdirSync(dir)
-      .filter((f) => /\.(jpe?g|png|webp)$/i.test(f))
-      .sort((a, b) => {
-        const na = parseInt(a.replace(/\D/g, ''), 10) || 0;
-        const nb = parseInt(b.replace(/\D/g, ''), 10) || 0;
-        return na - nb;
-      });
-  } catch {
-    return [];
-  }
-}
+const GALLERY_PHOTOS: { file: string; alt: string }[] = [
+  { file: 'corvette-doors-sunset.webp', alt: 'Couple with a red Corvette at Red Rock Canyon in Las Vegas with the moon rising at sunset' },
+  { file: 'corvette-hood-portrait.webp', alt: 'Couple posing against a red Corvette at Red Rock Canyon in Las Vegas' },
+  { file: 'corvette-roses-couple.webp', alt: 'Couple with a bouquet of white roses next to a red Corvette at Red Rock Canyon' },
+  { file: 'corvette-wide-lean.webp', alt: 'Couple with a red Corvette convertible on a desert road at Red Rock Canyon' },
+  { file: 'red-rock-roses-raised.webp', alt: 'Woman raising a bouquet of white roses at Red Rock Canyon in Las Vegas' },
+  { file: 'moon-heart-rooftop.webp', alt: 'Couple in formal wear making a heart shape with their hands at dusk in Las Vegas' },
+];
 
 export default function WeddingPhotographyPage() {
-  const galleryPhotos = getWeddingPhotos();
+  const galleryPhotos = GALLERY_PHOTOS;
   return (
     <>
       <Navbar />
@@ -46,8 +37,8 @@ export default function WeddingPhotographyPage() {
         {/* Hero Section with Background Image */}
         <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden pt-32 pb-20 px-6">
           <Image
-            src="/images/wedding/zia%20wedding-5.jpg"
-            alt="Bride and groom holding a vinyl record at their alternative Las Vegas wedding inside Zia Records"
+            src="/images/portfolio/corvette-doors-sunset.webp"
+            alt="Couple with a red Corvette at Red Rock Canyon in Las Vegas with the moon rising at sunset"
             fill
             className="object-cover"
             priority
@@ -192,8 +183,8 @@ export default function WeddingPhotographyPage() {
               {/* Ring Exchange, tall */}
               <div className="relative row-span-2 overflow-hidden group">
                 <Image
-                  src="/images/wedding/zia%20wedding-7.jpg"
-                  alt="Bride and groom kissing in the aisles of Zia Records at a Las Vegas wedding"
+                  src="/images/portfolio/corvette-hood-portrait.webp"
+                  alt="Couple posing against a red Corvette at Red Rock Canyon in Las Vegas"
                   width={600}
                   height={900}
                   className="object-cover w-full h-full transition-transform duration-700 group-hover:scale-105"
@@ -207,8 +198,8 @@ export default function WeddingPhotographyPage() {
               {/* Petal Toss, wide */}
               <div className="relative col-span-2 overflow-hidden group">
                 <Image
-                  src="/images/wedding/zia%20wedding-6.jpg"
-                  alt="Black and white photo of a couple kissing under the dome at Zia Records, Las Vegas"
+                  src="/images/portfolio/corvette-wide-lean.webp"
+                  alt="Couple with a red Corvette convertible on a desert road at Red Rock Canyon"
                   width={1200}
                   height={600}
                   className="object-cover w-full h-64 md:h-72 transition-transform duration-700 group-hover:scale-105"
@@ -222,8 +213,8 @@ export default function WeddingPhotographyPage() {
               {/* Overhead Couple */}
               <div className="relative overflow-hidden group">
                 <Image
-                  src="/images/wedding/zia%20wedding-27.jpg"
-                  alt="Playful portrait of newlyweds inside a Las Vegas record store"
+                  src="/images/portfolio/corvette-roses-couple.webp"
+                  alt="Couple with a bouquet of white roses next to a red Corvette at Red Rock Canyon"
                   width={600}
                   height={600}
                   className="object-cover w-full h-64 md:h-72 transition-transform duration-700 group-hover:scale-105"
@@ -237,8 +228,8 @@ export default function WeddingPhotographyPage() {
               {/* String Lights, wide bottom */}
               <div className="relative col-span-2 md:col-span-3 overflow-hidden group">
                 <Image
-                  src="/images/wedding/zia%20wedding-5.jpg"
-                  alt="Bride and groom celebrating at their Las Vegas record store wedding"
+                  src="/images/portfolio/red-rock-roses-raised.webp"
+                  alt="Woman raising a bouquet of white roses at Red Rock Canyon in Las Vegas"
                   width={1200}
                   height={500}
                   className="object-cover w-full h-64 md:h-80 transition-transform duration-700 group-hover:scale-105"
@@ -262,7 +253,7 @@ export default function WeddingPhotographyPage() {
           </div>
         </section>
 
-        {/* Full Gallery, every photo in the wedding folder */}
+        {/* Full Gallery, the portfolio photos listed in GALLERY_PHOTOS */}
         {galleryPhotos.length > 0 && (
           <section id="full-gallery" className="py-20 px-6 bg-brand-charcoal">
             <div className="max-w-6xl mx-auto">
@@ -273,19 +264,19 @@ export default function WeddingPhotographyPage() {
                 Every Frame
               </h2>
               <p className="font-body text-brand-gray text-center max-w-2xl mx-auto mb-16">
-                A full look at a real Las Vegas wedding, shot and edited the way we shoot everything.
+                Recent work from around Las Vegas, shot and edited the way we shoot everything.
               </p>
 
               <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 [column-fill:_balance]">
-                {galleryPhotos.map((file) => (
+                {galleryPhotos.map(({ file, alt }) => (
                   <div
                     key={file}
                     className="mb-4 break-inside-avoid overflow-hidden border border-brand-gold/10 group"
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={`/images/wedding/${encodeURIComponent(file)}`}
-                      alt="Las Vegas wedding photography by Echo Chamber Media"
+                      src={`/images/portfolio/${file}`}
+                      alt={alt}
                       loading="lazy"
                       className="w-full h-auto object-cover transition-transform duration-700 group-hover:scale-105"
                     />
@@ -307,8 +298,8 @@ export default function WeddingPhotographyPage() {
               <div className="text-center">
                 <div className="relative w-full h-48 mb-6 overflow-hidden">
                   <Image
-                    src="/images/wedding/zia%20wedding-19.jpg"
-                    alt="Groom carrying his bride through a Las Vegas record store"
+                    src="/images/portfolio/moon-heart-rooftop.webp"
+                    alt="Couple in formal wear making a heart shape with their hands at dusk in Las Vegas"
                     fill
                     className="object-cover"
                   />
@@ -322,8 +313,8 @@ export default function WeddingPhotographyPage() {
               <div className="text-center">
                 <div className="relative w-full h-48 mb-6 overflow-hidden">
                   <Image
-                    src="/images/wedding/zia%20wedding-27.jpg"
-                    alt="Candid moment of newlyweds at an alternative Las Vegas wedding"
+                    src="/images/portfolio/corvette-roses-couple.webp"
+                    alt="Couple with a bouquet of white roses next to a red Corvette at Red Rock Canyon"
                     fill
                     className="object-cover"
                   />
@@ -337,8 +328,8 @@ export default function WeddingPhotographyPage() {
               <div className="text-center">
                 <div className="relative w-full h-48 mb-6 overflow-hidden">
                   <Image
-                    src="/images/wedding/zia%20wedding-7.jpg"
-                    alt="Cinematic black and white wedding photo in a Las Vegas record store"
+                    src="/images/portfolio/corvette-wide-lean.webp"
+                    alt="Couple with a red Corvette convertible on a desert road at Red Rock Canyon"
                     fill
                     className="object-cover"
                   />
