@@ -28,6 +28,16 @@ export const PHOTOS: Photo[] = [
   L("corvette-moonrise", "Couple beside a red Corvette convertible at moonrise with red rock hills in the distance", "Red Rock"),
   L("corvette-smile", "Smiling woman resting her arms on the door of a red convertible at Red Rock Canyon", "Red Rock"),
   P("engagement-ring-embrace", "Close detail of an engagement ring on a hand resting on a partner's shoulder", "Red Rock"),
+  L("corvette-doors-sunset", "Couple standing behind a red Corvette with its doors open at sunset, a full moon over Red Rock Canyon", "Red Rock"),
+  P("corvette-hood-portrait", "Couple posing close together on the hood of a red Corvette at dusk with red rock mountains behind them", "Red Rock"),
+  L("corvette-roses-couple", "Couple standing beside a red convertible, the bride holding a bouquet of pale roses with mountains behind them", "Red Rock"),
+  L("corvette-wide-lean", "Groom leaning on a red Corvette convertible with his partner seated on the rear deck and mountains behind them", "Red Rock"),
+  L("red-rock-roses-raised", "Bride in a black dress holding a bouquet of roses high in the desert at Red Rock Canyon", "Red Rock"),
+  P("moon-heart-rooftop", "Couple in a suit and a blue gown making a heart with their hands around the full moon on a rooftop at dusk", "Downtown"),
+  P("moon-heart-hands", "Two hands forming a heart around the full moon against a purple dusk sky", "Downtown"),
+  P("venetian-plaza-embrace", "Couple embracing in front of the pink and white patterned facade at the Venetian", "Venetian"),
+  L("venetian-arches-portrait", "Couple standing in front of white arches and tall wooden doors at the Venetian", "Venetian"),
+  P("high-roller-fountain", "Couple posing at a fountain with the High Roller observation wheel rising behind them at dusk", "High Roller"),
 ];
 
 export const photoSrc = (p: Photo) => `/images/portfolio/${p.file}.webp`;
