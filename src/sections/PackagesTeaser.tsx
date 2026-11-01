@@ -6,9 +6,9 @@ export default function PackagesTeaser() {
     <section id="packages" className="scroll-mt-24 bg-ivory px-4 pt-12 pb-16 md:px-16 md:pt-[72px] md:pb-[112px]">
       <div className="mx-auto flex max-w-[1312px] flex-col gap-10 md:gap-14">
         <div className="flex flex-col items-center gap-4 text-center">
-          <span className="font-sans text-xs uppercase tracking-[0.3em] text-gilt">2026 season pricing</span>
+          <span className="font-sans text-xs uppercase tracking-[0.3em] text-gilt">Simple pricing</span>
           <h2 className="font-display text-5xl font-normal leading-none tracking-[-0.01em] text-ink md:text-[72px]">
-            Pick your <span className="italic text-gilt">Vegas.</span>
+            Pick your <span className="text-gilt">package.</span>
           </h2>
           <p className="max-w-[620px] font-sans text-[17px] leading-[1.6] text-muted md:text-lg">{INCLUDED}</p>
         </div>
@@ -19,11 +19,11 @@ export default function PackagesTeaser() {
               key={p.id}
               href="/elopements#packages"
               className={`relative flex flex-col gap-4 rounded-xl border p-8 transition-shadow hover:shadow-[0_12px_40px_rgba(43,33,26,0.08)] md:p-10 ${
-                p.badge ? "border-gilt-accent bg-champagne" : "border-gilt/20 bg-white"
+                p.badge ? "border-gilt bg-champagne" : "border-gilt/20 bg-champagne"
               }`}
             >
               {p.badge && (
-                <span className="absolute -top-[15px] left-8 flex h-[30px] items-center rounded-full bg-ink px-3.5 font-sans text-[11px] font-semibold uppercase tracking-[0.14em] text-ivory md:left-10">
+                <span className="absolute -top-[15px] left-8 flex h-[30px] items-center rounded-full bg-gilt px-3.5 font-sans text-[11px] font-semibold uppercase tracking-[0.14em] text-ivory md:left-10">
                   {p.badge}
                 </span>
               )}
@@ -37,7 +37,7 @@ export default function PackagesTeaser() {
 
         <div className="flex flex-col items-center gap-3">
           <Button variant="ink" href="/elopements#packages">See what&apos;s included</Button>
-          <span className="font-sans text-sm text-muted">Planning last minute? Reach out anyway. Short notice dates often still work.</span>
+          <span className="font-sans text-sm text-muted">Photos add on for $500. A second nearby location is $250. A $500 deposit holds your date.</span>
         </div>
       </div>
     </section>

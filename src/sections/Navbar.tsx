@@ -4,10 +4,10 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 
 const navLinks = [
-  { label: "Weddings & Elopements", href: "/elopements" },
+  { label: "Photos", href: "/photos" },
+  { label: "Films", href: "/elopements" },
   { label: "Music Videos", href: "/music-videos" },
-  { label: "Work", href: "/#work" },
-  { label: "About", href: "/#about" },
+  { label: "Blog", href: "/blog" },
 ];
 
 export default function Navbar() {
@@ -29,23 +29,23 @@ export default function Navbar() {
     >
       <div className="mx-auto flex h-[72px] max-w-[1440px] items-center justify-between px-4 md:h-24 md:px-16">
         <Link href="/" className="flex flex-col gap-0.5 text-ink" onClick={() => setMenuOpen(false)}>
-          <span className="font-display text-[22px] font-medium tracking-[0.02em] md:text-[26px]">
+          <span className="whitespace-nowrap font-display text-[17px] tracking-[0.04em] md:text-[20px]">
             Echo Chamber Media
           </span>
-          <span className="font-sans text-[9px] uppercase tracking-[0.3em] text-gilt md:text-[11px] md:tracking-[0.32em]">
-            Las Vegas Film Co.
+          <span className="whitespace-nowrap font-sans text-[8px] uppercase tracking-[0.3em] text-gilt md:text-[10px] md:tracking-[0.32em]">
+            Las Vegas Photo and Film
           </span>
         </Link>
 
-        <div className="hidden items-center gap-10 font-sans text-[15px] lg:flex">
+        <div className="hidden items-center gap-8 whitespace-nowrap font-sans text-[15px] lg:flex">
           {navLinks.map((l) => (
             <Link key={l.label} href={l.href} className="text-ink transition-colors hover:text-gilt">
               {l.label}
             </Link>
           ))}
           <Link
-            href="/elopements#date"
-            className="flex h-12 items-center rounded-full bg-ink px-6 font-semibold text-ivory transition-colors hover:bg-gilt-hover"
+            href="/#date"
+            className="flex h-12 items-center rounded-full bg-gilt px-6 font-semibold text-ivory transition-colors hover:bg-gilt-hover"
           >
             Check your date
           </Link>
@@ -77,9 +77,9 @@ export default function Navbar() {
             </Link>
           ))}
           <Link
-            href="/elopements#date"
+            href="/#date"
             onClick={() => setMenuOpen(false)}
-            className="mt-3 flex h-[54px] items-center justify-center rounded-full bg-ink font-semibold text-ivory"
+            className="mt-3 flex h-[54px] items-center justify-center rounded-full bg-gilt font-semibold text-ivory"
           >
             Check your date
           </Link>

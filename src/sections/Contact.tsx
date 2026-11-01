@@ -11,15 +11,15 @@ type Kind = "elopement" | "music";
 const COPY = {
   elopement: {
     id: "date",
-    script: "Let's make your film",
+    script: "Let's make yours",
     heading: "Tell us your date.",
     sub: "Free 20 minute call. We reply within 24 hours, usually faster.",
     nameLabel: "Your names",
-    namePlaceholder: "Luciano & Muriel",
-    dateLabel: "Wedding date (if you have one)",
-    messagePlaceholder: "A few sentences is plenty. Where you're thinking, how many people, anything you want us to know.",
+    namePlaceholder: "Your names",
+    dateLabel: "Shoot date (if you have one)",
+    messagePlaceholder: "A few sentences is plenty. Photos, film, or both? Where are you thinking?",
     button: "Check my date",
-    subject: "New elopement inquiry",
+    subject: "New photo and film inquiry",
   },
   music: {
     id: "contact",
@@ -45,7 +45,7 @@ function track(event: string, label: string) {
 
 export default function Contact({ kind }: { kind: Kind }) {
   const c = COPY[kind];
-  const dark = kind === "music";
+  const dark = true; // dark gold redesign: both forms use the night styling
   const [form, setForm] = useState({
     name: "",
     email: "",

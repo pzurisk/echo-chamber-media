@@ -2,7 +2,8 @@ const items = [
   { label: "5.0 on Google", stars: true },
   { label: "6 festival selections" },
   { label: "Award-winning filmmaker" },
-  { label: "Chapel, downtown, or desert" },
+  { label: "Photos, film, or both" },
+  { label: "Delivered within 10 days" },
 ];
 
 export default function TrustStrip() {

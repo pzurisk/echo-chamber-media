@@ -7,7 +7,7 @@ type GtagWindow = Window & { gtag?: (...args: unknown[]) => void };
 
 // Phone only. A slim bar pinned to the bottom once the visitor scrolls past the hero,
 // hidden again while the inquiry form (#date) is on screen so it never covers the submit button.
-export default function MobileCta({ dateHref = "/elopements#date" }: { dateHref?: string }) {
+export default function MobileCta({ dateHref = "/#date" }: { dateHref?: string }) {
   const [past, setPast] = useState(false);
   const [formInView, setFormInView] = useState(false);
 
@@ -42,7 +42,7 @@ export default function MobileCta({ dateHref = "/elopements#date" }: { dateHref?
           <a
             href={dateHref}
             tabIndex={show ? 0 : -1}
-            className="flex h-[52px] flex-[1.4] items-center justify-center rounded-full bg-ink font-sans text-[15px] font-semibold text-ivory"
+            className="flex h-[52px] flex-[1.4] items-center justify-center rounded-full bg-gilt font-sans text-[15px] font-semibold text-ivory"
           >
             Check your date
           </a>

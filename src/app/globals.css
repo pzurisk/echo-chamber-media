@@ -80,3 +80,14 @@ body {
 .post img { width: 100%; border-radius: 8px; height: auto; }
 .post blockquote { border-left: 3px solid var(--gilt-accent); padding-left: 1.1em; font-family: var(--font-cormorant), serif; font-size: 1.5rem; line-height: 1.35; font-style: italic; }
 .post hr { border: 0; border-top: 1px solid rgba(140, 106, 36, 0.25); margin: 2.5em 0; }
+
+/* 2026-11 redesign: display headings use Archivo Black, uppercase, per the ECM brand system. */
+.font-display {
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  line-height: 1.05;
+}
+.font-display .italic,
+.font-display em {
+  font-style: normal;
+}

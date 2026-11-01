@@ -37,8 +37,8 @@ export default function ElopementHero() {
             <Button variant="ink-outline" href="#packages">See packages</Button>
           </div>
           <p className="font-sans text-[15px] text-ink">
-            <span className="font-semibold">Films from $500.</span>{" "}
-            <span className="text-muted">Delivered in 2 weeks. Ask about rush delivery.</span>
+            <span className="font-semibold">Films from $1,000.</span>{" "}
+            <span className="text-muted">Photos add on for $500. Delivered within 10 days.</span>
           </p>
         </div>
       </div>

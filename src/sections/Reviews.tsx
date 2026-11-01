@@ -49,7 +49,7 @@ export default function Reviews() {
       <div className="mx-auto max-w-[1312px]">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <h2 className="font-display text-4xl md:text-[56px] font-normal leading-none">
-            Kind <span className="italic text-gilt">words</span>
+            Kind <span className="text-gilt">words</span>
           </h2>
           <a
             href={GOOGLE_REVIEWS_URL}
@@ -73,7 +73,7 @@ export default function Reviews() {
               <span className="text-gilt text-base tracking-[0.2em]" aria-label="5 stars">
                 ★★★★★
               </span>
-              <blockquote className="m-0 flex-grow font-display italic text-[22px] md:text-[26px] leading-[1.35] text-ink">
+              <blockquote className="m-0 flex-grow font-sans text-[18px] md:text-[20px] leading-[1.6] text-ink">
                 &ldquo;{r.quote}&rdquo;
               </blockquote>
               <figcaption className="flex flex-col gap-1 font-sans">

@@ -19,16 +19,18 @@ const config: Config = {
           gray: "#A0A0A0",
           red: "#C94C4C",
         },
-        // Bridal palette (2026-09 rebuild). Old brand tokens above stay for
-        // the service, blog, links, and MealTime pages, which are still dark.
-        ivory: "#FBF7F1",
-        champagne: "#F3EBDF",
-        ink: "#2B211A",
-        muted: "#6B5B4C",
+        // 2026-11 redesign: the former bridal token names now carry the dark gold
+        // palette (ECM brand system), so every page that used them goes dark at once.
+        // ivory = page background, champagne = raised surface, ink = main text,
+        // muted = secondary text, gilt = gold accent.
+        ivory: "#1A1A1A",
+        champagne: "#242424",
+        ink: "#F5F5F5",
+        muted: "#A8A8A8",
         gilt: {
-          DEFAULT: "#8C6A24",
-          hover: "#5E4615",
-          accent: "#C9A45C",
+          DEFAULT: "#C9A84C",
+          hover: "#D4B85C",
+          accent: "#C9A84C",
         },
         // After dark section.
         night: {
@@ -41,8 +43,8 @@ const config: Config = {
       fontFamily: {
         heading: ["var(--font-archivo-black)", "sans-serif"],
         body: ["var(--font-montserrat)", "sans-serif"],
-        display: ["var(--font-cormorant)", "Georgia", "serif"],
-        sans: ["var(--font-instrument)", "system-ui", "sans-serif"],
+        display: ["var(--font-archivo-black)", "sans-serif"],
+        sans: ["var(--font-montserrat)", "system-ui", "sans-serif"],
         script: ["var(--font-pinyon)", "cursive"],
         "script-dark": ["var(--font-yellowtail)", "cursive"],
       },

@@ -1,74 +1,40 @@
 import Image from "next/image";
-import Link from "next/link";
 import Button from "@/components/Button";
-import { FILMS } from "@/lib/site";
 
 export default function Hero() {
   return (
-    <section className="bg-ivory px-4 pb-10 pt-[88px] md:px-16 md:pb-[72px] md:pt-[120px]">
-      <div className="mx-auto grid max-w-[1312px] grid-cols-1 items-center gap-6 lg:grid-cols-12 lg:gap-x-10">
-        <div className="order-2 flex flex-col gap-5 lg:order-1 lg:col-span-5 lg:gap-6">
-          {/* One h1 holding both lines, so the heading carries "Las Vegas elopements". Looks the same as before. */}
-          <h1 className="flex flex-col gap-5 font-normal lg:gap-6">
-            <span className="font-script text-[40px] leading-[1.1] text-gilt md:text-[56px] md:leading-none">
-              Las Vegas elopements
-            </span>
-            {" "}
-            <span className="font-display text-[54px] leading-[0.98] tracking-[-0.015em] text-ink sm:text-[72px] lg:leading-[0.95] xl:text-[88px]">
-              Say yes in Vegas. <span className="italic">Keep it forever.</span>
-            </span>
-          </h1>
-          <p className="font-sans text-[17px] leading-[1.55] text-muted md:text-xl md:leading-[1.6]">
-            Cinematic wedding films for couples who want it small, personal, and beautiful.
-            <span className="hidden md:inline"> Shot on cinema cameras by a director who makes movies.</span>
-          </p>
-          <div className="flex flex-col gap-4 md:flex-row lg:mt-1">
-            <Button variant="ink" href="/elopements#date">Check your date</Button>
-            <Button variant="ink-outline" href="/elopements#packages">See packages</Button>
-          </div>
-          <p className="font-sans text-[15px] text-ink">
-            <span className="font-semibold">Elopement films from $500.</span>{" "}
-            <span className="text-muted">Delivered in 2 weeks. Ask about rush delivery.</span>
-          </p>
-          <span className="font-sans text-[15px] text-muted">
-            Artist or band?{" "}
-            <Link href="/music-videos" className="font-semibold text-gilt hover:text-gilt-hover">
-              We make music videos too →
-            </Link>
-          </span>
-        </div>
-
-        <div className="relative order-1 h-[360px] overflow-hidden rounded-lg bg-champagne sm:h-[460px] lg:order-2 lg:col-span-7 lg:h-[560px]">
-          {/* The still sits under the video and shows until it plays, so the video needs no poster of its own. */}
-          <Image
-            src="/images/elopements/hero-poster.webp"
-            alt=""
-            fill
-            priority
-            sizes="(min-width: 1024px) 58vw, 100vw"
-            className="object-cover"
-          />
-          <video
-            autoPlay
-            loop
-            muted
-            playsInline
-            preload="auto"
-            aria-label="Luciano and Muriel laughing and walking down a gold lit arcade in Las Vegas"
-            className="absolute inset-0 h-full w-full object-cover motion-reduce:hidden"
-          >
-            <source src="/video/elopement-hero.mp4" type="video/mp4" />
-          </video>
+    <section className="relative flex min-h-[640px] items-end overflow-hidden bg-ivory text-white md:h-screen">
+      <Image
+        src="/images/portfolio/high-roller-sunset-kiss.webp"
+        alt="Couple kissing at sunset in front of the High Roller observation wheel in Las Vegas"
+        fill
+        priority
+        sizes="100vw"
+        className="object-cover object-[50%_35%]"
+      />
+      <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-black/45" />
+      <div className="relative mx-auto w-full max-w-[1312px] px-4 pb-14 pt-32 md:px-16 md:pb-24">
+        <p className="mb-4 font-sans text-xs font-semibold uppercase tracking-[0.28em] text-gilt">
+          Las Vegas photography and film
+        </p>
+        <h1 className="max-w-[900px] font-display text-[40px] leading-[1.05] sm:text-6xl lg:text-7xl">
+          Las Vegas photos and films that feel like your best night.
+        </h1>
+        <p className="mt-5 max-w-[560px] font-sans text-[17px] leading-[1.6] text-white/90 md:text-xl">
+          Engagements, elopements and weddings. Choose photos, film, or both. I run every shoot myself, and you get everything within 10 days.
+        </p>
+        <div className="mt-8 flex flex-col gap-4 sm:flex-row">
+          <Button variant="ink" href="#date">Check your date</Button>
           <a
             href="#work"
-            className="absolute bottom-4 left-4 flex h-11 items-center gap-2.5 rounded-full bg-ivory/95 pl-3 pr-5 font-sans text-[13px] font-semibold text-ink transition-colors hover:bg-white md:bottom-6 md:left-6"
+            className="inline-flex h-14 items-center justify-center rounded-full border border-white/70 px-8 font-sans text-base font-semibold text-white transition-colors hover:bg-white hover:text-black"
           >
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-gilt">
-              <svg viewBox="0 0 24 24" className="h-3 w-3 fill-ivory" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
-            </span>
-            Watch Luciano &amp; Muriel · {FILMS.lucianoMuriel.length}
+            See the work
           </a>
         </div>
+        <p className="mt-6 font-sans text-[15px] text-white/80">
+          <span className="font-semibold text-white">Film from $1,000.</span> Photos add on for $500. A $500 deposit holds your date.
+        </p>
       </div>
     </section>
   );

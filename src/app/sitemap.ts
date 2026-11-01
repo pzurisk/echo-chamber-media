@@ -36,7 +36,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ])
   );
 
-  const routes = ["", "/elopements", "/music-videos", "/blog", "/links", ...posts];
+  const routes = ["", "/elopements", "/photos", "/music-videos", "/blog", "/links", ...posts];
 
   return routes.map((route) => ({
     url: `${BASE}${route}`,
@@ -45,7 +45,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority:
       route === ""
         ? 1
-        : route === "/elopements" || route === "/music-videos"
+        : route === "/elopements" || route === "/photos" || route === "/music-videos"
         ? 0.9
         : route === "/blog"
         ? 0.8

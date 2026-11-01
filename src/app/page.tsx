@@ -1,14 +1,16 @@
 import Navbar from "@/sections/Navbar";
 import Hero from "@/sections/Hero";
 import TrustStrip from "@/sections/TrustStrip";
+import PickDoor from "@/sections/PickDoor";
+import GalleryHome from "@/sections/GalleryHome";
 import FeaturedFilm from "@/sections/FeaturedFilm";
-import FilmStrip from "@/sections/FilmStrip";
-import HowItWorks from "@/sections/HowItWorks";
 import PackagesTeaser from "@/sections/PackagesTeaser";
+import HowItWorks from "@/sections/HowItWorks";
 import Reviews from "@/sections/Reviews";
 import AfterDark from "@/sections/AfterDark";
 import About from "@/sections/About";
-import CTA from "@/sections/CTA";
+import FAQ from "@/sections/FAQ";
+import Contact from "@/sections/Contact";
 import Footer from "@/sections/Footer";
 import MobileCta from "@/sections/MobileCta";
 
@@ -19,14 +21,16 @@ export default function Home() {
       <main>
         <Hero />
         <TrustStrip />
+        <PickDoor />
+        <GalleryHome />
         <FeaturedFilm />
-        <FilmStrip />
-        <HowItWorks />
         <PackagesTeaser />
+        <HowItWorks />
         <Reviews />
         <AfterDark />
         <About />
-        <CTA />
+        <FAQ />
+        <Contact kind="elopement" />
       </main>
       <Footer />
       <MobileCta />

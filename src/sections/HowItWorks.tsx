@@ -1,37 +1,25 @@
 const steps = [
-  {
-    n: "One",
-    title: "Pick your Vegas",
-    body: "A chapel, the downtown lights, the Strip at night, or the desert at golden hour. We plan the route and timing around the light.",
-  },
-  {
-    n: "Two",
-    title: "Just be together",
-    body: "No stiff posing. We follow you, guide you a little, and catch the moments you did not know were happening.",
-  },
-  {
-    n: "Three",
-    title: "Get your film",
-    body: "Edited, color graded, and set to licensed music. Delivered in 2 weeks (ask about rush delivery), ready for everyone who could not be there.",
-  },
+  { n: "1", title: "Check your date", text: "Tell me your date and where you are thinking. I reply within 24 hours, and a free 20 minute call is one click away." },
+  { n: "2", title: "Hold it", text: "A $500 deposit and a signed agreement hold your date. The balance is due right after the shoot." },
+  { n: "3", title: "Just be together", text: "No stiff posing. I guide you a little and catch the moments you did not know were happening." },
+  { n: "4", title: "Get it in 10 days", text: "Your finished videos and photos arrive within 10 days of the shoot, color graded and ready to share." },
 ];
 
 export default function HowItWorks() {
   return (
-    <section className="bg-ivory px-4 pt-16 pb-12 md:px-16 md:pt-[120px] md:pb-[72px]">
-      <div className="mx-auto flex max-w-[1312px] flex-col gap-10 md:gap-16">
-        <h2 className="font-display text-5xl font-normal leading-[1.02] tracking-[-0.01em] text-ink md:text-[68px]">
-          Eloping is easy. <span className="italic text-gilt">Here&apos;s how.</span>
-        </h2>
-        <div className="grid grid-cols-1 gap-10 md:grid-cols-3 md:gap-12">
+    <section id="how" className="scroll-mt-24 bg-ivory px-4 py-16 md:px-16 md:py-[104px]">
+      <div className="mx-auto max-w-[1312px]">
+        <p className="mb-3 font-sans text-xs font-semibold uppercase tracking-[0.28em] text-gilt">How it works</p>
+        <h2 className="font-display text-4xl text-ink md:text-6xl">Booking is easy.</h2>
+        <ol className="mt-10 grid grid-cols-1 gap-8 md:grid-cols-4 md:gap-6">
           {steps.map((s) => (
-            <div key={s.n} className="flex flex-col gap-3.5 border-t border-gilt/35 pt-7">
-              <span className="font-display text-2xl italic text-gilt">{s.n}</span>
-              <span className="font-display text-[30px] font-medium leading-tight text-ink md:text-[34px]">{s.title}</span>
-              <span className="font-sans text-[17px] leading-[1.6] text-muted">{s.body}</span>
-            </div>
+            <li key={s.n} className="border-t border-gilt/30 pt-5">
+              <span className="font-display text-5xl leading-none text-gilt">{s.n}</span>
+              <h3 className="mt-3 font-sans text-lg font-semibold text-ink">{s.title}</h3>
+              <p className="mt-2 font-sans text-base leading-[1.6] text-muted">{s.text}</p>
+            </li>
           ))}
-        </div>
+        </ol>
       </div>
     </section>
   );

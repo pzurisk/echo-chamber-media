@@ -26,8 +26,8 @@ export default function Button({
     outline:
       "border border-brand-gold text-brand-gold hover:bg-brand-gold hover:text-brand-black",
     dark: "bg-brand-charcoal text-brand-off-white hover:bg-brand-gold hover:text-brand-black",
-    ink: "bg-ink text-ivory hover:bg-gilt-hover",
-    "ink-outline": "border border-ink text-ink hover:bg-ink hover:text-ivory",
+    ink: "bg-gilt text-ivory hover:bg-gilt-hover",
+    "ink-outline": "border border-gilt text-gilt hover:bg-gilt hover:text-ivory",
     "night-gold": "bg-night-gold text-night hover:bg-[#F0C25C]",
   };
 

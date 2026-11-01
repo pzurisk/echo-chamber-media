@@ -13,10 +13,10 @@ import { PACKAGES } from "@/lib/packages";
 import { SITE, OG_IMAGE } from "@/lib/site";
 
 const URL = "https://echochambermedia.com/elopements";
-// Absolute title: the 2 week delivery is the hook, so it takes the spot the brand name would.
-const TITLE = "Las Vegas Wedding and Elopement Videographer | Films in 2 Weeks";
+// Absolute title: the 10 day delivery is the hook, so it takes the spot the brand name would.
+const TITLE = "Las Vegas Wedding and Elopement Videographer | Films in 10 Days";
 const DESCRIPTION =
-  "Las Vegas wedding and elopement videographer. Cinematic films from $500, delivered in 2 weeks. Chapel, downtown, or desert. Check your date.";
+  "Las Vegas wedding and elopement videographer. Cinematic films from $1,000, delivered within 10 days. Photos add on for $500. Check your date.";
 
 export const metadata: Metadata = {
   title: { absolute: TITLE },
@@ -50,7 +50,7 @@ const serviceLd = {
   },
   hasOfferCatalog: {
     "@type": "OfferCatalog",
-    name: "Elopement film packages",
+    name: "Photo and film packages",
     itemListElement: PACKAGES.map((p) => ({
       "@type": "Offer",
       name: p.name,

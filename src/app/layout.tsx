@@ -57,13 +57,16 @@ const yellowtail = Yellowtail({
 export const metadata: Metadata = {
   metadataBase: new URL("https://echochambermedia.com"),
   title: {
-    default: "Las Vegas Elopement Films and Music Videos | Echo Chamber Media",
+    default: "Las Vegas Photos, Elopement Films and Music Videos | Echo Chamber Media",
     template: "%s | Echo Chamber Media",
   },
   description:
-    "Cinematic Las Vegas elopement films from $500, delivered in 2 weeks. Music videos too, from a filmmaker who makes movies. Check your date.",
+    "Las Vegas photos and films for engagements, elopements and weddings. Film from $1,000, photos add on for $500, delivered within 10 days. Check your date.",
   keywords: [
     "Las Vegas elopement videographer",
+    "Las Vegas engagement photographer",
+    "Las Vegas elopement photographer",
+    "Red Rock Canyon engagement photos",
     "Las Vegas elopement film",
     "elopement videographer Las Vegas",
     "Las Vegas wedding videographer",
@@ -82,9 +85,9 @@ export const metadata: Metadata = {
     canonical: "https://echochambermedia.com",
   },
   openGraph: {
-    title: "Las Vegas Elopement Films and Music Videos | Echo Chamber Media",
+    title: "Las Vegas Photos, Elopement Films and Music Videos | Echo Chamber Media",
     description:
-      "Cinematic Las Vegas elopement films from $500, delivered in 2 weeks. Music videos too, from a filmmaker who makes movies. Check your date.",
+      "Las Vegas photos and films for engagements, elopements and weddings. Film from $1,000, photos add on for $500, delivered within 10 days. Check your date.",
     type: "website",
     locale: "en_US",
     url: "https://echochambermedia.com",
@@ -117,7 +120,7 @@ const jsonLd = {
   telephone: "+1-916-468-9419",
   email: "echochambermediasales@gmail.com",
   description:
-    "Las Vegas film company making cinematic elopement films and music videos.",
+    "Las Vegas photo and film company making engagement and elopement photos, cinematic films and music videos.",
   priceRange: "$$",
   address: {
     "@type": "PostalAddress",
@@ -148,6 +151,7 @@ const jsonLd = {
     name: "Film Services",
     itemListElement: [
       { "@type": "Offer", itemOffered: { "@type": "Service", name: "Las Vegas Elopement Videography" } },
+      { "@type": "Offer", itemOffered: { "@type": "Service", name: "Las Vegas Engagement and Wedding Photography" } },
       { "@type": "Offer", itemOffered: { "@type": "Service", name: "Music Video Production" } },
     ],
   },

@@ -14,7 +14,23 @@ export const FAQS = [
   },
   {
     q: "Do you shoot photos too?",
-    a: "Film is our focus. If you want photos too, we can add a short photo session. Just mention it when you reach out.",
+    a: "Yes. Photos are a $500 add-on to any film package, shot in the same session.",
+  },
+  {
+    q: "How long until we get everything?",
+    a: "Your finished videos and photos arrive within 10 days of the shoot.",
+  },
+  {
+    q: "How does booking and the deposit work?",
+    a: "A $500 deposit and a signed agreement hold your date. The balance is due right after the shoot.",
+  },
+  {
+    q: "What if we need to reschedule?",
+    a: "Rescheduling is free with at least 7 days notice. With 72 hours to 7 days notice it is a $100 fee. Under 72 hours counts as a cancellation.",
+  },
+  {
+    q: "How long are the videos?",
+    a: "Each finished video runs up to 1 minute 30 seconds. Longer videos are available, and you see the price before any editing starts.",
   },
   {
     q: "How far out should we book?",
@@ -27,12 +43,12 @@ export default function FAQ() {
     <section id="faq" className="scroll-mt-24 bg-ivory px-4 py-16 md:px-16 md:py-[104px]">
       <div className="mx-auto flex max-w-[860px] flex-col gap-10 md:gap-12">
         <h2 className="text-center font-display text-5xl font-normal leading-none tracking-[-0.01em] text-ink md:text-[64px]">
-          Good <span className="italic text-gilt">questions.</span>
+          Good <span className="text-gilt">questions.</span>
         </h2>
         <div className="flex flex-col border-t border-gilt/25">
           {FAQS.map((f) => (
             <details key={f.q} className="group border-b border-gilt/25 py-5 md:py-6">
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-6 font-display text-[22px] leading-[1.25] text-ink md:text-[28px] [&::-webkit-details-marker]:hidden">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-6 font-sans text-lg font-semibold leading-[1.35] text-ink md:text-xl [&::-webkit-details-marker]:hidden">
                 {f.q}
                 <span
                   aria-hidden="true"
