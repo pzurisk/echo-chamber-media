@@ -36,7 +36,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ])
   );
 
-  const routes = ["", "/elopements", "/photos", "/music-videos", "/blog", "/links", ...posts];
+  const routes = ["", "/elopements", "/photos", "/music-videos", "/blog", "/links", "/services/interviews-podcasts", ...posts];
 
   return routes.map((route) => ({
     url: `${BASE}${route}`,
