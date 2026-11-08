@@ -152,18 +152,18 @@ export default function InterviewsPodcastsPage() {
         <section className="py-16 px-6 bg-brand-charcoal">
           <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-6">
             <Link
-              href="/services/documentary"
+              href="/music-videos"
               className="block bg-brand-black p-6 rounded-lg border border-brand-gold border-opacity-30 hover:border-opacity-80 transition-all"
             >
-              <h3 className="font-heading text-xl font-black text-brand-gold mb-2 tracking-editorial">Documentary</h3>
-              <p className="text-brand-gray text-sm">Story-driven films built around real people and real interviews.</p>
+              <h3 className="font-heading text-xl font-black text-brand-gold mb-2 tracking-editorial">Music Videos</h3>
+              <p className="text-brand-gray text-sm">Cinematic music videos shot on the same cinema cameras.</p>
             </Link>
             <Link
-              href="/services/corporate"
+              href="/elopements"
               className="block bg-brand-black p-6 rounded-lg border border-brand-gold border-opacity-30 hover:border-opacity-80 transition-all"
             >
-              <h3 className="font-heading text-xl font-black text-brand-gold mb-2 tracking-editorial">Corporate Video</h3>
-              <p className="text-brand-gray text-sm">Brand films, commercials, and company stories.</p>
+              <h3 className="font-heading text-xl font-black text-brand-gold mb-2 tracking-editorial">Elopements and Weddings</h3>
+              <p className="text-brand-gray text-sm">Wedding and elopement films and photography in Las Vegas.</p>
             </Link>
           </div>
         </section>
