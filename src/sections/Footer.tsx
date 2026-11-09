@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { SITE } from "@/lib/site";
 
@@ -11,7 +12,7 @@ export default function Footer() {
           <span className="font-display text-[26px] text-ink">Echo Chamber Media</span>
           <span className="font-sans text-[15px] text-muted">Elopement films and music videos. Las Vegas, NV.</span>
         </div>
-        <div className="flex gap-12 md:gap-16">
+        <div className="flex flex-wrap gap-x-12 gap-y-8 md:gap-x-16">
           <div className="flex flex-col gap-2.5">
             <Link href="/elopements" className={link}>Weddings & Elopements</Link>
             <Link href="/music-videos" className={link}>Music Videos</Link>
@@ -23,6 +24,21 @@ export default function Footer() {
             <a href={SITE.instagram} target="_blank" rel="noopener noreferrer" className={link}>Instagram</a>
             <a href={SITE.tiktok} target="_blank" rel="noopener noreferrer" className={link}>TikTok</a>
           </div>
+          <a
+            href="https://instagram.com/echochambermediaco"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex flex-col gap-2.5"
+          >
+            <span className={link}>Follow us on Instagram</span>
+            <Image
+              src="/images/instagram-qr.webp"
+              alt="QR code to follow Echo Chamber Media on Instagram"
+              width={1741}
+              height={2000}
+              className="h-auto w-[130px]"
+            />
+          </a>
         </div>
       </div>
       <p className="mx-auto mt-10 max-w-[1312px] border-t border-gilt/20 pt-6 font-sans text-xs text-muted">
