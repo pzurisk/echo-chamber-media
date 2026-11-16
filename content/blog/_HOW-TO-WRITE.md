@@ -17,3 +17,7 @@ What Google likes:
 - Two or three links to your other pages, especially `/elopements#date` near the end.
 - Photos from your own films, each with a short description in the alt text.
 - No em dashes. No made-up facts or reviews.
+
+The `cta` line picks the box at the bottom of the post: `elopement` (check your date),
+`music` (start your music video), or `business` (request a quote, for corporate and
+commercial posts).

@@ -17,7 +17,7 @@ export interface Post {
   image?: string;
   imageAlt?: string;
   keywords?: string;
-  cta: "elopement" | "music";
+  cta: "elopement" | "music" | "business";
   draft: boolean;
   faq?: { q: string; a: string }[];
   readMinutes: number;
@@ -46,7 +46,7 @@ function load(file: string): Post {
     image: data.image ? String(data.image) : undefined,
     imageAlt: data.imageAlt ? String(data.imageAlt) : undefined,
     keywords: data.keywords ? String(data.keywords) : undefined,
-    cta: data.cta === "music" ? "music" : "elopement",
+    cta: data.cta === "music" || data.cta === "business" ? data.cta : "elopement",
     draft: data.draft === true,
     faq: Array.isArray(data.faq) ? data.faq.map((f: { q: unknown; a: unknown }) => ({ q: String(f.q), a: String(f.a) })) : undefined,
     readMinutes: Math.max(1, Math.round(words / 220)),

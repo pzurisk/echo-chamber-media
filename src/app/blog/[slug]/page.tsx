@@ -74,7 +74,29 @@ export default function PostPage({ params }: { params: { slug: string } }) {
         })),
       }
     : null;
-  const music = post.cta === "music";
+  const cta = {
+    elopement: {
+      script: "Let's make your film",
+      heading: "Tell us your date.",
+      body: "Free 20 minute call. We reply within 24 hours, usually faster.",
+      button: "Check your date",
+      href: "/elopements#date",
+    },
+    music: {
+      script: "Start your project",
+      heading: "Got a song that needs a video?",
+      body: "Send us a link and a few lines. We reply within 24 hours.",
+      button: "Start your music video",
+      href: "/music-videos#contact",
+    },
+    business: {
+      script: "Planning a shoot?",
+      heading: "Tell us about your project.",
+      body: "Send us a few details and we will come back with a plan.",
+      button: "Request a quote",
+      href: "/services/corporate#contact",
+    },
+  }[post.cta];
 
   return (
     <>
@@ -110,19 +132,17 @@ export default function PostPage({ params }: { params: { slug: string } }) {
 
             <div className="mt-14 rounded-xl border border-gilt/25 bg-champagne p-8 text-center md:p-10">
               <p className="font-script text-4xl text-gilt md:text-5xl">
-                {music ? "Start your project" : "Let's make your film"}
+                {cta.script}
               </p>
               <h2 className="mt-2 font-display text-3xl md:text-4xl">
-                {music ? "Got a song that needs a video?" : "Tell us your date."}
+                {cta.heading}
               </h2>
               <p className="mx-auto mt-3 max-w-[460px] font-sans text-base text-muted">
-                {music
-                  ? "Send us a link and a few lines. We reply within 24 hours."
-                  : "Free 20 minute call. We reply within 24 hours, usually faster."}
+                {cta.body}
               </p>
               <div className="mt-6 flex justify-center">
-                <Button variant="ink" href={music ? "/music-videos#contact" : "/elopements#date"}>
-                  {music ? "Start your music video" : "Check your date"}
+                <Button variant="ink" href={cta.href}>
+                  {cta.button}
                 </Button>
               </div>
             </div>

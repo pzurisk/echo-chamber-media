@@ -4,7 +4,7 @@ description: "What to do before the crew shows up: picking the room, prepping th
 date: 2026-11-16
 category: "Corporate Video Guide"
 keywords: "corporate interview video Las Vegas, interview videographer Las Vegas, testimonial video Las Vegas, how to prepare for a video interview shoot, corporate video production Las Vegas"
-cta: elopement
+cta: business
 draft: true
 faq:
   - q: "What kind of room works best for a video interview?"
